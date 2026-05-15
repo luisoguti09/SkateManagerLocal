@@ -1,0 +1,17 @@
+$bg: #f6f7fb !default;
+$radius: 12px !default;
+
+@mixin card {
+  background: #fff;
+  border-radius: $radius;
+  padding: 16px;
+}
+
+$brand-gradient: 
+linear-gradient(180deg, #0b2a91 0%, #0f56d9 40%, #1b77ff 100%) !default;
+
+:root {
+  --bg: #f6f7fb;
+  --radius: 12px;
+  --brand-gradient: #{$brand-gradient}; 
+}

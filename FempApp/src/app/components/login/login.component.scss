@@ -1,0 +1,117 @@
+:host {
+  --fempa-blue: #0075f1;
+}
+
+/* Etiquetas legibles */
+:host ::ng-deep .mat-mdc-form-field .mdc-floating-label,
+:host ::ng-deep .mat-mdc-form-field .mdc-floating-label--float-above {
+  color: #111 !important;
+  font-weight: 600;
+}
+
+/* Input sobre fondo blanco */
+:host ::ng-deep .mat-mdc-text-field-wrapper {
+  background: #fff !important;
+  border-radius: 10px;
+}
+
+/* Botón primario azul FEMPA */
+:host ::ng-deep .mat-mdc-raised-button.mat-primary {
+  background: var(--fempa-blue) !important;
+}
+
+.contentLogin {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  min-height: 100vh;
+  background: rgb(2,70,206);
+background: linear-gradient(90deg, rgba(2,70,206,1) 0%, rgba(132,162,223,1) 32%, rgba(2,70,206,1) 100%);
+}
+
+.login-card {
+  width: 400px;
+  max-width: 100%;
+  background-color: #f1f1f1;
+
+  mat-card-header {
+    display: flex;
+    align-items: center;
+    padding: 24px;
+
+    .logo-header-image {
+      margin-right: 16px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #eee; 
+    }
+  }
+
+  mat-card-title {
+    font-size: 20px;
+    font-weight: bold;
+
+    .cardImg {
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  mat-card-description {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 16px;
+  }
+
+  mat-card-subtitle {
+    margin-top: 20px;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+  }
+
+
+
+  mat-card-content {
+    padding: 16px;
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    mat-form-field {
+      margin-bottom: 16px;
+      
+    }
+  }
+
+  mat-card-actions {
+    display: flex;
+    flex-direction: column; 
+    padding: 16px;
+
+    section {
+      display: flex;
+      justify-content: flex-start; 
+    }
+
+    button {
+      width: 100%;
+
+      &:first-child {
+        background-color: #007bff;
+        color: #fff;
+      }
+
+      &:last-child {
+          background: rgb(0,0,0);
+          background: linear-gradient(0deg, rgba(0,0,0,1) 0%, 
+          rgba(120,114,114,1) 50%, rgba(0,0,0,1) 100%);
+      }
+    }
+  }
+}

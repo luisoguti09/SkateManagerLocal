@@ -1,0 +1,11 @@
+<div class="dialog-container" [ngClass]="{ 'success': data.success, 'error': !data.success }">
+  <h2>{{ data.success ? 'Registro Exitoso' : 'Registro Fallido' }}</h2>
+  <p>
+    {{ data.success
+      ? '¡Te has inscrito correctamente al evento!'
+      : 'Lo sentimos, no se pudo completar tu inscripción al evento.' }}
+  </p>
+  <button mat-button mat-dialog-close>Cerrar</button>
+</div>
+
+

@@ -1,0 +1,80 @@
+<div class="header-bar">
+    <button mat-icon-button (click)="volver()">
+        <mat-icon>arrow_back</mat-icon>
+    </button>
+</div>
+
+<div class="asistencias-page">
+
+    <mat-card class="asistencias-card">
+        <h1>Control de Asistencias</h1>
+        <p>Registro de deportistas presentes por evento.</p>
+
+        <div class="filtros">
+            <mat-form-field appearance="outline">
+                <mat-label>ID Evento</mat-label>
+                <input matInput type="number" [(ngModel)]="eventoIdFiltro">
+            </mat-form-field>
+
+            <button mat-raised-button color="primary" type="button" (click)="cargarAsistencias()">
+                Buscar
+            </button>
+
+            <button mat-stroked-button type="button" (click)="limpiarFiltro()">
+                Limpiar
+            </button>
+        </div>
+
+        <table mat-table [dataSource]="asistenciasData" class="asistencias-table">
+
+            <ng-container matColumnDef="deportista">
+                <th mat-header-cell *matHeaderCellDef>Deportista</th>
+                <td mat-cell *matCellDef="let a">
+                    {{ a.Usuario?.nombre || 'Sin nombre' }}
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="dni">
+                <th mat-header-cell *matHeaderCellDef>DNI</th>
+                <td mat-cell *matCellDef="let a">
+                    {{ a.Usuario?.dni || '-' }}
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="evento">
+                <th mat-header-cell *matHeaderCellDef>Evento</th>
+                <td mat-cell *matCellDef="let a">
+                    {{ a.Evento?.titulo || 'Evento sin título' }}
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="lugar">
+                <th mat-header-cell *matHeaderCellDef>Lugar</th>
+                <td mat-cell *matCellDef="let a">
+                    {{ a.Evento?.lugar || '-' }}
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="fecha">
+                <th mat-header-cell *matHeaderCellDef>Fecha</th>
+                <td mat-cell *matCellDef="let a">
+                    {{ a.checkedAt | date:'dd/MM/yyyy' }}
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="hora">
+                <th mat-header-cell *matHeaderCellDef>Hora</th>
+                <td mat-cell *matCellDef="let a">
+                    {{ a.checkedAt | date:'HH:mm' }}
+                </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+
+        <p *ngIf="asistenciasData.length === 0" class="empty-msg">
+            No hay asistencias registradas.
+        </p>
+    </mat-card>
+</div>

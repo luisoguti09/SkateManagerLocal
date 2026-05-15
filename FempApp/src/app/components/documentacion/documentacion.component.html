@@ -1,0 +1,27 @@
+<mat-card class="card-section">
+  <h2>Subir Documentación</h2>
+
+  <div *ngFor="let field of ['dniFrente', 'dniDorso', 'fichaMedica']" class="file-upload-group">
+    <label>{{ field }}</label>
+    <input type="file" (change)="onFileChange($event, field)" accept="image/*,.pdf" />
+
+    <div *ngIf="previews[field]" class="preview-container">
+      <ng-container *ngIf="isImage(previews[field])">
+        <img [src]="previews[field]" class="preview-img" />
+      </ng-container>
+      <ng-container *ngIf="isPDF(previews[field])">
+        <span>📄 Archivo PDF cargado</span>
+      </ng-container>
+    </div>
+  </div>
+
+  <div *ngIf="successMsgDoc" class="success-message">{{ successMsgDoc }}</div>
+  <div *ngIf="errorMsgDoc" class="error-message">{{ errorMsgDoc }}</div>
+
+  <button mat-raised-button color="primary" (click)="subirDocumentos()" [disabled]="cargando">
+    <mat-progress-spinner *ngIf="cargando" diameter="20" mode="indeterminate" color="accent"></mat-progress-spinner>
+    <span *ngIf="!cargando">Enviar Documentación</span>
+  </button>
+</mat-card>
+<app-qr-credencial></app-qr-credencial>
+

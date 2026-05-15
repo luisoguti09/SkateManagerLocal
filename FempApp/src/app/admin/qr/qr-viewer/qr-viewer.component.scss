@@ -1,0 +1,24 @@
+@use '../../../../styles/admin-tokens' as *;
+
+.card { 
+    @include card; 
+    border:1px solid rgba(26,115,232,.25); 
+}
+
+.row { 
+    display:flex; 
+    align-items:center; 
+    gap:12px; 
+    flex-wrap: wrap; 
+}
+
+.preview { 
+    margin-top:12px; 
+    img{
+         max-width:256px;
+        } 
+    }
+    
+.muted { 
+    color: rgba(255,255,255,.8); 
+}

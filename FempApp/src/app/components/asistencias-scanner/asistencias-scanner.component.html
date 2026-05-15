@@ -1,0 +1,47 @@
+<mat-card>
+  <mat-card-title>Control de asistencias</mat-card-title>
+  <mat-card-content>
+
+    <div class="row">
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Evento</mat-label>
+        <mat-select [(value)]="eventoId">
+          <mat-option *ngFor="let ev of eventos" [value]="ev.id">
+            {{ ev.titulo || ev.nombre || ('Evento #' + ev.id) }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="row" style="margin-bottom:8px">
+      <mat-slide-toggle [(ngModel)]="mute">Silenciar sonidos</mat-slide-toggle>
+    </div>
+
+    <div class="scanner">
+      <zxing-scanner
+        [autostart]="true"
+        [tryHarder]="true"
+        [formats]="allowedFormats"
+        [device]="currentDevice"
+        (camerasFound)="onCamerasFound($event)"
+        (scanSuccess)="onScanSuccess($event)">
+      </zxing-scanner>
+    </div>
+
+    <div class="row actions">
+      <button mat-stroked-button type="button"
+              (click)="switchCamera()" [disabled]="devices.length === 0">
+        Cambiar cámara
+      </button>
+    </div>
+
+    <div class="history" *ngIf="history.length">
+      <div class="msg" *ngFor="let h of history">
+        <span class="usr" [class.ok]="h.ok" [class.err]="!h.ok">{{ h.ok ? 'OK' : 'ERR' }}</span>
+        <span class="txt">{{ h.msg }}</span>
+        <span class="time">{{ h.time | date:'HH:mm:ss' }}</span>
+      </div>
+    </div>
+
+  </mat-card-content>
+</mat-card>

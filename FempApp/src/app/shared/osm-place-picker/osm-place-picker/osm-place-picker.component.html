@@ -1,0 +1,10 @@
+<div class="top">
+  <input #q class="search" type="search" placeholder="Buscar lugar o dirección…" (input)="onInput()">
+  <button class="btn" type="button" (click)="useMyLocation()">Mi ubicación</button>
+</div>
+
+<ul class="suggestions" *ngIf="suggestions.length">
+  <li *ngFor="let s of suggestions" (click)="pick(s)">{{ s.title }}</li>
+</ul>
+
+<div #mapEl class="map"></div>

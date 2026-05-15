@@ -1,0 +1,98 @@
+.card-section {
+  background-color: rgba(255, 255, 255, 0.07);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
+  max-width: 600px;
+  margin: auto;
+}
+
+.preview-container {
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+.preview-img {
+  max-width: 200px;
+  border-radius: 8px;
+  border: 2px solid white;
+}
+
+input[type="file"] {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background-color: #fafafa;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #3f51b5;
+    background-color: #f0f0ff;
+  }
+
+  &::file-selector-button {
+    background-color: #3f51b5;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    margin-right: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+
+    &:hover {
+      background-color: #303f9f;
+    }
+  }
+}
+
+.preview-container span {
+  color: #d84315; // rojo sutil para destacar PDF
+  font-weight: 500;
+  font-style: italic;
+}
+
+@media (max-width: 600px) {
+  .file-upload-group {
+    input[type="file"] {
+      font-size: 0.85rem;
+    }
+
+    .preview-img {
+      width: 100%;
+      max-width: 250px;
+    }
+  }
+}
+
+.qr-card {
+  max-width: 420px;
+  margin: 1rem auto;
+  color: #fff;
+
+  mat-card-title {
+    font-weight: 700;
+  }
+
+  .qr-wrap {
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    img {
+      width: 220px;
+      height: 220px;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 6px 18px rgba(0,0,0,.25);
+      object-fit: contain;
+    }
+  }
+
+  mat-card-actions {
+    display: flex;
+    gap: .5rem;
+    justify-content: flex-end;
+  }
+}

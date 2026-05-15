@@ -1,0 +1,9 @@
+<div class="wrap">
+  <div class="top">
+    <input #search class="search" type="search" placeholder="Dirección / Lugar" />
+    <button class="btn" type="button" (click)="useMyLocation()">Mi ubicación</button>
+  </div>
+
+  <div #gmap class="map"></div>
+  <p class="hint">{{ selectedAddress || 'Ninguna' }}</p>
+</div>

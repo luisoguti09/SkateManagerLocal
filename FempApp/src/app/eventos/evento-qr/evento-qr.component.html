@@ -1,0 +1,23 @@
+<app-back-bar title="QR del evento"></app-back-bar>
+
+<div class="card">
+    <h1 class="title">{{ evento?.titulo || evento?.nombre }}</h1>
+
+    <img [src]="pngUrl" alt="QR" class="qr" />
+
+    <div class="actions">
+        <button mat-stroked-button (click)="copiar()">
+            <mat-icon>link</mat-icon> Copiar enlace
+        </button>
+
+        <!-- descarga real -->
+        <a mat-stroked-button [href]="evSvc.pngUrl(eventoId!)" [attr.download]="'evento_'+eventoId+'_qr.png'">
+            <mat-icon>download</mat-icon> Descargar PNG
+        </a>
+
+        <!-- CSV de inscriptos -->
+        <a mat-stroked-button [href]="csvUrl" target="_blank" rel="noopener">
+            <mat-icon>table_view</mat-icon> Exportar CSV
+        </a>
+    </div>
+</div>

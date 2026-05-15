@@ -1,0 +1,10 @@
+<mat-toolbar class="tb" color="primary">
+  <button *ngIf="showBack" mat-icon-button class="tb-back" (click)="goBack()">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+
+  <div class="tb-title">{{ title }}</div>
+  <span class="tb-spacer"></span>
+
+  <ng-content select="[right]"></ng-content>
+</mat-toolbar>

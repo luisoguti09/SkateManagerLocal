@@ -1,0 +1,47 @@
+<div class="card">
+    <h2>Usuarios Pendientes de Aprobación</h2>
+    <div class="table-scroll">
+        <table mat-table [dataSource]="data" class="mat-elevation-z1 users-table">
+
+            <ng-container matColumnDef="nombre">
+                <th mat-header-cell *matHeaderCellDef>Nombre</th>
+                <td class="col-nombre" mat-cell *matCellDef="let u">{{u.nombre}}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="dni">
+                <th mat-header-cell *matHeaderCellDef>DNI</th>
+                <td class="col-dni" mat-cell *matCellDef="let u">{{u.dni}}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="rol">
+                <th mat-header-cell *matHeaderCellDef>Rol</th>
+                <td class="col-rol" mat-cell *matCellDef="let u">{{u.rol}}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="estado">
+                <th mat-header-cell *matHeaderCellDef>Estado</th>
+                <td mat-cell *matCellDef="let u">
+                    <span class="chip" [class.ok]="u.estado==='aprobado'"
+                        [class.pend]="!u.estado || u.estado==='pendiente'" [class.block]="u.estado==='bloqueado'">
+                        {{ u.estado || 'pendiente' }}
+                    </span>
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="acciones">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let u" class="actions">
+                    <button mat-raised-button color="primary" (click)="aprobar(u.id)">
+                        <mat-icon>task_alt</mat-icon> Aprobar
+                    </button>
+                    <button mat-stroked-button (click)="bloquear(u.id)">
+                        <mat-icon>block</mat-icon> Bloquear
+                    </button>
+                </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="cols"></tr>
+            <tr mat-row *matRowDef="let row; columns: cols;"></tr>
+        </table>
+        </div>
+    </div>

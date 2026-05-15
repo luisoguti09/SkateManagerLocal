@@ -1,0 +1,235 @@
+.top-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+
+  button {
+    color: #fff !important;
+    border-color: rgba(255, 255, 255, .65) !important;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+
+  mat-icon {
+    margin-right: 6px;
+  }
+}
+
+.tecnico-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: linear-gradient(135deg, #08135f, #1234d8, #4c1d95);
+  color: #fff;
+}
+
+.hero-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px;
+  margin-bottom: 28px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
+  backdrop-filter: blur(10px);
+
+  h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 8px 0 0;
+    opacity: .85;
+  }
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 22px;
+}
+
+.module-card {
+  padding: 24px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .22);
+
+  mat-icon {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 12px;
+  }
+
+  h2 {
+    margin: 0 0 8px;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  p {
+    min-height: 48px;
+    opacity: .85;
+  }
+
+  button {
+    margin-top: 12px;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+}
+
+.wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 768px) {
+  .tecnico-page {
+    padding: 18px;
+  }
+
+  .wide {
+    grid-column: span 1;
+  }
+}
+
+.evaluacion-item {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  margin-bottom: 10px;
+}
+
+.evaluacion-card {
+  margin-top: 28px;
+  padding: 24px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #1738d8, #0a1d78);
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .28);
+}
+
+.evaluacion-card h2 {
+  color: #fff;
+}
+
+.evaluacion-card mat-form-field {
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.evaluacion-card ::ng-deep .mat-mdc-text-field-wrapper {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+}
+
+.evaluacion-card ::ng-deep .mat-mdc-form-field-label,
+.evaluacion-card ::ng-deep .mat-mdc-select-value,
+.evaluacion-card ::ng-deep input,
+.evaluacion-card ::ng-deep textarea {
+  color: #fff !important;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+::ng-deep .mat-mdc-select-panel {
+  background: #ffffff !important;
+}
+
+::ng-deep .mat-mdc-option .mdc-list-item__primary-text {
+  color: #111827 !important;
+}
+
+::ng-deep .mat-mdc-option:hover {
+  background: #e8edff !important;
+}
+
+.modulo-panel {
+  margin-top: 24px;
+  padding: 24px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #1738d8, #07145f);
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
+}
+
+.list-item {
+  padding: 14px;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .12);
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.evaluacion-bloque {
+  margin: 22px 0;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  h3 {
+    margin: 0 0 14px;
+    color: #fff;
+  }
+}
+
+.evaluacion-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 42px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.nota-field {
+  width: 120px;
+}
+
+.clickable {
+  cursor: pointer;
+  transition: transform .2s ease, background .2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, .18);
+  }
+}
+
+.metricas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+
+.metrica-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .14);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .25);
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: .95rem;
+    opacity: .85;
+  }
+
+  strong {
+    font-size: 1.8rem;
+    font-weight: 800;
+  }
+}

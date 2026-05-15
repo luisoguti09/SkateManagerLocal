@@ -1,0 +1,14 @@
+
+<div class="wrap">
+  <h2>¡Pago recibido! ✅</h2>
+  <p><strong>Estado:</strong> {{ status }}</p>
+  <p><strong>Payment ID:</strong> {{ paymentId }}</p>
+  <p><strong>Preference ID:</strong> {{ preferenceId }}</p>
+
+  <div *ngIf="validado">
+    <h4>Validación del servidor</h4>
+    <pre>{{ detalleValidacion | json }}</pre>
+  </div>
+
+  <button mat-stroked-button (click)="volver()">Volver</button>
+</div>

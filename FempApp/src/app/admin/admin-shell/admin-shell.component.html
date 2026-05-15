@@ -1,0 +1,56 @@
+<mat-sidenav-container class="shell">
+    <mat-sidenav #sidenav [mode]="mode" [(opened)]="opened" class="side">
+        <div class="brand">Administración de FEMPA</div>
+        <a mat-button (click)="logout()">
+            <mat-icon>logout</mat-icon> Salir
+        </a>
+        <mat-nav-list>
+            <a mat-list-item routerLink="/admin/eventos" routerLinkActive="active" (click)="closeOnNav()">
+                <mat-icon>event</mat-icon><span>Eventos</span>
+            </a>
+            <a mat-list-item routerLink="/admin/usuarios/pendientes" routerLinkActive="active" (click)="closeOnNav()">
+                <mat-icon>hourglass_top</mat-icon><span>Pendientes</span>
+            </a>
+            <a mat-list-item routerLink="/admin/usuarios/todos" routerLinkActive="active" (click)="closeOnNav()">
+                <mat-icon>group</mat-icon><span>Usuarios</span>
+            </a>
+            <a mat-list-item routerLink="/admin/qr" routerLinkActive="active" (click)="closeOnNav()">
+                <mat-icon>qr_code_2</mat-icon><span>Código QR</span>
+            </a>
+
+            <a mat-list-item routerLink="/admin/scanner" routerLinkActive="active" (click)="closeOnNav()">
+
+                <mat-icon>center_focus_strong</mat-icon><span>Escanear</span>
+            </a>
+            <a mat-list-item routerLink="/asistencias" routerLinkActive="active" (click)="closeOnNav()">
+                <mat-icon>qr_code_scanner</mat-icon>
+                <span>Control de Asistencias</span>
+            </a>
+        </mat-nav-list>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="content-area">
+        <mat-toolbar class="topbar">
+            <button mat-icon-button class="only-mobile" (click)="toggleSide()">
+                <mat-icon>menu</mat-icon>
+            </button>
+
+
+            <button mat-icon-button (click)="back()" class="back-btn">
+                <mat-icon>arrow_back</mat-icon>
+            </button>
+
+            <span class="title">Panel de administración</span>
+            <span class="spacer"></span>
+
+            <a mat-button routerLink="/perfil"><mat-icon>account_circle</mat-icon> Mi perfil</a>
+            <button mat-button (click)="logout()">
+                <mat-icon>logout</mat-icon> Salir
+            </button>
+        </mat-toolbar>
+
+        <div class="content">
+            <router-outlet></router-outlet>
+        </div>
+    </mat-sidenav-content>
+</mat-sidenav-container>

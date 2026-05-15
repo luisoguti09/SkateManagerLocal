@@ -1,0 +1,93 @@
+@use '@angular/material' as mat;
+@use '../m3-theme.scss' as m3;            
+@use './styles/admin-tokens' as *;  
+
+/* 2) inicialización material */
+@include mat.core();
+
+/* 3) aplicar el theme M3 a TODOS los componentes */
+:root {
+  @include mat.all-component-themes(m3.$light-theme);
+}
+
+:root {
+  --brand-gradient: linear-gradient(180deg,#0B5ED7 0%, #0E32EF 42%, #002B7A 100%);
+}
+
+
+/* 4) el resto (fuentes, resets, utilitarios...) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import "leaflet/dist/leaflet.css";
+
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
+  background: var(--brand-gradient);
+}
+
+.mat-drawer-container,
+.mat-drawer-content,
+.mat-sidenav-content,
+.mat-drawer-content .content,
+.admin-content {
+  background: var(--brand-gradient);
+}
+
+/* Topbar legible en blanco */
+.mat-toolbar {
+  background: #0d47a1;
+  color: #fff;
+}
+.mat-toolbar .mat-icon,
+.mat-toolbar .mat-mdc-icon-button,
+.mat-toolbar a[mat-button],
+.mat-toolbar button { color: #fff ; }
+
+/* Cards/tablas sobre blanco */
+.mat-mdc-card, .mat-elevation-z1, .card {
+  background: #fff ;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+}
+
+/* Labels/inputs bien oscuros (accesibilidad) */
+.mat-mdc-form-field .mdc-floating-label { color: rgba(0,0,0,.87); }
+.mat-mdc-form-field .mdc-text-field__input { color: rgba(0,0,0,.87); }
+::placeholder { color: rgba(0,0,0,.54); }
+
+/* Bordes del outline un poco más visibles */
+.mdc-text-field--outlined .mdc-notched-outline__leading,
+.mdc-text-field--outlined .mdc-notched-outline__notch,
+.mdc-text-field--outlined .mdc-notched-outline__trailing {
+  border-color: rgba(0,0,0,.22);
+}
+
+/* utilitario */
+.card { @include card; }
+
+/* Toasts de éxito / error (MDC) */
+.snack-ok {
+  --mdc-snackbar-container-color: #2e7d32;
+  --mdc-snackbar-supporting-text-color: #fff;
+}
+.snack-err {
+  --mdc-snackbar-container-color: #c62828;
+  --mdc-snackbar-supporting-text-color: #fff;
+}
+
+.admin-content,
+.mat-sidenav-content .content {
+  background: linear-gradient(180deg, #0d47a1 0%, #0a2c6f 100%);
+  min-height: 100%;
+  padding-bottom: 24px;
+}
+
+.mat-card {
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+}
+
+app-admin-shell .mat-drawer-container { background: var(--brand-gradient); }
+app-admin-shell .mat-drawer-content  { background: transparent; }

@@ -1,0 +1,19 @@
+<app-back-bar title="Escanear ingreso" (back)="onBack()"></app-back-bar>
+
+
+<div class="scan">
+    <div class="video-wrap">
+        <video autoplay playsinline></video>
+        <div class="overlay"></div>
+    </div>
+
+    <div class="msg" *ngIf="msg">{{ msg }}</div>
+
+    <div class="actions">
+        <button mat-flat-button color="primary" (click)="start()">Iniciar</button>
+        <button mat-stroked-button (click)="stop()">Detener</button>
+    </div>
+</div>
+<div class="info">
+    <p>Apunte la cámara del celular al código QR que se muestra en el evento.</p>
+    <p>El sistema leerá el código y registrará su ingreso automáticamente.</p>

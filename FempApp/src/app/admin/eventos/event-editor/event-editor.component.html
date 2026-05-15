@@ -1,0 +1,56 @@
+<app-back-bar [title]="id ? 'Editar evento' : 'Nuevo evento'"></app-back-bar>
+
+<mat-card class="card">
+  <form [formGroup]="form" (ngSubmit)="save()" class="grid">
+
+    <mat-form-field appearance="outline">
+      <mat-label>Título</mat-label>
+      <input matInput formControlName="titulo" required>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Descripción</mat-label>
+      <textarea matInput rows="3" formControlName="descripcion"></textarea>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Fecha de inicio</mat-label>
+      <input matInput [matDatepicker]="dp1" formControlName="fechaInicio">
+      <mat-datepicker-toggle matSuffix [for]="dp1"></mat-datepicker-toggle>
+      <mat-datepicker #dp1></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Fecha de fin (opcional)</mat-label>
+      <input matInput [matDatepicker]="dp2" formControlName="fechaFin">
+      <mat-datepicker-toggle matSuffix [for]="dp2"></mat-datepicker-toggle>
+      <mat-datepicker #dp2></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Dirección / Lugar</mat-label>
+      <input matInput formControlName="lugar" placeholder="Ej: Polideportivo X, Mendoza" />
+    </mat-form-field>
+
+    <!--<app-osm-place-picker [center]="{ lat: form.value.lat ?? -34.6037, lng: form.value.lng ?? -58.3816 }"
+      (placeChange)="onPlaceChange($event)">
+    </app-osm-place-picker>-->
+
+    <mat-form-field appearance="outline">
+      <mat-label>Precio (opcional)</mat-label>
+      <input matInput type="number" step="0.01" formControlName="precio">
+    </mat-form-field>
+
+    <div class="footer">
+      <button mat-stroked-button color="primary" type="button" routerLink="/admin/eventos">Cancelar</button>
+      <button mat-flat-button color="primary" type="submit">Guardar</button>
+    </div>
+  </form>
+
+  <ng-container *ngIf="eventoId as id">
+    <a mat-stroked-button [href]="eventServ.csvUrl(id, ['apellido','nombre','dni','genero','edad','division','grupo'])"
+      target="_blank" rel="noopener">
+      <mat-icon>download</mat-icon> Exportar CSV
+    </a>
+  </ng-container>
+</mat-card>

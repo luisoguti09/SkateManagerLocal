@@ -1,0 +1,83 @@
+<div class="main-gradient">
+  <mat-toolbar color="primary">
+    <span>Panel de Administrador</span>
+    <span class="spacer"></span>
+  </mat-toolbar>
+
+  <div class="content">
+    <!-- Tarjeta de navegación -->
+    <mat-card class="card-section">
+      <h2>Gestión de Sistema</h2>
+      <mat-list>
+        <mat-list-item routerLink="/eventos">
+          <mat-icon matListIcon>event</mat-icon>
+          <div matLine>Eventos</div>
+          <div matLine class="secondary">Ver y administrar eventos disponibles</div>
+        </mat-list-item>
+
+        <mat-list-item routerLink="/usuarios">
+          <mat-icon matListIcon>group</mat-icon>
+          <div matLine>Usuarios</div>
+          <div matLine class="secondary">Listado y gestión de usuarios registrados</div>
+        </mat-list-item>
+
+        <mat-list-item routerLink="/documentacion">
+          <mat-icon matListIcon>assignment</mat-icon>
+          <div matLine>Documentación</div>
+          <div matLine class="secondary">Validar fichas médicas y DNI</div>
+        </mat-list-item>
+
+        <mat-list-item routerLink="/asistencias">
+          <mat-icon matListIcon>qr_code</mat-icon>
+          <div matLine>Asistencias</div>
+          <div matLine class="secondary">Ver control de asistencia por QR</div>
+        </mat-list-item>
+      </mat-list>
+    </mat-card>
+
+    <!-- Tarjeta de usuarios pendientes -->
+    <mat-card class="card-section">
+      <h2>Usuarios Pendientes de Aprobación</h2>
+
+      <mat-progress-bar *ngIf="cargando" mode="indeterminate" color="accent"></mat-progress-bar>
+
+      <table mat-table [dataSource]="usuariosPendientes" class="mat-elevation-z8 full-width-table">
+
+        <!-- Nombre -->
+        <ng-container matColumnDef="nombre">
+          <th mat-header-cell *matHeaderCellDef>Nombre</th>
+          <td mat-cell *matCellDef="let user">{{ user.nombre }}</td>
+        </ng-container>
+
+        <!-- Email -->
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef>Email</th>
+          <td mat-cell *matCellDef="let user">{{ user.email }}</td>
+        </ng-container>
+
+        <!-- Rol -->
+        <ng-container matColumnDef="rol">
+          <th mat-header-cell *matHeaderCellDef>Rol</th>
+          <td mat-cell *matCellDef="let user">{{ user.rol }}</td>
+        </ng-container>
+
+        <!-- Acciones -->
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef>Acciones</th>
+          <td mat-cell *matCellDef="let user">
+            <button mat-icon-button color="primary" (click)="aprobarUsuario(user.id)" aria-label="Aprobar usuario">
+              <mat-icon>check_circle</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <p *ngIf="!cargando && usuariosPendientes.length === 0" class="no-users-msg">
+        No hay usuarios pendientes por aprobar.
+      </p>
+    </mat-card>
+  </div>
+</div>

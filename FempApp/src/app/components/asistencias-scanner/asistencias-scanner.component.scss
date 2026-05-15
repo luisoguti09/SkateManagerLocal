@@ -1,0 +1,45 @@
+.row { margin-bottom: 16px; }
+.w-full { width: 100%; }
+
+.scanner {
+  margin: 12px 0 8px;
+  zxing-scanner {
+    display: block;
+    width: 100%;
+    max-width: 520px;
+    aspect-ratio: 4 / 3;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,.2);
+  }
+}
+
+.actions { margin: 8px 0 16px; }
+
+.history {
+  margin-top: 16px;
+  .item {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px dashed rgba(255,255,255,.12);
+  }
+  .chip {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    &.ok  { background: rgba(0,200,83,.18);  color: #00c853; }
+    &.err { background: rgba(244,67,54,.18); color: #f44336; }
+  }
+  .when { opacity: .7; font-family: monospace; }
+  .msg  {  margin-left: 6px; opacity: .95; }
+  .usr  { opacity: .85; }
+}
+.empty {
+  margin-top: 32px;
+  text-align: center;
+  color: rgba(255,255,255,.3);
+  font-style: italic;
+}

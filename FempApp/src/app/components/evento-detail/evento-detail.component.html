@@ -1,0 +1,111 @@
+<div class="main-gradient">
+
+  <div class="back-wrapper">
+    <button mat-stroked-button class="back-btn" (click)="volver()">
+      <mat-icon>arrow_back</mat-icon>
+      Volver
+    </button>
+  </div>
+
+  <div class="content">
+    <!-- ===== LISTA ===== -->
+    <ng-container *ngIf="listMode; else detalle">
+      <h2>{{ listTitle }}</h2>
+
+      <ng-container *ngIf="eventos?.length; else noHay">
+        <div class="eventos-grid">
+          <mat-card class="evento-card" *ngFor="let ev of eventos; trackBy: trackById">
+            <mat-card-header>
+              <mat-card-title>{{ ev.titulo }}</mat-card-title>
+              <mat-card-subtitle>{{ ev.fechaInicio | date:'dd/MM/yyyy' }}</mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-content>
+              <p><strong>Lugar:</strong> {{ ev.lugar || 'No especificado' }}</p>
+              <p>{{ ev.descripcion || 'Sin descripción' }}</p>
+            </mat-card-content>
+
+            <mat-card-actions>
+              <button mat-raised-button color="accent" (click)="verDetalleEvento(ev.id)">
+                Ver Detalles
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        </div>
+      </ng-container>
+      <ng-template #noHay>
+        <p style="opacity:.8">
+          {{ listTitle === 'Mis Eventos'
+          ? 'No estás inscripto en eventos por el momento.'
+          : 'No hay eventos disponibles por el momento.' }}
+        </p>
+      </ng-template>
+    </ng-container>
+
+    <!-- ===== DETALLE ===== -->
+    <ng-template #detalle>
+      <div *ngIf="puedeVerInscriptos">
+        <h3>Deportistas inscriptos</h3>
+        <mat-list>
+          <mat-list-item *ngFor="let dep of deportistasInscritos">
+            {{ dep.nombre }} ({{ dep.dni }})
+          </mat-list-item>
+        </mat-list>
+      </div>
+
+      <div class="card-section" *ngIf="evento">
+
+        <div *ngIf="!inscripto" class="perfil-selector">
+          <h3>Elegí con qué perfil deportivo te inscribís</h3>
+
+          <div class="perfiles-carousel" *ngIf="perfilesDeportivos.length; else sinPerfiles">
+            <div class="perfil-card" *ngFor="let perfil of perfilesDeportivos"
+              [class.selected]="perfilSeleccionadoId === perfil.id" (click)="seleccionarPerfil(perfil.id)">
+              <div class="perfil-header">
+                <h3>{{ perfil.disciplina }}</h3>
+                <span class="perfil-temporada">{{ perfil.temporada }}</span>
+              </div>
+
+              <p class="perfil-categoria">{{ perfil.categoria }}</p>
+
+              <div class="perfil-meta">
+                <span>{{ perfil.licencia }}</span>
+                <span>{{ perfil.modalidad }}</span>
+                <span>{{ perfil.divisional }}</span>
+              </div>
+            </div>
+          </div>
+
+          <ng-template #sinPerfiles>
+            <p>No tenés perfiles deportivos cargados. Primero cargalos desde Mis Datos.</p>
+          </ng-template>
+        </div>
+
+        <h2>Info del Evento</h2>
+        <p><strong>Nombre:</strong> {{ evento.titulo }}</p>
+        <p><strong>Lugar:</strong> {{ evento.lugar }}</p>
+        <p><strong>Descripción:</strong> {{ evento.descripcion }}</p>
+        <div class="evento-actions">
+          <button mat-raised-button class="btn-inscripcion" *ngIf="!inscripto"
+            [disabled]="inscribiendo || !perfilSeleccionadoId" (click)="inscribirse()">
+            {{ inscribiendo ? 'Inscribiendo…' : 'Inscribirme' }}
+          </button>
+
+          <button mat-stroked-button class="btn-secundario" (click)="descargarCert()" [disabled]="!inscripto">
+            Descargar certificado
+          </button>
+
+          <button mat-stroked-button class="btn-secundario" *ngIf="inscripto" (click)="irAScanner()">
+            <mat-icon>qr_code_scanner</mat-icon>
+            Escanear QR de asistencia
+          </button>
+        </div>
+
+        <p class="hint-certificado" *ngIf="!inscripto">
+          Debés estar inscripto para descargar el certificado.
+        </p>
+
+      </div>
+    </ng-template>
+  </div>
+</div>

@@ -1,0 +1,118 @@
+<div class="regContainer">
+  <mat-card class="reg-card" appearance="outlined">
+    <mat-card-header>
+      <div class="logo-header-image"></div>
+      <mat-card-title>
+        <img class="cardImg" mat-card-md-image src="../../../assets/icons/MARCAFEMPA2.png" alt="Photo of logo">
+      </mat-card-title>
+      <mat-card-subtitle>Ahora corroboremos tu DNI</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+
+      <!-- Formulario de búsqueda de DNI -->
+      <form [formGroup]="form" class="reg-form">
+        <mat-form-field class="example-full-width">
+          <mat-label for="dni">Por favor ingresalo acá</mat-label>
+          <input type="text" matInput formControlName="dni" placeholder="12345678">
+        </mat-form-field>
+      </form>
+
+      <mat-card-actions>
+        <section>
+          <button mat-raised-button (click)="buscar()" [disabled]="cargandoBuscar">
+            <ng-container *ngIf="!cargandoBuscar; else buscandoTpl">Buscar</ng-container>
+          </button>
+
+          <ng-template #buscandoTpl>
+            <mat-progress-spinner diameter="18" mode="indeterminate"></mat-progress-spinner>
+          </ng-template>
+        </section>
+      </mat-card-actions>
+
+      <app-registro-fast *ngIf="empadronada == 'EMPADRONADA'" [pers]="pers"></app-registro-fast>
+
+      <div *ngIf="empadronada == 'NO_EMPADRONADA'">
+        <!-- Formulario para cargar datos si no está empadronada -->
+        <form [formGroup]="form" class="reg-form">
+          <mat-form-field class="example-full-width">
+            <mat-label for="nombre">Nombre y apellido</mat-label>
+            <input id="nombre" type="text" matInput formControlName="nombre" placeholder="Jorge Luis Rodriguez">
+          </mat-form-field>
+          <mat-form-field class="example-full-width">
+            <mat-label for="edad">Edad</mat-label>
+            <input id="edad" type="number" matInput formControlName="edad" placeholder="18">
+          </mat-form-field>
+          <mat-form-field *ngIf="form.get('rolId')?.value === 1" appearance="outline">
+            <mat-label>Categoría</mat-label>
+            <input matInput formControlName="categoria" />
+            <mat-error *ngIf="form.get('categoria')?.hasError('required')">Requerida</mat-error>
+          </mat-form-field>
+
+          <!-- Nivel sólo para técnico -->
+          <mat-form-field *ngIf="form.get('rolId')?.value === 3" appearance="outline">
+            <mat-label>Nivel</mat-label>
+            <input matInput formControlName="nivel" />
+            <mat-error *ngIf="form.get('nivel')?.hasError('required')">Requerido</mat-error>
+          </mat-form-field>
+        </form>
+      </div>
+
+      <!-- Formulario final para cuenta y envío -->
+      <div class="account_details" *ngIf="empadronada != ''">
+        <form [formGroup]="form" (ngSubmit)="guardar()">
+          <mat-form-field class="example-full-width">
+            <mat-label for="email">Email</mat-label>
+            <input id="email" type="email" matInput formControlName="email" placeholder="fempa@fempa.com.ar">
+          </mat-form-field>
+
+          <mat-form-field class="example-full-width">
+            <mat-label for="password">Contraseña</mat-label>
+            <input id="password" type="password" matInput formControlName="password"
+              placeholder="Ingresa una contraseña">
+          </mat-form-field>
+
+          <mat-form-field class="example-full-width">
+            <mat-label for="password">Confirme su contraseña</mat-label>
+            <input id="confirmPass" type="password" matInput formControlName="confirmPass"
+              placeholder="Reingresa tu contraseña">
+          </mat-form-field>
+
+          <mat-form-field class="example-full-width" *ngIf="empadronada == 'NO_EMPADRONADA'">
+            <mat-label for="dni">DNI</mat-label>
+            <input type="text" matInput formControlName="dni" placeholder="12345678">
+          </mat-form-field>
+
+          <mat-form-field appearance="fill">
+            <mat-label>Rol</mat-label>
+            <mat-select formControlName="rolId" required>
+              <mat-option *ngFor="let rol of roles" [value]="rol.id">
+                {{ rol.nombre }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div *ngIf="errorMsg" class="error-message">
+            {{ errorMsg }}
+          </div>
+
+          <div *ngIf="successMsg" class="success-message">
+            {{ successMsg }}
+          </div>
+
+          <section>
+            <button mat-raised-button color="primary" type="submit" [disabled]="cargando">
+              <mat-progress-spinner *ngIf="cargando" mode="indeterminate" diameter="20"
+                color="accent"></mat-progress-spinner>
+              <span *ngIf="!cargando">Registrar</span>
+            </button>
+          </section>
+
+          <button mat-button routerLink="/">Volver</button>
+        </form>
+      </div>
+
+    </mat-card-content>
+  </mat-card>
+</div>
+
+<router-outlet></router-outlet>

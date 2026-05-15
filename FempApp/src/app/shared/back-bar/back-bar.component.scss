@@ -1,0 +1,26 @@
+.tb {
+  position: sticky; 
+  top: 0; 
+  z-index: 10;
+  background: transparent;
+  color: #fff;
+  --mat-toolbar-container-background-color: transparent;
+  --mat-toolbar-container-text-color: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  display: flex; 
+  align-items: center;
+}
+
+.tb-back { 
+    color:#fff; 
+    margin-right: 8px; 
+}
+
+.tb-title { 
+    font-weight: 700; 
+    color:#fff;
+ }
+
+.tb-spacer { 
+    flex: 1 1 auto; 
+}

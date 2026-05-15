@@ -1,0 +1,47 @@
+.asistencias-page {
+    min-height: 100vh;
+    padding: 28px;
+    background: linear-gradient(135deg, #08135f, #1234d8, #4c1d95);
+    color: #fff;
+}
+
+.header-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
+    margin-bottom: 20px;
+
+    button {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+}
+
+.asistencias-card {
+    padding: 24px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.13);
+    color: #fff;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
+}
+
+.filtros {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+.asistencias-table {
+    width: 100%;
+    overflow: auto;
+    background: white;
+    border-radius: 16px;
+}
+
+.empty-msg {
+    margin-top: 18px;
+    opacity: .85;
+}

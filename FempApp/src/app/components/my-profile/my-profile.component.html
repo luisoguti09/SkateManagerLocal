@@ -1,0 +1,183 @@
+<div class="profile-page">
+  <div class="profile-container">
+    <button mat-mini-fab class="back-fab" aria-label="Volver" (click)="back()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="avatar-container">
+      <img [src]="usuario?.fotoPerfil || 'assets/img/default-profile.jpg'" alt="Foto de perfil" class="avatar">
+
+      <button mat-mini-fab color="accent" class="edit-avatar-btn" (click)="triggerFileInput()">
+        <mat-icon>edit</mat-icon>
+      </button>
+
+      <input type="file" id="fileInput" #fileInput (change)="onFileSelected($event)" hidden>
+    </div>
+
+    <!-- Card Mis Datos -->
+    <mat-card class="profile-card">
+      <h2>Mis Datos</h2>
+
+      <form [formGroup]="form" (ngSubmit)="guardar()">
+        <div class="form-grid">
+
+          <!-- Campos no editables -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email</mat-label>
+            <input matInput formControlName="email" readonly />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>DNI</mat-label>
+            <input matInput formControlName="dni" readonly />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nombre</mat-label>
+            <input matInput formControlName="nombre" readonly />
+          </mat-form-field>
+
+          <!-- Campos editables -->
+
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Domicilio</mat-label>
+            <input matInput formControlName="domicilio" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Teléfono</mat-label>
+            <input matInput formControlName="telefono" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Fecha de Nacimiento</mat-label>
+            <input matInput formControlName="fechaNacimiento" type="date" />
+          </mat-form-field>
+
+          <!-- Redes Sociales -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Instagram</mat-label>
+            <input matInput formControlName="instagram" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Facebook</mat-label>
+            <input matInput formControlName="facebook" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>TikTok</mat-label>
+            <input matInput formControlName="tiktok" />
+          </mat-form-field>
+
+          <app-qr-credencial [userId]="usuario?.id"></app-qr-credencial>
+
+        </div>
+
+        <div class="btn-container">
+          <button mat-flat-button color="primary" type="submit">Guardar Cambios</button>
+        </div>
+      </form>
+    </mat-card>
+
+    <mat-card class="profile-card perfiles-card">
+      <h2>Perfiles Deportivos</h2>
+
+      <button type="button" mat-raised-button color="primary" class="add-profile-btn"
+        (click)="mostrarFormPerfil = !mostrarFormPerfil">
+        {{ mostrarFormPerfil ? 'Cerrar formulario' : '+ Agregar Perfil Deportivo' }}
+      </button>
+
+      <div *ngIf="mostrarFormPerfil" class="perfil-form">
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Disciplina</mat-label>
+          <mat-select [(ngModel)]="nuevoPerfil.disciplina" name="disciplina">
+            <mat-option *ngFor="let d of disciplinas" [value]="d">
+              {{ d }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Licencia</mat-label>
+          <mat-select [(ngModel)]="nuevoPerfil.licencia" name="licencia">
+            <mat-option value="Nacional Atleta">Nacional Atleta</mat-option>
+            <mat-option value="Internacional WS">Internacional WS</mat-option>
+            <mat-option value="Promocional">Promocional</mat-option>
+            <mat-option value="Adaptado">Adaptado</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Modalidad</mat-label>
+          <mat-select [(ngModel)]="nuevoPerfil.modalidad" name="modalidad">
+            <mat-option *ngFor="let m of modalidades" [value]="m">
+              {{ m }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Divisional</mat-label>
+          <mat-select [(ngModel)]="nuevoPerfil.divisional" name="divisional"
+            (selectionChange)="onDivisionalChange($event.value)">
+            <mat-option *ngFor="let d of divisionales" [value]="d">
+              {{ d }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Categoría / Eficiencia</mat-label>
+          <mat-select [(ngModel)]="nuevoPerfil.categoria" name="categoria">
+            <mat-option *ngFor="let e of eficiencias" [value]="e">
+              {{ e }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Temporada</mat-label>
+          <mat-select [(ngModel)]="nuevoPerfil.temporada" name="temporada">
+            <mat-option value="2026">2026</mat-option>
+            <mat-option value="2027">2027</mat-option>
+            <mat-option value="2028">2028</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Club</mat-label>
+          <input matInput [(ngModel)]="nuevoPerfil.club" name="club">
+        </mat-form-field>
+
+        <button mat-raised-button color="accent" (click)="crearPerfil()">
+          Guardar Perfil
+        </button>
+      </div>
+
+      <ng-container *ngIf="perfilesDeportivos && perfilesDeportivos.length > 0; else sinPerfiles">
+        <div class="perfiles-list">
+          <div *ngFor="let perfil of perfilesDeportivos; trackBy: trackByPerfilId" class="perfil-item">
+            <p><strong>Disciplina:</strong> {{ perfil.disciplina }}</p>
+            <p><strong>Licencia:</strong> {{ perfil.licencia }}</p>
+            <p><strong>Modalidad:</strong> {{ perfil.modalidad }}</p>
+            <p><strong>Divisional:</strong> {{ perfil.divisional }}</p>
+            <p><strong>Categoría:</strong> {{ perfil.categoria }}</p>
+            <p><strong>Temporada:</strong> {{ perfil.temporada }}</p>
+            <p><strong>Club:</strong> {{ perfil.club }}</p>
+
+            <button type="button" mat-button color="warn" (click)="eliminarPerfil(perfil.id)">
+              Eliminar Perfil
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #sinPerfiles>
+        <p>No hay perfiles deportivos cargados.</p>
+      </ng-template>
+    </mat-card>
+
+  </div>
+</div>

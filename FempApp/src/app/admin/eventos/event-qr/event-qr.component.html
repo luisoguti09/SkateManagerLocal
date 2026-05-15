@@ -1,0 +1,28 @@
+<app-back-bar title="QR del evento" [backLink]="['/admin/eventos']"></app-back-bar>
+
+<div class="page" *ngIf="evento as ev; else loadingOrError">
+  <h2 class="title">{{ ev.titulo || ev.nombre || ('Evento ' + ev.id) }}</h2>
+
+  <app-qr-canvas class="qr" [text]="payload" [size]="320"></app-qr-canvas>
+
+  <div class="actions">
+    <button mat-stroked-button (click)="copiar()">
+      <mat-icon>content_copy</mat-icon>
+      Copiar enlace
+    </button>
+
+    <a mat-stroked-button [href]="evSvc.pngUrl(ev.id) + '?dl=1'">
+      <mat-icon>download</mat-icon>
+      Descargar PNG
+    </a>
+
+    <a mat-stroked-button [href]="evSvc.csvUrl(ev.id)" target="_blank" rel="noopener">
+      <mat-icon>file_download</mat-icon>
+      Exportar CSV
+    </a>
+  </div>
+</div>
+
+<ng-template #loadingOrError>
+  <div class="page"><div>Cargando evento…</div></div>
+</ng-template>

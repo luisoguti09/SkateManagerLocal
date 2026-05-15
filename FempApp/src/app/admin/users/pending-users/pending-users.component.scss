@@ -1,0 +1,100 @@
+@use '../../../../styles/admin-tokens' as *;
+
+.card {
+  max-width: 100%;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff;
+  box-sizing: border-box;
+  overflow: hidden;        /* respeta el borde redondeado */
+}
+
+.card-title {
+  margin: 0 0 12px;
+}
+
+.table-scroll {
+  overflow-x: auto;        /* permite scroll horizontal si hace falta */
+  -webkit-overflow-scrolling: touch;
+}
+
+.users-table {
+  width: 100%;
+  min-width: 720px;        /* evita que se rompa el layout en cols estrechas */
+  table-layout: fixed;     /* columnas predecibles */
+}
+
+/* Celdas: sin saltos locos y con ellipsis */
+.mat-mdc-cell,
+.mat-mdc-header-cell {
+  padding: 12px 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ajustá anchos relativos si querés */
+.col-nombre { width: 32%; }
+.col-dni    { width: 18%; }
+.col-rol    { width: 20%; }
+.col-estado { width: 16%; }
+.col-acciones { width: 14%; }
+
+/* Acciones compactas */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .users-table { min-width: 640px; }
+  .actions button { padding: 0 8px; }
+  .actions .mat-icon { margin-right: 4px; }
+}
+
+@media (max-width: 700px) {
+  .actions { gap: 4px; }
+  .actions button { min-width: 36px; padding: 0 6px; }
+  .actions button span { display: none; }   /* oculta texto y deja solo icono */
+  .actions button mat-icon { margin: 0; }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: center; 
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.actions .mat-mdc-button-base { min-height: 36px; }
+
+
+.chip {
+  display: inline-block;
+  min-width: 98px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  border: 1px solid transparent;
+}
+.chip.pend  { 
+    background:#fff4e5; 
+    color:#9a6700; 
+    border-color:#ffd58a; 
+}
+
+.chip.ok    { 
+    background:#e9f8ee; 
+    color:#0d6b3c; 
+    border-color:#b8ebcd; 
+}
+
+.chip.block { 
+    background:#fde8e8; 
+    color:#8a1f24; 
+    border-color:#f5b5b7;
+ }

@@ -1,0 +1,211 @@
+@use '../../../styles/admin-tokens' as *;
+
+:host ::ng-deep .topbar.mat-toolbar {
+  --mat-toolbar-container-background-color: #0d47a1;
+  --mat-toolbar-container-text-color: #fff;
+}
+
+/* Toolbar */
+.topbar.mat-toolbar {
+  --mat-toolbar-container-background-color: #0d47a1; /* azul oscuro */
+  --mat-toolbar-container-text-color: #fff;
+  color: #fff;
+}
+
+.topbar .mat-icon,
+.topbar .mat-mdc-icon-button,
+.topbar a[mat-button] {
+  color: #fff;
+}
+
+:host {
+  display: block;
+  min-height: 100vh;
+  /* Degradé FEMPA */
+  background: linear-gradient(180deg, #0b5bd3 0%, #0a2f72 100%);
+  color: #fff;
+}
+
+.shell .topbar.mat-toolbar {
+  background: transparent !important;
+  color: #fff !important;
+  box-shadow: none;
+}
+
+.content {
+  padding: 16px;
+}
+
+/* styles.scss o admin-shell */
+.mat-card.card {
+  background: rgba(255,255,255,.95);
+  backdrop-filter: saturate(120%) blur(3px);
+  border-radius: 16px;
+}
+
+/* Contenedores principales tipo card */
+.card,
+.mat-elevation-z1,
+.mat-mdc-card {
+  background: #fff;
+  color: #1a1a1a;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(6, 24, 44, 0.18);
+  padding: 16px;
+}
+
+/* Cabeceras dentro de tarjetas */
+.card .header { 
+  display: flex; 
+  gap: 12px; 
+  align-items: center; 
+  margin-bottom: 12px; 
+}
+
+/* Tablas sobre fondo degradé */
+table[mat-table] {
+  background: transparent;
+  color: #1a1a1a;
+}
+
+.mat-mdc-table .mdc-data-table__header-cell {
+  background: #f6f7fb;
+  font-weight: 600;
+}
+.mat-mdc-table .mdc-data-table__cell {
+  border-bottom: 1px solid rgba(0,0,0,.12);
+}
+
+/* ===== Layout base ===== 
+.shell { 
+  height: 100vh; 
+  position: relative; 
+}
+
+
+.content-area {
+  min-height: 100vh;
+  background: var(--brand-gradient, linear-gradient(180deg,#0B5ED7 0%, #0E32EF 42%, #002B7A 100%));
+}
+
+
+:host ::ng-deep .mat-drawer-content,
+:host ::ng-deep .mat-sidenav-content {
+  min-height: 100vh;
+  background: var(--brand-gradient, linear-gradient(180deg,#0B5ED7 0%, #0E32EF 42%, #002B7A 100%));
+}
+
+/* ===== Toolbar ===== 
+.topbar {
+  background: #0d47a1;
+  color: #fff;
+
+  .mat-icon { color: #fff; }
+}
+
+/* Íconos y botones en blanco
+.topbar .mat-mdc-icon-button,
+.topbar .mat-icon,
+.topbar a[mat-button] {
+  color: #fff;
+}
+
+.back-btn { margin-left: 4px; }
+
+.title { 
+  color: #fff;
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+.spacer { flex: 1 1 auto; }
+
+/* ===== Sidenav ===== 
+
+:host ::ng-deep .side .mdc-list-item__primary-text { color:#fff !important; }
+:host ::ng-deep .side .mat-icon { color:#fff !important; }
+.side {
+  background: #0055f1;
+  color: #fff;
+}
+
+/* Aplica tokens MDC al contenedor de la lista 
+.side .mat-mdc-list-base {
+  --mdc-list-list-item-label-text-color: #fff;
+  --mdc-list-list-item-disabled-label-text-color: rgba(255,255,255,.55);
+  --mdc-list-list-item-leading-icon-color: #fff;
+  --mdc-list-list-item-trailing-icon-color: #fff;
+  --mdc-ripple-hover-opacity: .06;
+  --mdc-ripple-pressed-opacity: .08;
+}
+
+/* El host real del ítem es .mat-mdc-list-item 
+.side a.mat-mdc-list-item {
+  color: #fff !important;
+  border-radius: 8px;
+}
+
+/* Texto interno del item (MDC) 
+.side a.mat-mdc-list-item .mdc-list-item__primary-text,
+.side a.mat-mdc-list-item .mat-mdc-list-item-title,
+.side a.mat-mdc-list-item .mat-mdc-list-item-line {
+  color: #fff !important;
+}
+
+/* Íconos dentro del item 
+.side a.mat-mdc-list-item .mat-icon,
+.side a.mat-mdc-list-item .mat-mdc-list-item-icon {
+  color: #fff !important;
+  fill: #fff !important;
+  opacity: .95;
+  margin-right: 10px;
+}
+
+/* Hover / activo 
+.side a.mat-mdc-list-item:hover {
+  background: rgba(255,255,255,.08);
+}
+
+.side {
+  background: #0a2c6f;
+  color: #fff;
+
+  a.mat-list-item.active,
+  a.mat-list-item:hover { background: rgba(255,255,255,.08); }
+}
+
+.side a.mat-mdc-list-item.active {
+  background: rgba(255,255,255,.16);
+  color: #fff;
+  border-left: 3px solid #9cc2ff;
+}
+
+/* Título del menú 
+.brand {
+  font-weight: 700;
+  padding: 16px 20px;
+  color: #fff;
+}
+
+
+
+/* ===== Contenido ===== 
+.content { 
+    padding: 24px;
+     overflow-x: hidden; 
+ }
+
+.card { 
+  @include card; 
+  border: 1px solid rgba(26,115,232,.25); 
+  box-shadow: 0 6px 24px rgba(2,35,97,.15);
+}
+
+/* ===== Responsive ===== 
+.only-mobile { display: none; }
+
+@media (max-width: 1024px) {
+  .only-mobile { display: inline-flex; }
+  .content { padding: 16px; margin: 8px auto 24px; }
+}
+*/

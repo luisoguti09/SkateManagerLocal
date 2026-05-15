@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FempApp</string>
+    <string name="title_activity_main">FempApp</string>
+    <string name="package_name">com.fempapp.app</string>
+    <string name="custom_url_scheme">com.fempapp.app</string>
+</resources>

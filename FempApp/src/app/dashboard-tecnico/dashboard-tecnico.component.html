@@ -1,0 +1,283 @@
+<div class="top-actions">
+    <button mat-stroked-button type="button" (click)="volver()">
+        <mat-icon>arrow_back</mat-icon>
+        Volver
+    </button>
+
+    <button mat-stroked-button type="button" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Salir
+    </button>
+</div>
+<div class="tecnico-page">
+    <section class="hero-card">
+        <div>
+            <h1>Panel Técnico / Juez</h1>
+            <p>Gestión técnica, evaluación deportiva y seguimiento de evolución.</p>
+        </div>
+    </section>
+
+    <section class="dashboard-grid">
+
+        <mat-card class="module-card">
+            <mat-icon>event</mat-icon>
+            <h2>Eventos</h2>
+            <p>Ver eventos y deportistas inscriptos.</p>
+            <button type="button" mat-raised-button color="primary" (click)="abrirModulo('eventos')">
+                Gestionar eventos
+            </button>
+        </mat-card>
+
+        <mat-card class="module-card">
+            <mat-icon>groups</mat-icon>
+            <h2>Deportistas</h2>
+            <p>Consultar perfiles deportivos y participación.</p>
+            <button type="button" mat-raised-button color="primary" (click)="abrirModulo('deportistas')">
+                Ver deportistas
+            </button>
+        </mat-card>
+
+        <mat-card class="module-card">
+            <mat-icon>sports_gymnastics</mat-icon>
+            <h2>Elementos técnicos</h2>
+            <p>Crear saltos, giros, secuencias y figuras técnicas.</p>
+            <button type="button" mat-raised-button color="accent" (click)="abrirModulo('elementos')">
+                Crear elementos
+            </button>
+        </mat-card>
+
+        <mat-card class="module-card">
+            <mat-icon>analytics</mat-icon>
+            <h2>Componentes</h2>
+            <p>Definir criterios como skating skills, performance y coreografía.</p>
+            <button type="button" mat-raised-button color="accent" (click)="abrirModulo('componentes')">
+                Crear componentes
+            </button>
+        </mat-card>
+
+        <mat-card class="module-card wide">
+            <mat-icon>timeline</mat-icon>
+            <h2>Evaluación y evolución</h2>
+            <p>
+                Registrar observaciones técnicas, evolución por perfil deportivo,
+                elementos y componentes.
+            </p>
+            <button type="button" mat-raised-button color="primary" (click)="abrirModulo('evaluacion')">
+                Nueva evaluación
+            </button>
+        </mat-card>
+
+    </section>
+
+    <section *ngIf="mostrarModulo() === 'deportistas'" class="modulo-panel">
+        <h2>Deportistas</h2>
+
+        <div *ngFor="let d of deportistas" class="list-item clickable" (click)="seleccionarDeportista(d)">
+            <strong>{{ d.apellidoYNombre || d.nombre || 'Sin nombre' }}</strong>
+            <p>DNI: {{ d.documentoN || d.dni || 'Sin DNI' }}</p>
+            <p>Club: {{ d.club || 'Sin club' }}</p>
+        </div>
+    </section>
+
+    <mat-card class="evaluacion-card" *ngIf="mostrarModulo() === 'evaluacion'">
+        <h2>Evaluación Técnica</h2>
+
+        <div *ngIf="deportistaSeleccionado" class="deportista-header">
+            <h3>{{ deportistaSeleccionado.apellidoYNombre || deportistaSeleccionado.nombre }}</h3>
+            <p>DNI: {{ deportistaSeleccionado.documentoN || deportistaSeleccionado.dni }}</p>
+        </div>
+
+        <form [formGroup]="evaluacionForm">
+
+            <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Deportista</mat-label>
+                <mat-select formControlName="deportistaId">
+                    <mat-option *ngFor="let d of deportistas" [value]="d.id">
+                        {{ d.apellidoYNombre || d.nombre || 'Sin nombre' }}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <section class="evaluacion-bloque">
+                <h3>Elementos técnicos evaluados</h3>
+
+                <div class="evaluacion-row" *ngFor="let el of elementosEvaluados; let i = index">
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Elemento técnico</mat-label>
+                        <mat-select [(ngModel)]="el.elementoId" [ngModelOptions]="{ standalone: true }">
+                            <mat-option *ngFor="let e of elementos" [value]="e.id">
+                                {{ e.nombre }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="nota-field">
+                        <mat-label>Nota</mat-label>
+                        <input matInput type="number" [(ngModel)]="el.nota" [ngModelOptions]="{ standalone: true }">
+                    </mat-form-field>
+
+                    <button mat-icon-button color="warn" type="button" (click)="elementosEvaluados.splice(i, 1)">
+                        <mat-icon>delete</mat-icon>
+                    </button>
+                </div>
+
+                <button mat-stroked-button color="primary" type="button" (click)="agregarElemento()">
+                    + Agregar elemento
+                </button>
+            </section>
+
+            <section class="evaluacion-bloque">
+                <h3>Componentes evaluados</h3>
+
+                <div class="evaluacion-row" *ngFor="let comp of componentesEvaluados; let i = index">
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Componente</mat-label>
+                        <mat-select [(ngModel)]="comp.componenteId" [ngModelOptions]="{ standalone: true }">
+                            <mat-option *ngFor="let c of componentes" [value]="c.id">
+                                {{ c.nombre }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="nota-field">
+                        <mat-label>Nota</mat-label>
+                        <input matInput type="number" [(ngModel)]="comp.nota" [ngModelOptions]="{ standalone: true }">
+                    </mat-form-field>
+
+                    <button mat-icon-button color="warn" type="button" (click)="componentesEvaluados.splice(i, 1)">
+                        <mat-icon>delete</mat-icon>
+                    </button>
+                </div>
+
+                <button mat-stroked-button color="primary" type="button" (click)="agregarComponente()">
+                    + Agregar componente
+                </button>
+            </section>
+
+            <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Observación</mat-label>
+                <textarea matInput formControlName="observacion"></textarea>
+            </mat-form-field>
+
+            <button mat-raised-button color="primary" type="button" (click)="guardarEvaluacion()">
+                Guardar Evaluación
+            </button>
+
+        </form>
+    </mat-card>
+
+    <section *ngIf="mostrarModulo() === 'deportistas'" class="modulo-panel">
+        <h2>Deportistas</h2>
+
+        <div *ngFor="let d of deportistas" class="list-item">
+            <strong>{{ d.apellidoYNombre || d.nombre || 'Sin nombre' }}</strong>
+            <p>DNI: {{ d.documentoN || d.dni || 'Sin DNI' }}</p>
+            <p>Club: {{ d.club || 'Sin club' }}</p>
+        </div>
+    </section>
+
+    <section *ngIf="mostrarModulo() === 'elementos'" class="modulo-panel">
+        <h2>Crear elemento técnico</h2>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nombre</mat-label>
+            <input matInput [(ngModel)]="nuevoElemento.nombre">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Categoría</mat-label>
+            <input matInput [(ngModel)]="nuevoElemento.categoria">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Valor</mat-label>
+            <input matInput type="number" [(ngModel)]="nuevoElemento.valor">
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="button" (click)="crearElemento()">
+            Guardar elemento
+        </button>
+    </section>
+
+    <section *ngIf="mostrarModulo() === 'componentes'" class="modulo-panel">
+        <h2>Crear componente</h2>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nombre</mat-label>
+            <input matInput [(ngModel)]="componenteForm.value.nombre">
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="button" (click)="crearComponente()">
+            Guardar componente
+        </button>
+    </section>
+
+    <section *ngIf="mostrarModulo() === 'eventos'" class="modulo-panel">
+        <h2>Eventos</h2>
+        <p>Este módulo todavía no está conectado. Próximo paso: traer eventos acá.</p>
+    </section>
+
+    <section class="metricas-grid" *ngIf="evaluaciones.length > 0">
+
+        <mat-card class="metrica-card">
+            <h3>Evaluaciones</h3>
+            <strong>{{ getTotalEvaluaciones() }}</strong>
+        </mat-card>
+
+        <mat-card class="metrica-card">
+            <h3>Promedio elementos</h3>
+            <strong>{{ getPromedioElementos() | number:'1.1-2' }}</strong>
+        </mat-card>
+
+        <mat-card class="metrica-card">
+            <h3>Promedio componentes</h3>
+            <strong>{{ getPromedioComponentes() | number:'1.1-2' }}</strong>
+        </mat-card>
+
+        <mat-card class="metrica-card">
+            <h3>Última evaluación</h3>
+            <strong>{{ getUltimaEvaluacion()?.createdAt | date:'dd/MM/yyyy' }}</strong>
+        </mat-card>
+
+    </section>
+
+    <mat-card class="evaluacion-card" *ngIf="evaluaciones.length > 0">
+        <h2>Historial de Evaluaciones</h2>
+
+        <div *ngFor="let ev of evaluaciones" class="evaluacion-item">
+            <strong>ID Deportista: {{ ev.deportistaId }}</strong>
+
+            <div class="historial-card" *ngFor="let ev of evaluaciones">
+
+                <h4>Evaluación</h4>
+
+                <div *ngIf="ev.elementos?.length">
+                    <strong>Elementos:</strong>
+                    <div *ngFor="let el of ev.elementos">
+                        {{ getNombreElemento(el.elementoId) }} → {{ el.nota }}
+                    </div>
+                </div>
+
+                <div *ngIf="ev.componentes?.length">
+                    <strong>Componentes:</strong>
+                    <div *ngFor="let comp of ev.componentes">
+                        {{ getNombreComponente(comp.componenteId) }} → {{ comp.nota }}
+                    </div>
+                </div>
+
+                <div *ngIf="ev.observacion">
+                    <strong>Obs:</strong> {{ ev.observacion }}
+                </div>
+
+                <small>{{ ev.createdAt | date:'short' }}</small>
+
+            </div>
+
+            <hr />
+        </div>
+    </mat-card>
+
+
+
+    <router-outlet></router-outlet>
+</div>

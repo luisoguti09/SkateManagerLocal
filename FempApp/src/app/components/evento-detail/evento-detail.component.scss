@@ -1,0 +1,257 @@
+$primary-color: #0E32EF;
+$dark-color: #000000;
+
+:host ::ng-deep .back-btn .mdc-button__label {
+  color: #fff !important;
+}
+
+:host ::ng-deep .back-btn .mdc-button__outline {
+  border-color: #fff !important;
+}
+
+
+.main-gradient {
+  background: linear-gradient(135deg, $primary-color, $dark-color);
+  min-height: 100vh;
+  color: white;
+
+  mat-toolbar {
+    background-color: $primary-color;
+    color: white;
+
+    .spacer {
+      flex: 1 1 auto;
+    }
+  }
+
+  .content {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+
+    .card-section {
+      width: 100%;
+      max-width: 800px;
+      background-color: rgba(255, 255, 255, 0.07);
+      color: white;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+
+      h2 {
+        margin-top: 0;
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      .full-width {
+        width: 100%;
+      }
+
+      .full-width-table {
+        width: 100%;
+        color: white;
+
+        th,
+        td {
+          color: white;
+        }
+
+        mat-header-row,
+        mat-row {
+          background-color: rgba(255, 255, 255, 0.05);
+        }
+      }
+
+      button {
+        margin-top: 1rem;
+      }
+    }
+  }
+
+  .custom-dialog-panel .mat-dialog-container {
+    background: transparent;
+    box-shadow: none;
+  }
+
+}
+
+.eventos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.evento-card {
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .2);
+}
+
+.tb {
+  position: relative;
+  /* deja espacio para que el botón no tape el título centrado */
+  padding-right: 56px;
+  /* 56px ≈ ancho de un icon button */
+}
+
+.tb-title.tb-center {
+  margin: 0 auto;
+  text-align: center;
+}
+
+.tb-back-right {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* contenedor del botón */
+.back-wrapper {
+  position: sticky;
+  /* se queda pegado arriba al hacer scroll */
+  top: 12px;
+  padding: 8px 12px 0;
+  display: flex;
+  justify-content: flex-end;
+  /* 👉 derecha */
+  z-index: 10;
+}
+
+/* estilos del botón */
+.back-btn {
+  color: #fff !important;
+  /* texto */
+  border-color: #fff !important;
+  /* borde del stroked */
+}
+
+.back-btn mat-icon {
+  color: #fff !important;
+  /* icono en blanco */
+}
+
+.actions {
+  display: flex;
+  gap: .75rem;
+  margin-top: 1rem;
+}
+
+.actions [disabled] {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.perfil-selector {
+  margin-bottom: 24px;
+
+  h3 {
+    margin-bottom: 14px;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #fff;
+  }
+}
+
+.perfiles-carousel {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 8px 4px 16px;
+  scroll-snap-type: x mandatory;
+}
+
+.perfil-card {
+  min-width: 230px;
+  max-width: 260px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  cursor: pointer;
+  scroll-snap-align: start;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+  transition: transform .2s ease, border .2s ease, background .2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  &.selected {
+    border: 2px solid #ffffff;
+    background: rgba(255, 255, 255, 0.22);
+    transform: scale(1.03);
+  }
+}
+
+.perfil-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+
+  h3 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+}
+
+.perfil-temporada {
+  font-size: .8rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.perfil-categoria {
+  margin: 12px 0;
+  font-weight: 700;
+}
+
+.perfil-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  span {
+    font-size: .75rem;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+  }
+}
+
+.evento-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+  align-items: center;
+}
+
+.btn-inscripcion {
+  background: #ffffff !important;
+  color: #1234d8 !important;
+  border-radius: 999px !important;
+  font-weight: 700;
+  padding: 0 22px;
+}
+
+.btn-secundario {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, .65) !important;
+  border-radius: 999px !important;
+}
+
+.hint-certificado {
+  margin-top: 10px;
+  color: rgba(255, 255, 255, .78);
+  font-size: .9rem;
+}
