@@ -8,7 +8,15 @@ const Usuario = require('../models/usuario.model');
 const Rol = require('../models/rol.model');
 const Padron = require('../models/padron.model');
 const { Op } = require('sequelize');
-const ROL_CANON = { admin: 'administrador', auditor: 'tecnico', deportista: 'deportista' };
+const ROL_CANON = {
+  admin: 'administrador',
+  administrador: 'administrador',
+  auditor: 'tecnico',
+  tecnico: 'tecnico',
+  deportista: 'deportista',
+  tesoreria: 'tesoreria',
+  tesorero: 'tesoreria'
+};
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_only_change_me';
 
@@ -30,9 +38,16 @@ router.post('/register', async (req, res) => {
 
     // rol válido
     const rol = await Rol.findByPk(rolId);
-   
-    if (!rol) return res.status(400).json({ error: 'Rol no válido' });
-    const rolCanon = ROL_CANON[rol.nombre] || rol.nombre;
+
+    const nombreRol = String(rol.nombre || '').trim().toLowerCase();
+    const rolCanon = ROL_CANON[nombreRol];
+
+    if (!rolCanon) {
+      return res.status(400).json({
+        error: 'Rol no reconocido',
+        detalle: rol.nombre
+      });
+    }
     const isTec = rolCanon === 'tecnico';
     const isDep = rolCanon === 'deportista';
 
@@ -45,7 +60,7 @@ router.post('/register', async (req, res) => {
       rol: rolCanon,     // ENUM compatible
       rolId: rol.id,
       categoria: isDep ? (categoria ?? '') : '', // ← nunca null
-      nivel:     isTec ? (nivel ?? '')     : '', // ← nunca null
+      nivel: isTec ? (nivel ?? '') : '', // ← nunca null
       qrJti: uuidv4(),
       estado: 'pendiente'
     });

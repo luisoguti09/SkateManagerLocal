@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const mercadopago = require('mercadopago');
 const db = require('../models');
+const { Op } = require('sequelize');
+const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 
 mercadopago.configure({
   access_token: process.env.MP_ACCESS_TOKEN,
@@ -46,6 +48,88 @@ function crearExternalReference({ eventoId, usuarioId, perfilDeportivoIds }) {
   return `evento_${eventoId}_usuario_${usuarioId}_perfiles_${perfiles}_${timestamp}`;
 }
 
+function normalizarDocumento(value = '') {
+  return String(value)
+    .replace(/\D/g, '')
+    .trim();
+}
+
+function queryNumber(value) {
+  if (
+    value === undefined ||
+    value === null ||
+    value === '' ||
+    value === 'undefined' ||
+    value === 'null'
+  ) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function queryText(value) {
+  if (
+    value === undefined ||
+    value === null ||
+    value === '' ||
+    value === 'undefined' ||
+    value === 'null'
+  ) {
+    return null;
+  }
+
+  return String(value).trim();
+}
+
+async function obtenerSnapshotsPago({ usuario, evento }) {
+  const dniNormalizado = normalizarDocumento(usuario.dni);
+
+  let padron = null;
+
+  if (db.Padron && dniNormalizado) {
+    padron = await db.Padron.findOne({
+      where: {
+        documentoNormalizado: dniNormalizado,
+        temporada: '2026',
+        activo: true
+      }
+    });
+
+    if (!padron) {
+      padron = await db.Padron.findOne({
+        where: {
+          documentoN: usuario.dni
+        }
+      });
+    }
+  }
+
+  let club = null;
+  let sede = null;
+
+  if (padron?.clubId && db.Club) {
+    club = await db.Club.findByPk(padron.clubId);
+  }
+
+  if (padron?.clubSedeId && db.ClubSede) {
+    sede = await db.ClubSede.findByPk(padron.clubSedeId);
+  }
+
+  return {
+    deportistaNombreSnapshot: usuario.nombre || padron?.apellidoYNombre || null,
+    deportistaDniSnapshot: usuario.dni || padron?.documentoN || null,
+    eventoNombreSnapshot: evento.nombre || null,
+
+    clubId: padron?.clubId || null,
+    clubSedeId: padron?.clubSedeId || null,
+
+    clubSnapshot: club?.nombre || padron?.club || padron?.clubOriginal || usuario.club || null,
+    clubSedeSnapshot: sede?.nombre || null
+  };
+}
+
 router.post('/crear-preferencia', async (req, res) => {
   try {
     const {
@@ -73,6 +157,7 @@ router.post('/crear-preferencia', async (req, res) => {
         error: 'Debe seleccionar al menos un perfil deportivo para la inscripción',
       });
     }
+
 
     const cantidadParticipaciones = perfilDeportivoIds.length;
 
@@ -119,6 +204,11 @@ router.post('/crear-preferencia', async (req, res) => {
       perfilDeportivoIds,
     });
 
+    const snapshotsPago = await obtenerSnapshotsPago({
+      usuario,
+      evento
+    });
+
     const pref = {
       items: [
         {
@@ -141,6 +231,14 @@ router.post('/crear-preferencia', async (req, res) => {
         porcentaje_comision: montos.porcentajeComision,
         monto_comision: montos.montoComision,
         monto_total: montos.montoTotal,
+
+        deportista_nombre: snapshotsPago.deportistaNombreSnapshot,
+        deportista_dni: snapshotsPago.deportistaDniSnapshot,
+        evento_nombre: snapshotsPago.eventoNombreSnapshot,
+        club_id: snapshotsPago.clubId,
+        club_sede_id: snapshotsPago.clubSedeId,
+        club: snapshotsPago.clubSnapshot,
+        club_sede: snapshotsPago.clubSedeSnapshot,
       },
 
       ...(isHttpsFront && {
@@ -183,6 +281,14 @@ router.post('/crear-preferencia', async (req, res) => {
         estadoPago: 'pendiente',
         estadoConciliacion: 'pendiente',
 
+        deportistaNombreSnapshot: snapshotsPago.deportistaNombreSnapshot,
+        deportistaDniSnapshot: snapshotsPago.deportistaDniSnapshot,
+        eventoNombreSnapshot: snapshotsPago.eventoNombreSnapshot,
+        clubId: snapshotsPago.clubId,
+        clubSedeId: snapshotsPago.clubSedeId,
+        clubSnapshot: snapshotsPago.clubSnapshot,
+        clubSedeSnapshot: snapshotsPago.clubSedeSnapshot,
+
         rawPreference: mpRes.body,
       });
     }
@@ -204,6 +310,8 @@ router.post('/crear-preferencia', async (req, res) => {
       porcentajeComision: montos.porcentajeComision,
       montoComision: montos.montoComision,
       montoTotal: montos.montoTotal,
+
+      snapshots: snapshotsPago,
     });
   } catch (e) {
     console.error('[MP crear-preferencia error]', e?.response?.body || e);
@@ -350,6 +458,214 @@ router.post('/webhook', async (req, res) => {
   } catch (e) {
     console.error('[MP webhook error]', e?.response?.body || e);
     return res.sendStatus(200);
+  }
+});
+
+router.get('/',
+  verifyToken,
+  requireRole('administrador', 'tesoreria'),
+  async (req, res) => {
+    try {
+      const {
+        eventoId,
+        clubId,
+        clubSedeId,
+        estado,
+        buscar,
+        fechaDesde,
+        fechaHasta
+      } = req.query;
+
+      const where = {};
+
+      const eventoIdNumber = queryNumber(eventoId);
+      const clubIdNumber = queryNumber(clubId);
+      const clubSedeIdNumber = queryNumber(clubSedeId);
+
+      if (eventoIdNumber !== null) {
+        where.eventoId = eventoIdNumber;
+      }
+
+      if (clubIdNumber !== null) {
+        where.clubId = clubIdNumber;
+      }
+
+      if (clubSedeIdNumber !== null) {
+        where.clubSedeId = clubSedeIdNumber;
+      }
+
+      const estadoText = queryText(estado);
+      const buscarText = queryText(buscar);
+      const fechaDesdeText = queryText(fechaDesde);
+      const fechaHastaText = queryText(fechaHasta);
+
+      if (estadoText) {
+        if (estadoText === 'pagado') {
+          where.estadoPago = 'approved';
+          where.estadoConciliacion = 'ok';
+        }
+
+        if (estadoText === 'pendiente') {
+          where.estadoPago = 'pendiente';
+        }
+
+        if (estadoText === 'observado') {
+          where[Op.or] = [
+            { estadoConciliacion: 'requiere_revision' },
+            {
+              estadoPago: {
+                [Op.in]: ['rejected', 'cancelled', 'refunded', 'charged_back']
+              }
+            }
+          ];
+        }
+      }
+
+      if (buscarText) {
+        where[Op.or] = [
+          { deportistaNombreSnapshot: { [Op.like]: `%${buscarText}%` } },
+          { deportistaDniSnapshot: { [Op.like]: `%${buscarText}%` } },
+          { externalReference: { [Op.like]: `%${buscarText}%` } },
+          { preferenceId: { [Op.like]: `%${buscarText}%` } },
+          { paymentId: { [Op.like]: `%${buscarText}%` } }
+        ];
+      }
+
+      if (fechaDesdeText || fechaHastaText) {
+        where.createdAt = {};
+
+        if (fechaDesdeText) {
+          where.createdAt[Op.gte] = new Date(fechaDesdeText);
+        }
+
+        if (fechaHastaText) {
+          where.createdAt[Op.lte] = new Date(fechaHastaText);
+        }
+      }
+
+      const pagos = await db.Pago.findAll({
+        where,
+        order: [['createdAt', 'DESC']]
+      });
+
+      return res.json(pagos);
+    } catch (error) {
+      console.error('[GET /pagos error]', error);
+
+      return res.status(500).json({
+        error: 'No se pudieron obtener los pagos',
+        detail: error.message
+      });
+    }
+  });
+
+router.get('/resumen/evento/:eventoId',
+  verifyToken,
+  requireRole('administrador', 'tesoreria'),
+  async (req, res) => {
+    try {
+      const { eventoId } = req.params;
+
+      const pagos = await db.Pago.findAll({
+        where: {
+          eventoId: Number(eventoId)
+        }
+      });
+
+      const resumen = pagos.reduce((acc, pago) => {
+        const montoBase = Number(pago.montoBase || 0);
+        const montoComision = Number(pago.montoComision || 0);
+        const montoTotal = Number(pago.montoTotal || 0);
+
+        acc.totalPagos += 1;
+        acc.totalInscripcion += montoBase;
+        acc.totalComisionSkateManager += montoComision;
+        acc.totalGeneral += montoTotal;
+
+        if (pago.estadoPago === 'approved' && pago.estadoConciliacion === 'ok') {
+          acc.pagados += 1;
+        } else if (pago.estadoPago === 'pendiente') {
+          acc.pendientes += 1;
+        } else {
+          acc.observados += 1;
+        }
+
+        return acc;
+      }, {
+        eventoId: Number(eventoId),
+        totalPagos: 0,
+        pagados: 0,
+        pendientes: 0,
+        observados: 0,
+        totalInscripcion: 0,
+        totalComisionSkateManager: 0,
+        totalGeneral: 0
+      });
+
+      return res.json(resumen);
+    } catch (error) {
+      console.error('[GET /pagos/resumen/evento/:eventoId error]', error);
+
+      return res.status(500).json({
+        error: 'No se pudo obtener el resumen del evento',
+        detail: error.message
+      });
+    }
+  });
+
+router.get('/filtros/clubes', verifyToken, requireRole('administrador', 'tesoreria'), async (req, res) => {
+  try {
+    const { eventoId } = req.query;
+
+    const where = {
+      clubId: {
+        [Op.ne]: null
+      }
+    };
+
+    const eventoIdNumber = queryNumber(eventoId);
+
+    if (eventoIdNumber !== null) {
+      where.eventoId = eventoIdNumber;
+    }
+
+    const pagos = await db.Pago.findAll({
+      attributes: [
+        'clubId',
+        'clubSnapshot',
+        'clubSedeId',
+        'clubSedeSnapshot'
+      ],
+      where,
+      order: [
+        ['clubSnapshot', 'ASC'],
+        ['clubSedeSnapshot', 'ASC']
+      ]
+    });
+
+    const mapa = new Map();
+
+    for (const pago of pagos) {
+      const key = `${pago.clubId || 'sin-club'}-${pago.clubSedeId || 'sin-sede'}`;
+
+      if (!mapa.has(key)) {
+        mapa.set(key, {
+          clubId: pago.clubId,
+          club: pago.clubSnapshot,
+          clubSedeId: pago.clubSedeId,
+          sede: pago.clubSedeSnapshot
+        });
+      }
+    }
+
+    return res.json(Array.from(mapa.values()));
+  } catch (error) {
+    console.error('[GET /pagos/filtros/clubes error]', error);
+
+    return res.status(500).json({
+      error: 'No se pudieron obtener los clubes para filtros',
+      detail: error.message
+    });
   }
 });
 

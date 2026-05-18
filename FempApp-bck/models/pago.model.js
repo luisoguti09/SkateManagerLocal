@@ -109,6 +109,41 @@ const Pago = sequelize.define('Pago', {
     allowNull: true
   },
 
+  deportistaNombreSnapshot: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+
+  deportistaDniSnapshot: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+
+  eventoNombreSnapshot: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+
+  clubId: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+
+  clubSedeId: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+
+  clubSnapshot: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+
+  clubSedeSnapshot: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+
   rawPayment: {
     type: DataTypes.JSON,
     allowNull: true

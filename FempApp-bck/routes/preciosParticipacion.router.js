@@ -1,11 +1,10 @@
-// routes/preciosParticipacion.router.js
-
 const express = require('express');
 const router = express.Router();
 const db = require('../models');
+const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 
 // GET /precios-participacion/evento/:eventoId
-router.get('/evento/:eventoId', async (req, res) => {
+router.get('/evento/:eventoId', verifyToken, requireRole('administrador', 'tesoreria'), async (req, res) => {
   try {
     const { eventoId } = req.params;
 
@@ -25,7 +24,7 @@ router.get('/evento/:eventoId', async (req, res) => {
 });
 
 // POST /precios-participacion
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, requireRole('administrador', 'tesoreria'), async (req, res) => {
   try {
     const {
       eventoId,
@@ -82,7 +81,7 @@ router.post('/', async (req, res) => {
 });
 
 // PATCH /precios-participacion/:id
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', verifyToken, requireRole('administrador', 'tesoreria'), async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -119,7 +118,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // DELETE lógico /precios-participacion/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, requireRole('administrador', 'tesoreria'), async (req, res) => {
   try {
     const { id } = req.params;
 
