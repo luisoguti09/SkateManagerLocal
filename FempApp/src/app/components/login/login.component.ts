@@ -25,87 +25,96 @@ import { AuthService } from '../../services/auth.service';
     ReactiveFormsModule,
     MatButtonModule,
     RouterOutlet,
-    RouterLink,    
+    RouterLink,
   ],
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss'] 
+  styleUrls: ['./login.component.scss']
 })
 export class LoginComponent implements OnInit {
 
   private loginService = inject(LoginService);
-  private router = inject (Router);
+  private router = inject(Router);
   private fb = inject(FormBuilder);
   private regService = inject(RegistroService);
   private authService = inject(AuthService);
 
   public form!: FormGroup;
 
-  ngOnInit( ) {
-  this.form = this.fb.group({
-    forms: new FormControl('', [Validators.required]),
-    email: new FormControl('', [Validators.required, Validators.email]),
-    password: new FormControl('', [Validators.required])
-  });
-  console.log('Form creado');
+  ngOnInit() {
+    this.form = this.fb.group({
+      forms: new FormControl('', [Validators.required]),
+      email: new FormControl('', [Validators.required, Validators.email]),
+      password: new FormControl('', [Validators.required])
+    });
+    console.log('Form creado');
   }
 
-   login() {
-  this.authService.login(
-    this.form?.get('email')?.value,
-    this.form?.get('password')?.value
-  ).subscribe({
-    next: (res) => {
-      if (!res || !res.usuario) {
-        console.error('Respuesta de login inválida:', res);
-        return;
-      }
+  obtenerRolPorId(rolId: number | null): string {
+    const roles: Record<number, string> = {
+      1: 'deportista',
+      2: 'administrador',
+      3: 'tecnico',
+      4: 'tesoreria'
+    };
 
-      const rolId = res?.rolId ?? res?.usuario?.rolId ?? this.authService.getRolId();
-const target =
-  rolId === 2 ? '/admin' :       // administrador
-  rolId === 3 ? '/tecnico' :     // futuro panel técnico
-                '/perfil';       // deportista
+    return rolId ? roles[Number(rolId)] || '' : '';
+  }
 
-this.router.navigate([target]);
-      console.log('Usuario logueado:', res.usuario); // <- ya es el objeto
-
-      const role = res.usuario.rol;
-      if (role === 'deportista') {
-        this.router.navigate(['dashboard-deport']);
-      } else if (role === 'administrador') {
-        this.router.navigate(['dashboard-admin']);
-      } else if (role === 'tecnico') {
-        this.router.navigate(['dashboard-tecnico']);
-      }
-    },
-    error: (e) => {
-      console.error('Login fallido:', e.error?.error || e.message);
-    }
-  });
-}
-
-  /*login() {
+  login() {
     this.authService.login(
-      this.form?.get('email')?.value, 
-      this.form?.get('password')?.value)
-      .subscribe({
-        next: (res) => {
-          this.loginService.loggedUser = res;
-          // token
-            const role = res.usuario.rol;
-            if (role === 'deportista') {
-            this.router.navigate(['dashboard-deport']);
-            } else if (role === 'administrador') {
-            this.router.navigate(['dashboard-admin']);
-            } else if (role === 'tecnico') {
-            this.router.navigate(['dashboard-tecnico']);
-            }          
-          console.log(res);
-        },
-        error: (e) => {
-          //mostrar mensaje de error sacandolo de error
-          console.log(e.error.error);
+      this.form?.get('email')?.value,
+      this.form?.get('password')?.value
+    ).subscribe({
+      next: (res) => {
+        if (!res || !res.usuario) {
+          console.error('Respuesta de login inválida:', res);
+          return;
         }
-      });
-  }*/
+
+        const usuario = res.usuario;
+
+        console.log('Usuario logueado:', usuario);
+        console.log('[LOGIN] usuario.rol crudo:', usuario?.rol);
+        console.log('[LOGIN] usuario.rolId crudo:', usuario?.rolId);
+        console.log('[LOGIN] res.rolId crudo:', res?.rolId);
+        console.log('[LOGIN] authService.getRolId():', this.authService.getRolId());
+
+        const rol = String(
+          usuario?.rol ||
+          this.obtenerRolPorId(res?.rolId || usuario?.rolId || this.authService.getRolId())
+        ).trim().toLowerCase();
+
+        switch (rol) {
+          case 'administrador':
+            this.router.navigate(['/dashboard-admin']);
+            break;
+
+          case 'tecnico':
+            this.router.navigate(['/dashboard-tecnico']);
+            break;
+
+          case 'deportista':
+            this.router.navigate(['/dashboard-deport']);
+            break;
+
+          case 'tesoreria':
+            console.log('[LOGIN] navegando a dashboard-tesoreria');
+            this.router.navigate(['/dashboard-tesoreria']).then(ok => {
+              console.log('[LOGIN] navegación tesorería resultado:', ok);
+            });
+            break;
+
+          default:
+            console.warn('Rol no reconocido:', rol, usuario);
+            this.router.navigate(['/login']);
+            break;
+        }
+      },
+      error: (e) => {
+        console.error('Login fallido:', e.error?.error || e.message);
+      }
+    });
+  }
+
+
 }

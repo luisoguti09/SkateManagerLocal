@@ -1,0 +1,241 @@
+<section class="tesoreria-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Panel de gestión</p>
+      <h1>Tesorería</h1>
+      <p class="subtitle">
+        Control de pagos, conciliación, comisiones y recaudación por evento.
+      </p>
+    </div>
+
+    <button mat-raised-button color="primary" (click)="exportarCsv()">
+      <mat-icon>download</mat-icon>
+      Exportar CSV
+    </button>
+  </header>
+
+  <section class="summary-grid">
+    <mat-card class="summary-card primary">
+      <span>Total general</span>
+      <strong>{{ formatoMoneda(resumen.totalGeneral) }}</strong>
+      <small>Inscripción + gestión</small>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <span>Inscripciones</span>
+      <strong>{{ formatoMoneda(resumen.totalInscripcion) }}</strong>
+      <small>Monto base</small>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <span>Gestión Skate Manager</span>
+      <strong>{{ formatoMoneda(resumen.totalComisionSkateManager) }}</strong>
+      <small>Comisiones</small>
+    </mat-card>
+
+    <mat-card class="summary-card success">
+      <span>Pagados</span>
+      <strong>{{ resumen.pagados }}</strong>
+      <small>Conciliados</small>
+    </mat-card>
+
+    <mat-card class="summary-card warning">
+      <span>Pendientes</span>
+      <strong>{{ resumen.pendientes }}</strong>
+      <small>Sin confirmar</small>
+    </mat-card>
+
+    <mat-card class="summary-card danger">
+      <span>Observados</span>
+      <strong>{{ resumen.observados }}</strong>
+      <small>Requieren revisión</small>
+    </mat-card>
+  </section>
+
+  <mat-card class="filters-card">
+    <div class="filters-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Evento</mat-label>
+        <mat-select [(ngModel)]="filtros.eventoId" (selectionChange)="onEventoChange()">
+          <mat-option [value]="null">Todos</mat-option>
+          <mat-option *ngFor="let evento of eventos" [value]="evento.id">
+            {{ evento.nombre || evento.titulo }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Club / sede</mat-label>
+        <mat-select (selectionChange)="onClubChange($event.value)">
+          <mat-option value="">Todos</mat-option>
+          <mat-option
+            *ngFor="let item of clubes"
+            [value]="(item.clubId || 'null') + '|' + (item.clubSedeId || 'null')"
+          >
+            {{ item.club || 'Sin club' }}
+            <ng-container *ngIf="item.sede"> - {{ item.sede }}</ng-container>
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Estado</mat-label>
+        <mat-select [(ngModel)]="filtros.estado" (selectionChange)="aplicarFiltros()">
+          <mat-option value="">Todos</mat-option>
+          <mat-option value="pagado">Pagado</mat-option>
+          <mat-option value="pendiente">Pendiente</mat-option>
+          <mat-option value="observado">Observado</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Buscar</mat-label>
+        <input
+          matInput
+          [(ngModel)]="filtros.buscar"
+          placeholder="Nombre, DNI, paymentId..."
+          (keyup.enter)="aplicarFiltros()"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Desde</mat-label>
+        <input matInput type="date" [(ngModel)]="filtros.fechaDesde" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Hasta</mat-label>
+        <input matInput type="date" [(ngModel)]="filtros.fechaHasta" />
+      </mat-form-field>
+    </div>
+
+    <div class="filters-actions">
+      <button mat-raised-button color="primary" (click)="aplicarFiltros()">
+        <mat-icon>filter_alt</mat-icon>
+        Aplicar filtros
+      </button>
+
+      <button mat-button (click)="limpiarFiltros()">
+        Limpiar
+      </button>
+    </div>
+  </mat-card>
+
+  <mat-card class="table-card">
+    <div class="loading-box" *ngIf="cargando">
+      <mat-spinner diameter="42"></mat-spinner>
+      <p>Cargando pagos...</p>
+    </div>
+
+    <div class="table-wrapper" *ngIf="!cargando">
+      <table mat-table [dataSource]="dataSource" matSort>
+
+        <ng-container matColumnDef="createdAt">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Fecha</th>
+          <td mat-cell *matCellDef="let pago">
+            {{ pago.createdAt | date:'dd/MM/yyyy HH:mm' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="eventoNombreSnapshot">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Evento</th>
+          <td mat-cell *matCellDef="let pago">
+            {{ pago.eventoNombreSnapshot || 'Sin evento' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="deportistaNombreSnapshot">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Deportista</th>
+          <td mat-cell *matCellDef="let pago">
+            {{ pago.deportistaNombreSnapshot || 'Sin nombre' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="deportistaDniSnapshot">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>DNI</th>
+          <td mat-cell *matCellDef="let pago">
+            {{ pago.deportistaDniSnapshot || '-' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="clubSnapshot">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Club</th>
+          <td mat-cell *matCellDef="let pago">
+            {{ pago.clubSnapshot || '-' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="cantidadParticipaciones">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Part.</th>
+          <td mat-cell *matCellDef="let pago">
+            {{ pago.cantidadParticipaciones }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="montoBase">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Base</th>
+          <td mat-cell *matCellDef="let pago">
+            {{ formatoMoneda(pago.montoBase) }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="montoComision">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Gestión</th>
+          <td mat-cell *matCellDef="let pago">
+            {{ formatoMoneda(pago.montoComision) }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="montoTotal">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Total</th>
+          <td mat-cell *matCellDef="let pago" class="money-strong">
+            {{ formatoMoneda(pago.montoTotal) }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="estadoPago">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Pago</th>
+          <td mat-cell *matCellDef="let pago">
+            <span
+              class="status"
+              [class.ok]="pago.estadoPago === 'approved'"
+              [class.pending]="pago.estadoPago === 'pendiente'"
+              [class.bad]="pago.estadoPago !== 'approved' && pago.estadoPago !== 'pendiente'"
+            >
+              {{ estadoPagoLabel(pago.estadoPago) }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="estadoConciliacion">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Conciliación</th>
+          <td mat-cell *matCellDef="let pago">
+            <span
+              class="status"
+              [class.ok]="pago.estadoConciliacion === 'ok'"
+              [class.pending]="pago.estadoConciliacion === 'pendiente'"
+              [class.bad]="pago.estadoConciliacion === 'requiere_revision'"
+            >
+              {{ estadoConciliacionLabel(pago.estadoConciliacion) }}
+            </span>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+        <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
+
+        <tr class="mat-row empty-row" *matNoDataRow>
+          <td class="mat-cell" [attr.colspan]="columnas.length">
+            No hay pagos para mostrar con los filtros actuales.
+          </td>
+        </tr>
+      </table>
+
+      <mat-paginator
+        [pageSize]="10"
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        showFirstLastButtons>
+      </mat-paginator>
+    </div>
+  </mat-card>
+</section>

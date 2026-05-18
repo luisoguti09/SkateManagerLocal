@@ -7,12 +7,13 @@ import { tap, catchError } from 'rxjs/operators';
 import { PerfilEditable } from '../interfaces/PerfilEditable';
 import { BehaviorSubject } from 'rxjs';
 
-type RolNombre = 'administrador' | 'tecnico' | 'deportista';
+type RolNombre = 'administrador' | 'tecnico' | 'deportista'| 'tesoreria';
 
 const ROLE_BY_ID: Record<number, RolNombre> = {
   1: 'deportista',
   2: 'administrador',
   3: 'tecnico',
+  4: 'tesoreria'
 };
 
 @Injectable({
@@ -63,6 +64,7 @@ export class AuthService {
         if (res.token && res.rolId) {
           localStorage.setItem(this.tokenKey, res.token);
           localStorage.setItem(this.rolKey, res.rolId);
+          localStorage.setItem('user_rol_nombre', res.usuario?.rol || '');
           localStorage.setItem('usuario', JSON.stringify(res.usuario));
 
           this.loggedUser = res.usuario;
@@ -83,6 +85,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.rolKey);
+    localStorage.removeItem('user_rol_nombre');
     this.loggedUser = null;
     this.router.navigate(['/login']);
   }

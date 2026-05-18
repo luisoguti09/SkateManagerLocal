@@ -64,7 +64,7 @@ export class UsuariosService {
 
 
 
-  solicitarRol(id: number, rol: 'tecnico' | 'deportista') {
+  solicitarRol(id: number, rol: 'tecnico' | 'deportista' | 'tesoreria') {
     return this.http.post(`${environment.SERVER_API}/usuarios/${id}/solicitar-rol`, { rol });
   }
 

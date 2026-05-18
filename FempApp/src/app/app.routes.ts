@@ -139,6 +139,14 @@ export const routes: Routes = [
   },
   { path: 'admin/eventos', component: EventsListComponent },
   { path: 'admin/eventos/:id', component: EventEditorComponent },
+  {
+    path: 'dashboard-tesoreria',
+    loadComponent: () =>
+      import('./components/dashboard-tesoreria/dashboard-tesoreria.component')
+        .then(m => m.DashboardTesoreriaComponent),
+    canActivate: [authGuard],
+    data: { roles: ['tesoreria', 'administrador'] }
+  },
 
 
   // Ruta comodín para rutas inválidas
