@@ -5,13 +5,14 @@ import {
   PerfilDeportivo,
   CrearPerfilDeportivoDto
 } from '../interfaces/perfil-deportivo.interface';
+import { environment } from '../../environments/environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PerfilesDeportivosService {
   private http = inject(HttpClient);
-  private apiUrl = 'https://fempapp-back-production.up.railway.app/perfiles-deportivos';
+  private apiUrl = environment.SERVER_API + '/perfiles-deportivos';
   //private apiUrl = 'http://localhost:3000/perfiles-deportivos';
 
   getByUsuario(usuarioId: number): Observable<PerfilDeportivo[]> {

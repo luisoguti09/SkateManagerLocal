@@ -31,6 +31,7 @@ import { Usuario } from '../../interfaces/usuario';
 import { AuthService } from '../../services/auth.service';
 import { CertificadoService } from '../../services/certificado.service';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment.prod';
 
 
 
@@ -159,14 +160,14 @@ export class DashboardDeportComponent implements OnInit {
     this.fotoPerfilUrl = usuario.fotoPerfil
       ? (usuario.fotoPerfil.startsWith('http')
         ? usuario.fotoPerfil
-        : `https://fempapp-back-production.up.railway.app/${usuario.fotoPerfil}`)
+        : environment.SERVER_API + '/' + usuario.fotoPerfil)
         //: `http://localhost:3000/${usuario.fotoPerfil}`)
       : 'assets/img/default-profile.jpg';
     usuario.club = usuario?.padron?.club || '';
     usuario.categoria = usuario?.padron?.categoria || '';
     this.pers = { ...usuario };
     this.pers.fotoPerfilUrl = usuario.fotoPerfil
-      ?`https://fempapp-back-production.up.railway.app/${usuario.fotoPerfil}`
+      ?`${environment.SERVER_API}/${usuario.fotoPerfil}`
       //? `http://localhost:3000/${usuario.fotoPerfil}`
       : 'assets/img/default-profile.jpg';
 
