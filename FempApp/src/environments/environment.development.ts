@@ -1,4 +1,5 @@
-export const environment = {     SERVER_API: "http://localhost:3000",
+export const environment = {     
+    SERVER_API: "https://fempapp-back-develop.up.railway.app",
      production: false,
     googleMapsApiKey: "AIzaSyDbYqUVDgKvj2RoynplKO_fg0BCMZLVmdc"
 };

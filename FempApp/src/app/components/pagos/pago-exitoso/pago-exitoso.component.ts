@@ -27,7 +27,7 @@ export class PagoExitosoComponent {
 
   ngOnInit() {
     this.route.queryParams.pipe(take(1)).subscribe((p: Params) => {
-      // Leer parámetros que envía MercadoPago
+      
       // https://www.mercadopago.com.ar/developers/es/guides/online-payments/checkout-pro/integration/
       this.status       = p['status'] || p['collection_status'] || '';
       this.paymentId    = p['payment_id'] || p['collection_id'] || '';

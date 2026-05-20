@@ -39,8 +39,8 @@ export class EventoQrComponent implements OnInit {
 
   this.evSvc.getById(id).subscribe(ev => {
     this.evento = ev;
-    this.pngUrl = this.evSvc.pngUrl(id);          // -> http://localhost:3000/eventos/:id/qr.png
-    this.csvUrl = this.evSvc.csvUrl(id);          // -> http://localhost:3000/eventos/:id/inscripciones.csv
+    this.pngUrl = this.evSvc.pngUrl(id);          
+    this.csvUrl = this.evSvc.csvUrl(id);          
   });
   }
 
