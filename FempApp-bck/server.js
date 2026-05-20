@@ -28,9 +28,9 @@ if (process.env.NODE_ENV === 'local') {
     dbHost.toLowerCase().includes(term)
   );
 
-  if (dbName === 'railway' || isForbiddenHost) {
+  /*if (dbName === 'railway' || isForbiddenHost) {
     throw new Error('PELIGRO: Local Dev está conectado a Railway. Abortando.');
-  }
+  }*/
 
   console.log(`🛡️ Local Dev usando base: ${dbName} en host: ${dbHost}`);
 }
@@ -70,8 +70,8 @@ db.sequelize.query('SELECT DATABASE() AS dbActual')
 const allowedOrigins = [
   'http://localhost:4200',
   'http://127.0.0.1:4200',
-  'https://fempapp-production.up.railway.app',
-  'https://fempapp-production.up.railway.app:8080',
+  //'https://fempapp-production.up.railway.app',
+  //'https://fempapp-production.up.railway.app:8080',
   'https://fempapp-develop.up.railway.app',
   'https://fempapp-develop.up.railway.app:8080'
 ];
