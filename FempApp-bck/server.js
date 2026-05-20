@@ -72,6 +72,8 @@ const allowedOrigins = [
   'http://127.0.0.1:4200',
   'https://fempapp-production.up.railway.app',
   'https://fempapp-production.up.railway.app:8080',
+  'https://fempapp-develop.up.railway.app',
+  'https://fempapp-develop.up.railway.app:8080'
 ];
 
 app.use(cors({
