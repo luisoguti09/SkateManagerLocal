@@ -62,7 +62,7 @@
                 Registrar observaciones técnicas, evolución por perfil deportivo,
                 elementos y componentes.
             </p>
-            <button type="button" mat-raised-button color="primary" (click)="abrirModulo('evaluacion')">
+            <button type="button" mat-raised-button color="primary" (click)="abrirNuevaEvaluacion()">
                 Nueva evaluación
             </button>
         </mat-card>
@@ -90,12 +90,34 @@
         <form [formGroup]="evaluacionForm">
 
             <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Deportista</mat-label>
-                <mat-select formControlName="deportistaId">
-                    <mat-option *ngFor="let d of deportistas" [value]="d.id">
-                        {{ d.apellidoYNombre || d.nombre || 'Sin nombre' }}
+                <mat-label>Tipo de evaluación</mat-label>
+                <mat-select formControlName="tipoEvaluacion">
+                    <mat-option *ngFor="let tipo of tiposEvaluacion" [value]="tipo.value">
+                        {{ tipo.label }}
                     </mat-option>
                 </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width deportista-autocomplete">
+                <mat-label>Buscar deportista</mat-label>
+
+                <input type="text" matInput placeholder="Escribí nombre, DNI o club"
+                    [formControl]="deportistaSearchControl" [matAutocomplete]="autoDeportista">
+
+                <mat-icon matSuffix>search</mat-icon>
+
+                <mat-autocomplete #autoDeportista="matAutocomplete" [displayWith]="displayDeportista"
+                    (optionSelected)="onDeportistaAutocompleteSelected($event.option.value)">
+                    <mat-option *ngFor="let d of deportistasFiltrados$ | async" [value]="d">
+                        <div class="deportista-option">
+                            <strong>{{ d.apellidoYNombre || d.nombre || 'Sin nombre' }}</strong>
+                            <small>
+                                DNI: {{ d.documentoN || d.dni || 'Sin DNI' }}
+                                · {{ d.club || 'Sin club' }}
+                            </small>
+                        </div>
+                    </mat-option>
+                </mat-autocomplete>
             </mat-form-field>
 
             <section class="evaluacion-bloque">
@@ -159,11 +181,34 @@
                 <textarea matInput formControlName="observacion"></textarea>
             </mat-form-field>
 
-            <button mat-raised-button color="primary" type="button" (click)="guardarEvaluacion()">
-                Guardar Evaluación
+            <button mat-raised-button color="primary" type="button" *ngIf="estadoEvaluacion !== 'guardada'"
+                (click)="guardarEvaluacion()">
+                Guardar evaluación
             </button>
 
         </form>
+
+        <div class="acciones-evaluacion" *ngIf="estadoEvaluacion === 'guardada'">
+            <mat-card class="evaluacion-guardada-card">
+                <mat-card-title>Evaluación guardada</mat-card-title>
+
+                <mat-card-content>
+                    <p>La evaluación fue registrada correctamente.</p>
+                    <p>Podés revisarla, editarla o iniciar una nueva evaluación.</p>
+                </mat-card-content>
+
+                <mat-card-actions>
+                    <button mat-raised-button color="primary" type="button" (click)="nuevaEvaluacion()">
+                        Nueva evaluación
+                    </button>
+
+                    <button mat-stroked-button color="accent" type="button" (click)="editarEvaluacionActual()">
+                        Editar esta evaluación
+                    </button>
+                </mat-card-actions>
+            </mat-card>
+        </div>
+
     </mat-card>
 
     <section *ngIf="mostrarModulo() === 'deportistas'" class="modulo-panel">

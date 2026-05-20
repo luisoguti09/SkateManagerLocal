@@ -1,9 +1,9 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, FormControl } from '@angular/forms';
+import { Observable, startWith, map } from 'rxjs';
 
 import { RouterModule, Router } from '@angular/router';
-import { HttpClientModule } from '@angular/common/http';
 
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -13,6 +13,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 import { forkJoin } from 'rxjs';
 
@@ -37,7 +38,6 @@ type ModuloTecnico =
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
-    HttpClientModule,
     FormsModule,
     MatCardModule,
     MatFormFieldModule,
@@ -46,7 +46,8 @@ type ModuloTecnico =
     MatSelectModule,
     MatSnackBarModule,
     MatTableModule,
-    MatIconModule
+    MatIconModule,
+    MatAutocompleteModule
   ],
   templateUrl: './dashboard-tecnico.component.html',
   styleUrls: ['./dashboard-tecnico.component.scss']
@@ -78,13 +79,25 @@ export class DashboardTecnicoComponent implements OnInit {
   public elementosEvaluados: any[] = [];
   public componentesEvaluados: any[] = [];
   public deportistaSeleccionado: any = null;
+  public estadoEvaluacion: 'nueva' | 'editando' | 'guardada' = 'nueva';
+  public evaluacionSeleccionada: any = null;
+  public evaluacionGuardada: boolean = false;
+  public elementosDeclarados: any[] = [];
+  public deportistaSearchControl = new FormControl('');
+  public deportistasFiltrados$!: Observable<any[]>;
+  public tiposEvaluacion = [
+    { value: 'LIBRE', label: 'Libre' },
+    { value: 'FO', label: 'F.O. / Figuras Obligatorias' },
+    { value: 'DANZA', label: 'Danza' }
+  ];
 
-  evaluacionForm!: FormGroup;
-  cargando = false;
+  public evaluacionForm!: FormGroup;
+  public cargando: boolean = false;
 
   ngOnInit(): void {
     this.evaluacionForm = this.fb.group({
       deportistaId: [''],
+      tipoEvaluacion: ['LIBRE'],
       elementoId: [''],
       componenteId: [''],
       notaElemento: [''],
@@ -113,6 +126,9 @@ export class DashboardTecnicoComponent implements OnInit {
         this.deportistas = deportistas;
         this.elementos = elementos;
         this.componentes = componentes;
+
+        this.inicializarFiltroDeportistas();
+
         this.cargando = false;
       },
       error: (err) => {
@@ -134,9 +150,18 @@ export class DashboardTecnicoComponent implements OnInit {
   }
 
   guardarEvaluacion(): void {
+    const deportistaId = this.evaluacionForm.value.deportistaId;
+
+    if (!deportistaId) {
+      this.snackBar.open('Seleccioná una deportista antes de guardar', 'Cerrar', {
+        duration: 3000
+      });
+      return;
+    }
 
     const data = {
-      deportistaId: this.evaluacionForm.value.deportistaId,
+      deportistaId,
+      tipoEvaluacion: this.evaluacionForm.value.tipoEvaluacion,
       observacion: this.evaluacionForm.value.observacion,
       elementos: this.elementosEvaluados,
       componentes: this.componentesEvaluados
@@ -145,14 +170,16 @@ export class DashboardTecnicoComponent implements OnInit {
     console.log('Evaluación completa:', data);
 
     this.evaluacionesService.crearEvaluacion(data).subscribe({
-      next: (res) => {
-        console.log('Evaluación guardada backend:', res);
+      next: (resp) => {
+        this.evaluacionSeleccionada = resp;
+        this.evaluacionGuardada = true;
+        this.estadoEvaluacion = 'guardada';
 
         this.snackBar.open('Evaluación guardada correctamente', 'Cerrar', {
-          duration: 2500
+          duration: 3000
         });
 
-        this.cargarEvaluaciones(data.deportistaId);
+        this.cargarEvaluaciones(deportistaId);
       },
       error: (err) => {
         console.error('Error guardando evaluación:', err);
@@ -162,6 +189,49 @@ export class DashboardTecnicoComponent implements OnInit {
         });
       }
     });
+  }
+
+  resetearEvaluacion(): void {
+    this.evaluacionForm.reset({
+      deportistaId: null,
+      tipoEvaluacion: 'LIBRE',
+      observacion: ''
+    });
+
+    this.deportistaSearchControl.setValue('', { emitEvent: true });
+
+    this.deportistaSeleccionado = null;
+    this.evaluacionSeleccionada = null;
+
+    this.elementosDeclarados = [];
+    this.elementosEvaluados = [];
+    this.componentesEvaluados = [];
+
+    this.evaluacionGuardada = false;
+    this.estadoEvaluacion = 'nueva';
+
+    this.evaluaciones = [];
+
+    this.evaluacionForm.markAsPristine();
+    this.evaluacionForm.markAsUntouched();
+  }
+
+  nuevaEvaluacion(): void {
+    this.resetearEvaluacion();
+  }
+
+  editarEvaluacionActual(): void {
+    this.estadoEvaluacion = 'editando';
+    this.evaluacionGuardada = false;
+
+    this.snackBar.open('Podés corregir la evaluación antes de volver a guardar', 'Cerrar', {
+      duration: 2500
+    });
+  }
+
+  abrirNuevaEvaluacion(): void {
+    this.mostrarModulo.set('evaluacion');
+    this.resetearEvaluacion();
   }
 
   componenteForm = this.fb.group({
@@ -306,6 +376,66 @@ export class DashboardTecnicoComponent implements OnInit {
         nota: ev.componentes?.find((c: any) => c.componenteId === id)?.nota
       }))
       .filter(c => c.nota !== undefined);
+  }
+
+  inicializarFiltroDeportistas(): void {
+    this.deportistasFiltrados$ = this.deportistaSearchControl.valueChanges.pipe(
+      startWith(''),
+      map(value => {
+        const texto = typeof value === 'string'
+          ? value
+          : this.getNombreDeportista(value);
+
+        return this.filtrarDeportistas(texto || '');
+      })
+    );
+  }
+
+  filtrarDeportistas(texto: string): any[] {
+    const filtro = texto.toLowerCase().trim();
+
+    if (!filtro) {
+      return this.deportistas;
+    }
+
+    return this.deportistas.filter((d: any) => {
+      const nombre = (d.apellidoYNombre || d.nombre || '').toLowerCase();
+      const dni = String(d.documentoN || d.dni || '').toLowerCase();
+      const club = (d.club || '').toLowerCase();
+
+      return (
+        nombre.includes(filtro) ||
+        dni.includes(filtro) ||
+        club.includes(filtro)
+      );
+    });
+  }
+
+  getNombreDeportista(deportista: any): string {
+    if (!deportista) return '';
+
+    return deportista.apellidoYNombre || deportista.nombre || '';
+  }
+
+  displayDeportista = (deportista: any): string => {
+    if (!deportista) return '';
+
+    const nombre = deportista.apellidoYNombre || deportista.nombre || 'Sin nombre';
+    const dni = deportista.documentoN || deportista.dni || 'Sin DNI';
+
+    return `${nombre} - DNI: ${dni}`;
+  };
+
+  onDeportistaAutocompleteSelected(deportista: any): void {
+    if (!deportista) return;
+
+    this.deportistaSeleccionado = deportista;
+
+    this.evaluacionForm.patchValue({
+      deportistaId: deportista.id
+    });
+
+    this.cargarEvaluaciones(deportista.id);
   }
 
   logout(): void {

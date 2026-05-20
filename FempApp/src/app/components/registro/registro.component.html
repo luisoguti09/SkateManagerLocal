@@ -1,4 +1,8 @@
 <div class="regContainer">
+  <button mat-stroked-button type="button" class="btn-volver-registro" (click)="volver()">
+    <mat-icon>arrow_back</mat-icon>
+    Volver
+  </button>
   <mat-card class="reg-card" appearance="outlined">
     <mat-card-header>
       <div class="logo-header-image"></div>
@@ -106,8 +110,6 @@
               <span *ngIf="!cargando">Registrar</span>
             </button>
           </section>
-
-          <button mat-button routerLink="/">Volver</button>
         </form>
       </div>
 

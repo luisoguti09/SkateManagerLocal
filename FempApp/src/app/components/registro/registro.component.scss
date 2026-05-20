@@ -1,40 +1,60 @@
+.btn-volver-registro {
+  position: absolute;
+  top: 32px;
+  left: 32px;
+  z-index: 10;
 
-/*.regContainer{
-    width: auto;
-    height: auto;
-    border-radius: 10px;
-    border-top: 50px;
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    top: 50%;
-    right: 50%;
-    transform: translate(50%, -50%) ;
-    align-items: center;
-    justify-content: center;
-    background-color: #e3e8e8 ;
-}
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 
-.cardImg{
-    width: auto;
-    padding: 16px 16px 0;
-    justify-content: center;
-  }*/
+  min-height: 40px;
+  padding: 0 18px;
 
-  /* Estilos generales */
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.16) !important;
 
-.regContainer {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 2rem;
-    background: rgb(2,70,206);
-    background: linear-gradient(90deg, rgba(2,70,206,1) 0%,
-     rgba(132,162,223,1) 32%, rgba(2,70,206,1) 100%);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.14);
+
+  transition: all 0.2s ease;
+
+  mat-icon {
+    margin: 0;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: #ffffff;
   }
 
-  .error-message {
+  &:hover {
+    background: rgba(255, 255, 255, 0.26) !important;
+    transform: translateX(-2px);
+  }
+}
+
+.regContainer {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background: rgb(2, 70, 206);
+  background: linear-gradient(90deg,
+      rgba(2, 70, 206, 1) 0%,
+      rgba(132, 162, 223, 1) 32%,
+      rgba(2, 70, 206, 1) 100%);
+}
+
+.error-message {
   background-color: #ffcccc;
   color: #b00020;
   padding: 0.75rem 1rem;
@@ -56,84 +76,84 @@ mat-progress-spinner {
   vertical-align: middle;
   margin-right: 8px;
 }
-  
-  /* Estilos de MatCard */
-  
-  .reg-card {
-    width: 400px;
-    max-width: 100%;
-    background-color: #f1f1f1;
-  
-    mat-card-header {
-      display: flex;
-      align-items: center;
-      padding: 24px;
-  
-      .logo-header-image {
-        margin-right: 16px;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: #eee; 
-      }
-    }
-  
-    mat-card-title {
-      font-size: 20px;
-      font-weight: bold;
-  
-      .cardImg {
-        width: 100%;
-        height: auto;
-      }
-    }
-  
-    mat-card-subtitle {
-      margin-top: 8px;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      flex-direction: column;
-    }
-  
-    mat-card-content {
-      padding: 16px;
-      
-      .reg-form {
-        display: flex;
-        flex-direction: column;
-  
-        .mat-form-field {
-          margin-bottom: 16px;
-          width: 100%; 
-        }
-      }
-    }
-  
-    mat-card-actions {
-      display: flex;
-      flex-direction: column;
-      padding: 16px;
-  
-      button {
-        width: 100%;
-  
-        &:first-child {
-          background-color: #007bff;
-          color: #fff;
-        }
-  
-        &:last-child {
-            background: rgb(0,0,0);
-            background: linear-gradient(0deg, rgba(0,0,0,1) 0%, 
-            rgba(120,114,114,1) 50%, rgba(0,0,0,1) 100%);
-        }
-      }
-    }
-  
-    .account_details {
-      margin-top: 20px;
-      border-top: 1px solid #ccc;
-      padding-top: 20px;
+
+/* Estilos de MatCard */
+
+.reg-card {
+  width: 400px;
+  max-width: 100%;
+  background-color: #f1f1f1;
+
+  mat-card-header {
+    display: flex;
+    align-items: center;
+    padding: 24px;
+
+    .logo-header-image {
+      margin-right: 16px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #eee;
     }
   }
+
+  mat-card-title {
+    font-size: 20px;
+    font-weight: bold;
+
+    .cardImg {
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  mat-card-subtitle {
+    margin-top: 8px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+  }
+
+  mat-card-content {
+    padding: 16px;
+
+    .reg-form {
+      display: flex;
+      flex-direction: column;
+
+      .mat-form-field {
+        margin-bottom: 16px;
+        width: 100%;
+      }
+    }
+  }
+
+  mat-card-actions {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+
+    button {
+      width: 100%;
+
+      &:first-child {
+        background-color: #007bff;
+        color: #fff;
+      }
+
+      &:last-child {
+        background: rgb(0, 0, 0);
+        background: linear-gradient(0deg, rgba(0, 0, 0, 1) 0%,
+            rgba(120, 114, 114, 1) 50%, rgba(0, 0, 0, 1) 100%);
+      }
+    }
+  }
+
+  .account_details {
+    margin-top: 20px;
+    border-top: 1px solid #ccc;
+    padding-top: 20px;
+  }
+}

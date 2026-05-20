@@ -135,6 +135,49 @@
   color: #fff !important;
 }
 
+.acciones-evaluacion {
+  margin-top: 24px;
+}
+
+.evaluacion-guardada-card {
+  border-radius: 18px;
+  padding: 20px;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  background: linear-gradient(135deg,
+      rgba(239, 246, 255, 0.98),
+      rgba(255, 255, 255, 0.96));
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.10);
+
+  mat-card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #123d82;
+    margin-bottom: 8px;
+  }
+
+  mat-card-content {
+    color: #334155;
+    font-size: 0.95rem;
+
+    p {
+      margin: 4px 0;
+    }
+  }
+
+  mat-card-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 0 0;
+  }
+
+  button {
+    border-radius: 999px;
+    font-weight: 600;
+    padding-inline: 18px;
+  }
+}
+
 .full-width {
   width: 100%;
   margin-bottom: 12px;
@@ -231,5 +274,45 @@
   strong {
     font-size: 1.8rem;
     font-weight: 800;
+  }
+}
+
+.deportista-autocomplete {
+  margin-bottom: 12px;
+}
+
+.deportista-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.25;
+
+  strong {
+    font-size: 0.95rem;
+    color: #0f172a;
+  }
+
+  small {
+    font-size: 0.78rem;
+    color: #64748b;
+  }
+}
+
+.deportista-header {
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #eff6ff, #ffffff);
+  border: 1px solid rgba(37, 99, 235, 0.16);
+
+  h3 {
+    margin: 0 0 4px;
+    color: #123d82;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    color: #475569;
   }
 }
