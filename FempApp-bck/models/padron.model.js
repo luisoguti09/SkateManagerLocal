@@ -119,7 +119,7 @@ const Padron = sequelize.define('Padron', {
     defaultValue: true
   }
 }, {
-  tableName: 'padrons',
+  tableName: 'Padrons',
   timestamps: true
 });
 
