@@ -24,7 +24,7 @@ export class RegistroService {
 
   buscar(dni: string) {
     return forkJoin({
-      padron: this.http.get(`${this.apURL}/padron/${dni}`).pipe(
+      padron: this.http.get(`${this.apURL}/Padron/${dni}`).pipe(
         catchError(err => err.status === 404 ? of(null) : throwError(() => err))
       ),
       usuario: this.http.get(`${this.apURL}/usuarios/dni/${dni}`).pipe(

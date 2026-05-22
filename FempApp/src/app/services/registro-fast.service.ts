@@ -13,7 +13,7 @@ export class RegistroFastService {
   constructor() { }
 
   buscar(dni: string) {
-    return this.http.get(`${this.apURL}/padron/${dni}`);
+    return this.http.get(`${this.apURL}/Padron/${dni}`);
   }
 
   guardarFast(email: string, password: string, dni: string ){

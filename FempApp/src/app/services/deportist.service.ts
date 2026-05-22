@@ -14,11 +14,11 @@ export class DeportistService {
   private http = inject(HttpClient);
 
   mostrarDeportist() {
-    return this.http.get(`${this.apURL}/padron`);
+    return this.http.get(`${this.apURL}/Padron`);
   }
 
   getDeportistas(): Observable<Deportist[]> {
-    return this.http.get<Deportist[]>(`${this.apURL}/padron`)
+    return this.http.get<Deportist[]>(`${this.apURL}/Padron`)
       .pipe(
         tap(data => {
           console.log('Datos recibidos:', data);
@@ -35,32 +35,32 @@ export class DeportistService {
   }
 
   addDeportist(deportist: Deportist): Observable<Deportist> {
-    return this.http.post<Deportist>(`${this.apURL}/padron`, deportist);
+    return this.http.post<Deportist>(`${this.apURL}/Padron`, deportist);
   }
 
   updateDeportist(deportist: Deportist): Observable<Deportist> {
-    return this.http.put<Deportist>(`${this.apURL}/padron`, deportist);
+    return this.http.put<Deportist>(`${this.apURL}/Padron`, deportist);
   }
 
   deleteDeportist(id: number): Observable<Deportist> {
-    return this.http.delete<Deportist>(`${this.apURL}/padron/${id}`);
+    return this.http.delete<Deportist>(`${this.apURL}/Padron/${id}`);
   }
 
   getDeportistById(id: number): Observable<Deportist[]> {
-    return this.http.get<Deportist[]>(`${this.apURL}/padron?id=${id}`);
+    return this.http.get<Deportist[]>(`${this.apURL}/Padron?id=${id}`);
   }
 
  getDeportistByDni(dni: string): Observable<Deportist[]> {
-  return this.http.get<Deportist[]>(`${this.apURL}/padron?dni=${dni}`);
+  return this.http.get<Deportist[]>(`${this.apURL}/Padron?dni=${dni}`);
 }
 
 
   getDeportistByNombre(nombre: string): Observable<Deportist[]> {
-    return this.http.get<Deportist[]>(`${this.apURL}/padron?nombre=${nombre}`);
+    return this.http.get<Deportist[]>(`${this.apURL}/Padron?nombre=${nombre}`);
   }
 
   getDeportistByApellidos(apellidos: string): Observable<Deportist[]> {
-    return this.http.get<Deportist[]>(`${this.apURL}/padron?apellidos=${apellidos}`);
+    return this.http.get<Deportist[]>(`${this.apURL}/Padron?apellidos=${apellidos}`);
   }
 
  subirFotoPerfil(dni: string, formData: FormData): Observable<any> {
