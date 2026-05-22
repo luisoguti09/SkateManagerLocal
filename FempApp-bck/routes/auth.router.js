@@ -13,6 +13,7 @@ const ROL_CANON = {
   administrador: 'administrador',
   auditor: 'tecnico',
   tecnico: 'tecnico',
+  juez: 'tecnico',
   deportista: 'deportista',
   tesoreria: 'tesoreria',
   tesorero: 'tesoreria'
