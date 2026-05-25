@@ -35,29 +35,52 @@ router.get('/admin/usuarios',
     try {
       const { estado, rol, q } = req.query;
 
+      const rawAttrs = (Usuario.getAttributes?.() ?? Usuario.rawAttributes) || {};
+      const has = (k) => !!rawAttrs[k];
+
       const where = {};
 
-      if (estado) where.estado = estado;
-      if (rol) where.rol = rol;
+      if (estado && has('estado')) where.estado = estado;
+      if (rol && has('rol')) where.rol = rol;
 
       if (q) {
-        where[Op.or] = [
-          { nombre: { [Op.like]: `%${q}%` } },
-          { apellido: { [Op.like]: `%${q}%` } },
-          { email: { [Op.like]: `%${q}%` } },
-          { dni: { [Op.like]: `%${q}%` } },
-        ];
+        const or = [];
+
+        if (has('nombre')) {
+          or.push({ nombre: { [Op.like]: `%${q}%` } });
+        }
+
+        if (has('apellido')) {
+          or.push({ apellido: { [Op.like]: `%${q}%` } });
+        }
+
+        if (has('email')) {
+          or.push({ email: { [Op.like]: `%${q}%` } });
+        }
+
+        if (has('dni')) {
+          or.push({ dni: { [Op.like]: `%${q}%` } });
+        }
+
+        if (or.length) where[Op.or] = or;
       }
+
+      const attributes = [];
+
+      ['id', 'dni', 'nombre', 'apellido', 'email', 'rol', 'rolId', 'aprobado', 'estado', 'createdAt']
+        .forEach(attr => {
+          if (has(attr)) attributes.push(attr);
+        });
 
       const usuarios = await Usuario.findAll({
         where,
         order: [['createdAt', 'DESC']],
-        attributes: ['id','dni','nombre','apellido','email','rol','aprobadoEstado','createdAt']
+        attributes
       });
 
       res.json(usuarios);
     } catch (e) {
-      console.error(e);
+      console.error('GET /usuarios/admin/usuarios error', e);
       res.status(500).json({ error: 'Error al listar usuarios' });
     }
   }
@@ -268,14 +291,33 @@ router.patch('/:id/aprobar', verifyToken, requireRole('administrador'), async (r
     const { aprobar, rol } = req.body;
 
     const usuario = await Usuario.findByPk(id);
+
     if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    if (Number(usuario.id) === Number(req.user.id) && aprobar === false) {
+      return res.status(400).json({
+        error: 'No podés bloquear tu propio usuario administrador'
+      });
     }
 
     if (aprobar) {
       usuario.estado = 'aprobado';
       usuario.aprobado = true;
-      if (rol) usuario.rol = rol;
+
+      if (rol) {
+        const rolNormalizado = ROL_CANON[String(rol).trim().toLowerCase()] || rol;
+
+        if (!['administrador', 'tecnico', 'deportista', 'tesoreria'].includes(rolNormalizado)) {
+          return res.status(400).json({
+            error: 'Rol no válido para aprobación',
+            detalle: rol
+          });
+        }
+
+        usuario.rol = rolNormalizado;
+      }
     } else {
       usuario.estado = 'bloqueado';
       usuario.aprobado = false;
@@ -291,15 +333,19 @@ router.patch('/:id/aprobar', verifyToken, requireRole('administrador'), async (r
         nombre: usuario.nombre,
         email: usuario.email,
         rol: usuario.rol,
+        rolId: usuario.rolId,
         estado: usuario.estado,
         aprobado: usuario.aprobado
       }
     });
   } catch (error) {
     console.error('PATCH /usuarios/:id/aprobar error', error);
-    return res.status(500).json({ error: 'Error al actualizar aprobación del usuario' });
+    return res.status(500).json({
+      error: 'Error al actualizar aprobación del usuario'
+    });
   }
 });
+
 // GET /eventos/:id/qr.png  => PNG del QR del evento (único)
 router.get('/:eventId/qr.png', authOptional, async (req, res) => {
   const id = Number(req.params.eventId);

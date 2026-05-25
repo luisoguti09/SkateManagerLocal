@@ -51,19 +51,34 @@ router.post('/register', async (req, res) => {
     }
     const isTec = rolCanon === 'tecnico';
     const isDep = rolCanon === 'deportista';
+    const esAdmin = rolCanon === 'administrador';
+
+    const existeAdminAprobado = await Usuario.findOne({
+      where: {
+        rol: 'administrador',
+        estado: 'aprobado'
+      }
+    });
+
+    const esPrimerAdmin = esAdmin && !existeAdminAprobado;
+
+    const estadoInicial = esPrimerAdmin ? 'aprobado' : 'pendiente';
+    const aprobadoInicial = esPrimerAdmin;
 
     const nuevo = await Usuario.create({
       nombre,
       edad,
       email,
-      password,          // hook beforeCreate hashea
+      password,
       dni,
-      rol: rolCanon,     // ENUM compatible
+      rol: rolCanon,
       rolId: rol.id,
-      categoria: isDep ? (categoria ?? '') : '', // ← nunca null
-      nivel: isTec ? (nivel ?? '') : '', // ← nunca null
+      categoria: isDep ? (categoria ?? '') : '',
+      nivel: isTec ? (nivel ?? '') : '',
       qrJti: uuidv4(),
-      estado: 'pendiente'
+      estado: estadoInicial,
+      aprobado: aprobadoInicial,
+      rolSolicitado: rolCanon
     });
 
     const payload = { id: nuevo.id, dni: nuevo.dni, email: nuevo.email, rolId: nuevo.rolId, rol: nuevo.rol };
@@ -81,6 +96,7 @@ router.post('/register', async (req, res) => {
         club: nuevo.club ?? null,
         categoria: nuevo.categoria ?? null,
         estado: nuevo.estado ?? null,
+        aprobado: nuevo.aprobado ?? null,
         rolSolicitado: nuevo.rolSolicitado ?? null,
         qrJti: nuevo.qrJti ?? null
       }
@@ -104,6 +120,19 @@ router.post('/login', async (req, res) => {
 
     const ok = await bcrypt.compare(String(password ?? ''), String(usuario.password ?? ''));
     if (!ok) return res.status(400).json({ error: 'Credenciales inválidas' });
+
+    const rolesQueRequierenAprobacion = ['administrador', 'tecnico', 'tesoreria'];
+
+    if (
+      rolesQueRequierenAprobacion.includes(usuario.rol) &&
+      usuario.estado !== 'aprobado'
+    ) {
+      return res.status(403).json({
+        error: 'Cuenta pendiente de aprobación',
+        estado: usuario.estado,
+        rol: usuario.rol
+      });
+    }
 
     // opcional: datos del padrón para enriquecer
     const padron = await Padron.findOne({ where: { documentoN: usuario.dni } });
