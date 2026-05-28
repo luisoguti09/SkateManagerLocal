@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../models');
+const { Op } = require('sequelize');
 
 const {
     Evaluacion,
@@ -132,6 +133,58 @@ router.get('/deportista/:deportistaId', async (req, res) => {
     } catch (error) {
         console.error('Error obteniendo evaluaciones:', error);
         res.status(500).json({ error: 'Error obteniendo evaluaciones' });
+    }
+});
+
+router.get('/', async (req, res) => {
+    try {
+        const {
+            tipoEvaluacion,
+            fechaDesde,
+            fechaHasta
+        } = req.query;
+
+        const where = {};
+
+        if (tipoEvaluacion) {
+            where.tipoEvaluacion = tipoEvaluacion;
+        }
+
+        if (fechaDesde || fechaHasta) {
+            where.createdAt = {};
+
+            if (fechaDesde) {
+                where.createdAt[Op.gte] = new Date(fechaDesde);
+            }
+
+            if (fechaHasta) {
+                const hasta = new Date(fechaHasta);
+                hasta.setHours(23, 59, 59, 999);
+                where.createdAt[Op.lte] = hasta;
+            }
+        }
+
+        const evaluaciones = await Evaluacion.findAll({
+            where,
+            include: [
+                {
+                    model: EvaluacionElemento,
+                    as: 'elementos',
+                    include: [{ model: Elemento, as: 'elemento' }]
+                },
+                {
+                    model: EvaluacionComponente,
+                    as: 'componentes',
+                    include: [{ model: Componente, as: 'componente' }]
+                }
+            ],
+            order: [['createdAt', 'DESC']]
+        });
+
+        res.json(evaluaciones);
+    } catch (error) {
+        console.error('Error listando evaluaciones:', error);
+        res.status(500).json({ error: 'Error listando evaluaciones' });
     }
 });
 
