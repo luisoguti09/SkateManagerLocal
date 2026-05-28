@@ -6,6 +6,24 @@ const Evaluacion = sequelize.define('Evaluacion', {
         type: DataTypes.INTEGER,
         allowNull: false
     },
+    eventoId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    tipoEvaluacion: {
+        type: DataTypes.ENUM('LIBRE', 'FO', 'DANZA'),
+        allowNull: false,
+        defaultValue: 'LIBRE'
+    },
+    origen: {
+        type: DataTypes.ENUM('EVENTO', 'EVALUATIVO', 'TECNICA', 'CONTROL', 'CLINICA', 'MANUAL', 'OTRO'),
+        allowNull: false,
+        defaultValue: 'TECNICA'
+    },
+    fechaEvaluacion: {
+        type: DataTypes.DATE,
+        allowNull: true
+    },
     elementoId: {
         type: DataTypes.INTEGER,
         allowNull: true

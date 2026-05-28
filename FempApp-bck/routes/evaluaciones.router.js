@@ -10,12 +10,29 @@ const {
     Componente
 } = db;
 
+function calcularEstadoTecnico(nota) {
+    const n = Number(nota);
+
+    if (!Number.isFinite(n)) return null;
+
+    if (n < 30) return 'NO_ADQUIRIDO';
+    if (n < 60) return 'EN_DESARROLLO';
+    if (n < 75) return 'CONSOLIDANDOSE';
+    if (n < 90) return 'LOGRADO';
+
+    return 'DOMINADO';
+}
+
 router.post('/', async (req, res) => {
     const t = await db.sequelize.transaction();
 
     try {
         const {
             deportistaId,
+            eventoId = null,
+            tipoEvaluacion = 'LIBRE',
+            origen = 'TECNICA',
+            fechaEvaluacion = null,
             observacion,
             elementos = [],
             componentes = []
@@ -28,6 +45,10 @@ router.post('/', async (req, res) => {
 
         const evaluacion = await Evaluacion.create({
             deportistaId,
+            eventoId,
+            tipoEvaluacion,
+            origen,
+            fechaEvaluacion: fechaEvaluacion || new Date(),
             observacion
         }, { transaction: t });
 
@@ -36,7 +57,9 @@ router.post('/', async (req, res) => {
             .map(e => ({
                 evaluacionId: evaluacion.id,
                 elementoId: e.elementoId,
-                nota: e.nota ?? null
+                nota: e.nota ?? null,
+                estadoTecnico: calcularEstadoTecnico(e.nota),
+                observacion: e.observacion ?? null
             }));
 
         const componentesFiltrados = componentes
@@ -44,7 +67,9 @@ router.post('/', async (req, res) => {
             .map(c => ({
                 evaluacionId: evaluacion.id,
                 componenteId: c.componenteId,
-                nota: c.nota ?? null
+                nota: c.nota ?? null,
+                estadoTecnico: calcularEstadoTecnico(c.nota),
+                observacion: c.observacion ?? null
             }));
 
         if (elementosFiltrados.length) {

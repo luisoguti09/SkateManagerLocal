@@ -13,6 +13,20 @@ const EvaluacionComponente = sequelize.define('EvaluacionComponente', {
     nota: {
         type: DataTypes.DECIMAL(5, 2),
         allowNull: true
+    },
+    estadoTecnico: {
+        type: DataTypes.ENUM(
+            'NO_ADQUIRIDO',
+            'EN_DESARROLLO',
+            'CONSOLIDANDOSE',
+            'LOGRADO',
+            'DOMINADO'
+        ),
+        allowNull: true
+    },
+    observacion: {
+        type: DataTypes.TEXT,
+        allowNull: true
     }
 }, {
     tableName: 'evaluacion_componentes',
