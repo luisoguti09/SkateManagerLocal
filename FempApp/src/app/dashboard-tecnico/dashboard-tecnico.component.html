@@ -134,8 +134,20 @@
                     </mat-form-field>
 
                     <mat-form-field appearance="outline" class="nota-field">
-                        <mat-label>Nota</mat-label>
-                        <input matInput type="number" [(ngModel)]="el.nota" [ngModelOptions]="{ standalone: true }">
+                        <mat-label>Nota / % logro</mat-label>
+                        <input matInput type="number" min="0" max="100" [(ngModel)]="el.nota"
+                            [ngModelOptions]="{ standalone: true }">
+                    </mat-form-field>
+
+                    <span class="estado-tecnico-chip" [ngClass]="getClaseEstadoTecnico(el.nota)"
+                        *ngIf="el.nota !== null && el.nota !== undefined && el.nota !== ''">
+                        {{ getEstadoTecnicoDesdeNota(el.nota) }}
+                    </span>
+
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Observación del elemento</mat-label>
+                        <input matInput [(ngModel)]="el.observacion" [ngModelOptions]="{ standalone: true }"
+                            placeholder="Ej: mejora la entrada, falta estabilidad en la caída">
                     </mat-form-field>
 
                     <button mat-icon-button color="warn" type="button" (click)="elementosEvaluados.splice(i, 1)">
@@ -162,8 +174,20 @@
                     </mat-form-field>
 
                     <mat-form-field appearance="outline" class="nota-field">
-                        <mat-label>Nota</mat-label>
-                        <input matInput type="number" [(ngModel)]="comp.nota" [ngModelOptions]="{ standalone: true }">
+                        <mat-label>Nota / % logro</mat-label>
+                        <input matInput type="number" min="0" max="100" [(ngModel)]="comp.nota"
+                            [ngModelOptions]="{ standalone: true }">
+                    </mat-form-field>
+
+                    <span class="estado-tecnico-chip" [ngClass]="getClaseEstadoTecnico(comp.nota)"
+                        *ngIf="comp.nota !== null && comp.nota !== undefined && comp.nota !== ''">
+                        {{ getEstadoTecnicoDesdeNota(comp.nota) }}
+                    </span>
+
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Observación del componente</mat-label>
+                        <input matInput [(ngModel)]="comp.observacion" [ngModelOptions]="{ standalone: true }"
+                            placeholder="Ej: mejora postura, falta velocidad o continuidad">
                     </mat-form-field>
 
                     <button mat-icon-button color="warn" type="button" (click)="componentesEvaluados.splice(i, 1)">

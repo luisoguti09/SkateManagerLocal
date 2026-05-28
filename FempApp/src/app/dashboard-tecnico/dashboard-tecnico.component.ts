@@ -159,9 +159,28 @@ export class DashboardTecnicoComponent implements OnInit {
       return;
     }
 
+    const notasInvalidasElementos = this.elementosEvaluados.some((e: any) => {
+      const n = Number(e.nota);
+      return e.nota !== null && e.nota !== '' && e.nota !== undefined && (!Number.isFinite(n) || n < 0 || n > 100);
+    });
+
+    const notasInvalidasComponentes = this.componentesEvaluados.some((c: any) => {
+      const n = Number(c.nota);
+      return c.nota !== null && c.nota !== '' && c.nota !== undefined && (!Number.isFinite(n) || n < 0 || n > 100);
+    });
+
+    if (notasInvalidasElementos || notasInvalidasComponentes) {
+      this.snackBar.open('Las notas deben estar entre 0 y 100.', 'Cerrar', {
+        duration: 3000
+      });
+      return;
+    }
+
     const data = {
       deportistaId,
-      tipoEvaluacion: this.evaluacionForm.value.tipoEvaluacion,
+      tipoEvaluacion: this.evaluacionForm.value.tipoEvaluacion || 'LIBRE',
+      origen: 'TECNICA',
+      fechaEvaluacion: new Date(),
       observacion: this.evaluacionForm.value.observacion,
       elementos: this.elementosEvaluados,
       componentes: this.componentesEvaluados
@@ -297,17 +316,19 @@ export class DashboardTecnicoComponent implements OnInit {
     });
   }
 
-  agregarElemento() {
+  agregarElemento(): void {
     this.elementosEvaluados.push({
       elementoId: null,
-      nota: null
+      nota: null,
+      observacion: ''
     });
   }
 
-  agregarComponente() {
+  agregarComponente(): void {
     this.componentesEvaluados.push({
       componenteId: null,
-      nota: null
+      nota: null,
+      observacion: ''
     });
   }
 
@@ -436,6 +457,32 @@ export class DashboardTecnicoComponent implements OnInit {
     });
 
     this.cargarEvaluaciones(deportista.id);
+  }
+
+  getEstadoTecnicoDesdeNota(nota: number | string | null | undefined): string {
+    const n = Number(nota);
+
+    if (!Number.isFinite(n)) return '';
+
+    if (n < 30) return 'No adquirido';
+    if (n < 60) return 'En desarrollo';
+    if (n < 75) return 'Consolidándose';
+    if (n < 90) return 'Logrado';
+
+    return 'Dominado';
+  }
+
+  getClaseEstadoTecnico(nota: number | string | null | undefined): string {
+    const n = Number(nota);
+
+    if (!Number.isFinite(n)) return '';
+
+    if (n < 30) return 'estado-no-adquirido';
+    if (n < 60) return 'estado-desarrollo';
+    if (n < 75) return 'estado-consolidando';
+    if (n < 90) return 'estado-logrado';
+
+    return 'estado-dominado';
   }
 
   logout(): void {
