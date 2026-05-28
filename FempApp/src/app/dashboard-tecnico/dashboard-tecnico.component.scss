@@ -670,47 +670,44 @@
 }
 
 .detalle-historial-card {
-  margin-top: 20px;
-  padding: 22px;
-  border-radius: 22px;
-
-  background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.98),
-      rgba(239, 246, 255, 0.98));
   color: #0f172a;
 
-  box-shadow: 0 18px 42px rgba(5, 15, 60, 0.24);
-}
+  .detalle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
 
-.detalle-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 20px;
+    h3 {
+      margin: 0;
+      color: #123d82 !important;
+      font-size: 1.45rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
 
-  h3 {
-    margin: 0;
-    color: #123d82;
-    font-size: 1.35rem;
-    font-weight: 800;
-  }
+    p {
+      margin: 6px 0 0;
+      color: #475569 !important;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
 
-  p {
-    margin: 4px 0 0;
-    color: #64748b;
-    font-weight: 600;
+    button {
+      color: #0f172a;
+    }
   }
 }
 
 .detalle-section {
-  margin-top: 18px;
+  margin-top: 20px;
 
   h4 {
     margin: 0 0 12px;
-    color: #123d82;
+    color: #123d82 !important;
     font-size: 1rem;
-    font-weight: 800;
+    font-weight: 900;
   }
 }
 
