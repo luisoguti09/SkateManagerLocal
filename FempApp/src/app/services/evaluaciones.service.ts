@@ -19,15 +19,15 @@ export class EvaluacionesService {
     return this.http.get<any[]>(`${this.apiUrl}/deportista/${deportistaId}`);
   }
 
-  getEvaluaciones(filtros: any = {}) {
-  let params: any = {};
+  getEvaluaciones(filtros: any = {}): Observable<any[]> {
+    const params: any = {};
 
-  if (filtros.tipoEvaluacion) params.tipoEvaluacion = filtros.tipoEvaluacion;
-  if (filtros.fechaDesde) params.fechaDesde = filtros.fechaDesde;
-  if (filtros.fechaHasta) params.fechaHasta = filtros.fechaHasta;
-  if (filtros.buscar) params.buscar = filtros.buscar;
+    if (filtros.tipoEvaluacion) params.tipoEvaluacion = filtros.tipoEvaluacion;
+    if (filtros.fechaDesde) params.fechaDesde = filtros.fechaDesde;
+    if (filtros.fechaHasta) params.fechaHasta = filtros.fechaHasta;
+    if (filtros.buscar) params.buscar = filtros.buscar;
 
-  return this.http.get<any[]>(`${this.apiUrl}/evaluaciones`, { params });
-}
+    return this.http.get<any[]>(`${this.apiUrl}`, { params });
+  }
 
 }
