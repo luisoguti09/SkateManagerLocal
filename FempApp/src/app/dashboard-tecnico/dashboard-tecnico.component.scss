@@ -139,6 +139,76 @@
   margin-top: 24px;
 }
 
+.evaluacion-row-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  padding: 16px;
+  margin-bottom: 16px;
+
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.evaluacion-row-main {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 120px auto 44px;
+  gap: 12px;
+  align-items: center;
+}
+
+.elemento-field,
+.observacion-field {
+  width: 100%;
+}
+
+.nota-field {
+  width: 120px;
+}
+
+.estado-tecnico-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 110px;
+  min-height: 34px;
+  padding: 6px 14px;
+
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.delete-row-btn {
+  justify-self: center;
+}
+
+.observacion-field {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .evaluacion-row-main {
+    grid-template-columns: 1fr;
+  }
+
+  .nota-field {
+    width: 100%;
+  }
+
+  .estado-tecnico-chip {
+    width: fit-content;
+  }
+
+  .delete-row-btn {
+    justify-self: flex-start;
+  }
+}
+
 .evaluacion-guardada-card {
   border-radius: 18px;
   padding: 20px;
@@ -229,17 +299,6 @@
   }
 }
 
-.evaluacion-row {
-  display: grid;
-  grid-template-columns: 1fr 120px 42px;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.nota-field {
-  width: 120px;
-}
 
 .clickable {
   cursor: pointer;
@@ -334,29 +393,29 @@
 .estado-no-adquirido {
   background: #fef2f2;
   color: #991b1b;
-  border-color: rgba(239, 68, 68, 0.35);
+  border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 .estado-desarrollo {
   background: #fff7ed;
   color: #9a3412;
-  border-color: rgba(249, 115, 22, 0.35);
+  border: 1px solid rgba(249, 115, 22, 0.35);
 }
 
 .estado-consolidando {
   background: #eff6ff;
   color: #1d4ed8;
-  border-color: rgba(59, 130, 246, 0.35);
+  border: 1px solid rgba(59, 130, 246, 0.35);
 }
 
 .estado-logrado {
   background: #ecfdf5;
   color: #047857;
-  border-color: rgba(16, 185, 129, 0.35);
+  border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
 .estado-dominado {
   background: #f0fdf4;
   color: #166534;
-  border-color: rgba(34, 197, 94, 0.45);
+  border: 1px solid rgba(34, 197, 94, 0.45);
 }

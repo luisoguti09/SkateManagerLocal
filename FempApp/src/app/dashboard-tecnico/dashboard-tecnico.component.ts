@@ -29,6 +29,7 @@ type ModuloTecnico =
   | 'elementos'
   | 'componentes'
   | 'evaluacion'
+  | 'historial-tecnico'
   | null;
 
 @Component({
@@ -53,8 +54,6 @@ type ModuloTecnico =
   styleUrls: ['./dashboard-tecnico.component.scss']
 })
 export class DashboardTecnicoComponent implements OnInit {
-
-
 
   public mostrarModulo = signal<ModuloTecnico>(null);
 
@@ -90,9 +89,16 @@ export class DashboardTecnicoComponent implements OnInit {
     { value: 'FO', label: 'F.O. / Figuras Obligatorias' },
     { value: 'DANZA', label: 'Danza' }
   ];
+  public filtrosHistorial = {
+    buscar: '',
+    tipoEvaluacion: '',
+    fechaDesde: '',
+    fechaHasta: ''
+  };
 
   public evaluacionForm!: FormGroup;
   public cargando: boolean = false;
+  public historialTecnico: any[] = [];
 
   ngOnInit(): void {
     this.evaluacionForm = this.fb.group({
@@ -146,7 +152,12 @@ export class DashboardTecnicoComponent implements OnInit {
 
   abrirModulo(modulo: ModuloTecnico): void {
     console.log('Módulo seleccionado:', modulo);
+
     this.mostrarModulo.set(modulo);
+
+    if (modulo === 'historial-tecnico') {
+      this.cargarHistorialTecnico();
+    }
   }
 
   guardarEvaluacion(): void {
@@ -483,6 +494,37 @@ export class DashboardTecnicoComponent implements OnInit {
     if (n < 90) return 'estado-logrado';
 
     return 'estado-dominado';
+  }
+
+  cargarHistorialTecnico(): void {
+    this.evaluacionesService.getEvaluaciones(this.filtrosHistorial).subscribe({
+      next: (res) => {
+        this.historialTecnico = res || [];
+      },
+      error: (err) => {
+        console.error('Error cargando historial técnico:', err);
+        this.snackBar.open('Error al cargar historial técnico', 'Cerrar', {
+          duration: 3000
+        });
+      }
+    });
+  }
+
+  limpiarFiltrosHistorial(): void {
+    this.filtrosHistorial = {
+      buscar: '',
+      tipoEvaluacion: '',
+      fechaDesde: '',
+      fechaHasta: ''
+    };
+
+    this.cargarHistorialTecnico();
+  }
+
+  getNombreDeportistaPorId(deportistaId: number): string {
+    const dep = this.deportistas.find((d: any) => Number(d.id) === Number(deportistaId));
+
+    return dep?.apellidoYNombre || dep?.nombre || `ID ${deportistaId}`;
   }
 
   logout(): void {

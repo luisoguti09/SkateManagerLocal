@@ -19,6 +19,18 @@
 
     <section class="dashboard-grid">
 
+        <mat-card class="module-card wide">
+            <mat-icon>manage_search</mat-icon>
+            <h2>Historial técnico</h2>
+            <p>
+                Consultar evaluaciones cargadas, filtrar por deportista, fecha,
+                tipo de evaluación y revisar evolución técnica.
+            </p>
+            <button type="button" mat-raised-button color="primary" (click)="abrirModulo('historial-tecnico')">
+                Ver evaluaciones
+            </button>
+        </mat-card>
+
         <mat-card class="module-card">
             <mat-icon>event</mat-icon>
             <h2>Eventos</h2>
@@ -123,36 +135,41 @@
             <section class="evaluacion-bloque">
                 <h3>Elementos técnicos evaluados</h3>
 
-                <div class="evaluacion-row" *ngFor="let el of elementosEvaluados; let i = index">
-                    <mat-form-field appearance="outline" class="full-width">
-                        <mat-label>Elemento técnico</mat-label>
-                        <mat-select [(ngModel)]="el.elementoId" [ngModelOptions]="{ standalone: true }">
-                            <mat-option *ngFor="let e of elementos" [value]="e.id">
-                                {{ e.nombre }}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
+                <div class="evaluacion-row evaluacion-row-card" *ngFor="let el of elementosEvaluados; let i = index">
 
-                    <mat-form-field appearance="outline" class="nota-field">
-                        <mat-label>Nota / % logro</mat-label>
-                        <input matInput type="number" min="0" max="100" [(ngModel)]="el.nota"
-                            [ngModelOptions]="{ standalone: true }">
-                    </mat-form-field>
+                    <div class="evaluacion-row-main">
+                        <mat-form-field appearance="outline" class="elemento-field">
+                            <mat-label>Elemento técnico</mat-label>
+                            <mat-select [(ngModel)]="el.elementoId" [ngModelOptions]="{ standalone: true }">
+                                <mat-option *ngFor="let e of elementos" [value]="e.id">
+                                    {{ e.nombre }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
 
-                    <span class="estado-tecnico-chip" [ngClass]="getClaseEstadoTecnico(el.nota)"
-                        *ngIf="el.nota !== null && el.nota !== undefined && el.nota !== ''">
-                        {{ getEstadoTecnicoDesdeNota(el.nota) }}
-                    </span>
+                        <mat-form-field appearance="outline" class="nota-field">
+                            <mat-label>Nota / % logro</mat-label>
+                            <input matInput type="number" min="0" max="100" [(ngModel)]="el.nota"
+                                [ngModelOptions]="{ standalone: true }">
+                        </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="full-width">
+                        <span class="estado-tecnico-chip" [ngClass]="getClaseEstadoTecnico(el.nota)"
+                            *ngIf="el.nota !== null && el.nota !== undefined && el.nota !== ''">
+                            {{ getEstadoTecnicoDesdeNota(el.nota) }}
+                        </span>
+
+                        <button mat-icon-button color="warn" type="button" class="delete-row-btn"
+                            (click)="elementosEvaluados.splice(i, 1)">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </div>
+
+                    <mat-form-field appearance="outline" class="observacion-field">
                         <mat-label>Observación del elemento</mat-label>
                         <input matInput [(ngModel)]="el.observacion" [ngModelOptions]="{ standalone: true }"
                             placeholder="Ej: mejora la entrada, falta estabilidad en la caída">
                     </mat-form-field>
 
-                    <button mat-icon-button color="warn" type="button" (click)="elementosEvaluados.splice(i, 1)">
-                        <mat-icon>delete</mat-icon>
-                    </button>
                 </div>
 
                 <button mat-stroked-button color="primary" type="button" (click)="agregarElemento()">
@@ -163,36 +180,42 @@
             <section class="evaluacion-bloque">
                 <h3>Componentes evaluados</h3>
 
-                <div class="evaluacion-row" *ngFor="let comp of componentesEvaluados; let i = index">
-                    <mat-form-field appearance="outline" class="full-width">
-                        <mat-label>Componente</mat-label>
-                        <mat-select [(ngModel)]="comp.componenteId" [ngModelOptions]="{ standalone: true }">
-                            <mat-option *ngFor="let c of componentes" [value]="c.id">
-                                {{ c.nombre }}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
+                <div class="evaluacion-row evaluacion-row-card"
+                    *ngFor="let comp of componentesEvaluados; let i = index">
 
-                    <mat-form-field appearance="outline" class="nota-field">
-                        <mat-label>Nota / % logro</mat-label>
-                        <input matInput type="number" min="0" max="100" [(ngModel)]="comp.nota"
-                            [ngModelOptions]="{ standalone: true }">
-                    </mat-form-field>
+                    <div class="evaluacion-row-main">
+                        <mat-form-field appearance="outline" class="elemento-field">
+                            <mat-label>Componente</mat-label>
+                            <mat-select [(ngModel)]="comp.componenteId" [ngModelOptions]="{ standalone: true }">
+                                <mat-option *ngFor="let c of componentes" [value]="c.id">
+                                    {{ c.nombre }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
 
-                    <span class="estado-tecnico-chip" [ngClass]="getClaseEstadoTecnico(comp.nota)"
-                        *ngIf="comp.nota !== null && comp.nota !== undefined && comp.nota !== ''">
-                        {{ getEstadoTecnicoDesdeNota(comp.nota) }}
-                    </span>
+                        <mat-form-field appearance="outline" class="nota-field">
+                            <mat-label>Nota / % logro</mat-label>
+                            <input matInput type="number" min="0" max="100" [(ngModel)]="comp.nota"
+                                [ngModelOptions]="{ standalone: true }">
+                        </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="full-width">
+                        <span class="estado-tecnico-chip" [ngClass]="getClaseEstadoTecnico(comp.nota)"
+                            *ngIf="comp.nota !== null && comp.nota !== undefined && comp.nota !== ''">
+                            {{ getEstadoTecnicoDesdeNota(comp.nota) }}
+                        </span>
+
+                        <button mat-icon-button color="warn" type="button" class="delete-row-btn"
+                            (click)="componentesEvaluados.splice(i, 1)">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </div>
+
+                    <mat-form-field appearance="outline" class="observacion-field">
                         <mat-label>Observación del componente</mat-label>
                         <input matInput [(ngModel)]="comp.observacion" [ngModelOptions]="{ standalone: true }"
                             placeholder="Ej: mejora postura, falta velocidad o continuidad">
                     </mat-form-field>
 
-                    <button mat-icon-button color="warn" type="button" (click)="componentesEvaluados.splice(i, 1)">
-                        <mat-icon>delete</mat-icon>
-                    </button>
                 </div>
 
                 <button mat-stroked-button color="primary" type="button" (click)="agregarComponente()">
@@ -346,6 +369,79 @@
         </div>
     </mat-card>
 
+    <section *ngIf="mostrarModulo() === 'historial-tecnico'" class="modulo-panel historial-tecnico-panel">
+        <h2>Historial técnico</h2>
+        <p class="section-subtitle">
+            Evaluaciones registradas en el sistema.
+        </p>
+
+        <mat-card class="filters-card">
+            <div class="filters-grid">
+                <mat-form-field appearance="outline">
+                    <mat-label>Buscar deportista</mat-label>
+                    <input matInput [(ngModel)]="filtrosHistorial.buscar" [ngModelOptions]="{ standalone: true }"
+                        placeholder="Nombre o DNI">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>Tipo de evaluación</mat-label>
+                    <mat-select [(ngModel)]="filtrosHistorial.tipoEvaluacion" [ngModelOptions]="{ standalone: true }">
+                        <mat-option value="">Todas</mat-option>
+                        <mat-option value="LIBRE">Libre</mat-option>
+                        <mat-option value="FO">F.O.</mat-option>
+                        <mat-option value="DANZA">Danza</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>Desde</mat-label>
+                    <input matInput type="date" [(ngModel)]="filtrosHistorial.fechaDesde"
+                        [ngModelOptions]="{ standalone: true }">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>Hasta</mat-label>
+                    <input matInput type="date" [(ngModel)]="filtrosHistorial.fechaHasta"
+                        [ngModelOptions]="{ standalone: true }">
+                </mat-form-field>
+            </div>
+
+            <div class="filters-actions">
+                <button mat-raised-button color="primary" type="button" (click)="cargarHistorialTecnico()">
+                    <mat-icon>filter_alt</mat-icon>
+                    Aplicar filtros
+                </button>
+
+                <button mat-button type="button" (click)="limpiarFiltrosHistorial()">
+                    Limpiar
+                </button>
+            </div>
+        </mat-card>
+
+        <mat-card class="historial-list-card" *ngIf="historialTecnico.length > 0; else sinHistorial">
+            <div class="historial-item" *ngFor="let ev of historialTecnico">
+                <div>
+                    <strong>{{ getNombreDeportistaPorId(ev.deportistaId) }}</strong>
+                    <p>
+                        {{ ev.tipoEvaluacion || 'LIBRE' }}
+                        · {{ ev.origen || 'TECNICA' }}
+                        · {{ ev.fechaEvaluacion || ev.createdAt | date:'dd/MM/yyyy' }}
+                    </p>
+                </div>
+
+                <div class="historial-resumen">
+                    <span>Elementos: {{ ev.elementos?.length || 0 }}</span>
+                    <span>Componentes: {{ ev.componentes?.length || 0 }}</span>
+                </div>
+            </div>
+        </mat-card>
+
+        <ng-template #sinHistorial>
+            <mat-card class="empty-card">
+                No hay evaluaciones para mostrar con los filtros actuales.
+            </mat-card>
+        </ng-template>
+    </section>
 
 
     <router-outlet></router-outlet>
