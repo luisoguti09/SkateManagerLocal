@@ -422,6 +422,7 @@
             <div class="historial-item" *ngFor="let ev of historialTecnico">
                 <div>
                     <strong>{{ getNombreDeportistaPorId(ev.deportistaId) }}</strong>
+
                     <p>
                         {{ ev.tipoEvaluacion || 'LIBRE' }}
                         · {{ ev.origen || 'TECNICA' }}

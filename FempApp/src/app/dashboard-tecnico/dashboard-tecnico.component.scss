@@ -419,3 +419,142 @@
   color: #166534;
   border: 1px solid rgba(34, 197, 94, 0.45);
 }
+
+.historial-tecnico-panel {
+  margin-top: 24px;
+
+  h2 {
+    color: #ffffff;
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .section-subtitle {
+    color: rgba(255, 255, 255, 0.86);
+    margin-bottom: 18px;
+    font-size: 0.95rem;
+  }
+}
+
+.filters-card {
+  padding: 20px;
+  border-radius: 18px;
+  margin-bottom: 20px;
+
+  background: rgba(255, 255, 255, 0.96);
+  color: #0f172a;
+
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 14px;
+  align-items: center;
+
+  mat-form-field {
+    width: 100%;
+  }
+}
+
+.filters-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+
+  button {
+    border-radius: 999px;
+    font-weight: 700;
+  }
+}
+
+.historial-list-card {
+  padding: 18px;
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.96);
+  color: #0f172a;
+
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.18);
+}
+
+.historial-item {
+  display: grid;
+  grid-template-columns: 1.5fr auto;
+  gap: 16px;
+  align-items: center;
+
+  padding: 16px 18px;
+  margin-bottom: 12px;
+
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f8fafc, #eef4ff);
+  border: 1px solid rgba(37, 99, 235, 0.14);
+
+  strong {
+    display: block;
+    color: #123d82;
+    font-size: 1rem;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+
+  p {
+    margin: 0;
+    color: #475569;
+    font-size: 0.9rem;
+  }
+}
+
+.historial-resumen {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 6px 12px;
+    border-radius: 999px;
+
+    font-size: 0.82rem;
+    font-weight: 700;
+
+    color: #1d4ed8;
+    background: #eff6ff;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+  }
+}
+
+.empty-card {
+  padding: 22px;
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.96);
+  color: #334155;
+  font-weight: 700;
+  text-align: center;
+
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.18);
+}
+
+@media (max-width: 900px) {
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .historial-item {
+    grid-template-columns: 1fr;
+  }
+
+  .historial-resumen {
+    justify-content: flex-start;
+  }
+}
