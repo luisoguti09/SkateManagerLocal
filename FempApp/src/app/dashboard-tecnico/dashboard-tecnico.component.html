@@ -380,12 +380,13 @@
                 <mat-form-field appearance="outline">
                     <mat-label>Buscar deportista</mat-label>
                     <input matInput [(ngModel)]="filtrosHistorial.buscar" [ngModelOptions]="{ standalone: true }"
-                        placeholder="Nombre o DNI">
+                        placeholder="Nombre, DNI, club o categoría" (input)="aplicarFiltrosHistorialFrontend()">
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
                     <mat-label>Tipo de evaluación</mat-label>
-                    <mat-select [(ngModel)]="filtrosHistorial.tipoEvaluacion" [ngModelOptions]="{ standalone: true }">
+                    <mat-select [(ngModel)]="filtrosHistorial.tipoEvaluacion" [ngModelOptions]="{ standalone: true }"
+                        (selectionChange)="aplicarFiltrosHistorialFrontend()">
                         <mat-option value="">Todas</mat-option>
                         <mat-option value="LIBRE">Libre</mat-option>
                         <mat-option value="FO">F.O.</mat-option>
@@ -396,13 +397,13 @@
                 <mat-form-field appearance="outline">
                     <mat-label>Desde</mat-label>
                     <input matInput type="date" [(ngModel)]="filtrosHistorial.fechaDesde"
-                        [ngModelOptions]="{ standalone: true }">
+                        [ngModelOptions]="{ standalone: true }" (change)="aplicarFiltrosHistorialFrontend()">
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
                     <mat-label>Hasta</mat-label>
                     <input matInput type="date" [(ngModel)]="filtrosHistorial.fechaHasta"
-                        [ngModelOptions]="{ standalone: true }">
+                        [ngModelOptions]="{ standalone: true }" (change)="aplicarFiltrosHistorialFrontend()">
                 </mat-form-field>
             </div>
 
@@ -417,6 +418,39 @@
                 </button>
             </div>
         </mat-card>
+
+        <section class="historial-results-section"
+            *ngIf="filtrosHistorial.buscar && historialResultadosBusqueda.length > 0">
+            <h3>Resultados de búsqueda</h3>
+
+            <div class="historial-item clickable" *ngFor="let ev of historialResultadosBusqueda"
+                (click)="seleccionarEvaluacionHistorial(ev)">
+                <div>
+                    <strong>{{ getNombreDeportistaPorId(ev.deportistaId) }}</strong>
+                    <p>
+                        {{ ev.tipoEvaluacion || 'LIBRE' }}
+                        · {{ ev.origen || 'TECNICA' }}
+                        · {{ ev.fechaEvaluacion || ev.createdAt | date:'dd/MM/yyyy' }}
+                    </p>
+                </div>
+
+                <div class="historial-resumen">
+                    <span>Elementos: {{ ev.elementos?.length || 0 }}</span>
+                    <span>Componentes: {{ ev.componentes?.length || 0 }}</span>
+                </div>
+
+                <button mat-stroked-button type="button" class="btn-ver-detalle"
+                    (click)="seleccionarEvaluacionHistorial(ev); $event.stopPropagation()">
+                    Ver detalle
+                </button>
+            </div>
+
+            <ng-container *ngFor="let ev of historialResultadosBusqueda">
+                <mat-card class="detalle-historial-card" *ngIf="evaluacionHistorialSeleccionada?.id === ev.id">
+                    <ng-container *ngTemplateOutlet="detalleEvaluacionTpl; context: { $implicit: ev }"></ng-container>
+                </mat-card>
+            </ng-container>
+        </section>
 
         <mat-card class="historial-list-card" *ngIf="historialTecnico.length > 0; else sinHistorial">
             <div class="historial-item clickable" *ngFor="let ev of historialTecnico"
@@ -502,12 +536,109 @@
             </section>
         </mat-card>
 
+        <mat-card class="empty-card" *ngIf="filtrosHistorial.buscar && historialResultadosBusqueda.length === 0">
+            No se encontraron evaluaciones para esa búsqueda.
+        </mat-card>
+    </section>
+
+    <section class="historial-results-section">
+        <h3>Listado completo</h3>
+
+        <mat-card class="historial-list-card" *ngIf="historialListadoCompleto.length > 0; else sinHistorial">
+            <ng-container *ngFor="let ev of historialListadoCompleto">
+                <div class="historial-item clickable" (click)="seleccionarEvaluacionHistorial(ev)">
+                    <div>
+                        <strong>{{ getNombreDeportistaPorId(ev.deportistaId) }}</strong>
+                        <p>
+                            {{ ev.tipoEvaluacion || 'LIBRE' }}
+                            · {{ ev.origen || 'TECNICA' }}
+                            · {{ ev.fechaEvaluacion || ev.createdAt | date:'dd/MM/yyyy' }}
+                        </p>
+                    </div>
+
+                    <div class="historial-resumen">
+                        <span>Elementos: {{ ev.elementos?.length || 0 }}</span>
+                        <span>Componentes: {{ ev.componentes?.length || 0 }}</span>
+                    </div>
+
+                    <button mat-stroked-button type="button" class="btn-ver-detalle"
+                        (click)="seleccionarEvaluacionHistorial(ev); $event.stopPropagation()">
+                        Ver detalle
+                    </button>
+                </div>
+
+                <mat-card class="detalle-historial-card" *ngIf="evaluacionHistorialSeleccionada?.id === ev.id">
+                    <ng-container *ngTemplateOutlet="detalleEvaluacionTpl; context: { $implicit: ev }"></ng-container>
+                </mat-card>
+            </ng-container>
+        </mat-card>
+
         <ng-template #sinHistorial>
             <mat-card class="empty-card">
-                No hay evaluaciones para mostrar con los filtros actuales.
+                No hay evaluaciones para mostrar.
             </mat-card>
         </ng-template>
     </section>
+
+    <ng-template #detalleEvaluacionTpl let-ev>
+        <div class="detalle-header">
+            <div>
+                <h3>{{ getNombreDeportistaPorId(ev.deportistaId) }}</h3>
+                <p>
+                    {{ ev.tipoEvaluacion || 'LIBRE' }}
+                    · {{ ev.origen || 'TECNICA' }}
+                    · {{ ev.fechaEvaluacion || ev.createdAt | date:'dd/MM/yyyy' }}
+                </p>
+            </div>
+
+            <button mat-icon-button type="button" (click)="cerrarDetalleHistorial()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+
+        <section class="detalle-section" *ngIf="ev.elementos?.length">
+            <h4>Elementos evaluados</h4>
+
+            <div class="detalle-row" *ngFor="let el of ev.elementos">
+                <div>
+                    <strong>{{ el.elemento?.nombre || getNombreElemento(el.elementoId) }}</strong>
+                    <p *ngIf="el.observacion">{{ el.observacion }}</p>
+                </div>
+
+                <div class="detalle-score">
+                    <span>{{ el.nota ?? '-' }}</span>
+                    <small class="estado-tecnico-chip" [ngClass]="getClaseEstadoTecnico(el.nota)"
+                        *ngIf="el.nota !== null && el.nota !== undefined">
+                        {{ getEstadoTecnicoDesdeNota(el.nota) }}
+                    </small>
+                </div>
+            </div>
+        </section>
+
+        <section class="detalle-section" *ngIf="ev.componentes?.length">
+            <h4>Componentes evaluados</h4>
+
+            <div class="detalle-row" *ngFor="let comp of ev.componentes">
+                <div>
+                    <strong>{{ comp.componente?.nombre || getNombreComponente(comp.componenteId) }}</strong>
+                    <p *ngIf="comp.observacion">{{ comp.observacion }}</p>
+                </div>
+
+                <div class="detalle-score">
+                    <span>{{ comp.nota ?? '-' }}</span>
+                    <small class="estado-tecnico-chip" [ngClass]="getClaseEstadoTecnico(comp.nota)"
+                        *ngIf="comp.nota !== null && comp.nota !== undefined">
+                        {{ getEstadoTecnicoDesdeNota(comp.nota) }}
+                    </small>
+                </div>
+            </div>
+        </section>
+
+        <section class="detalle-section" *ngIf="ev.observacion">
+            <h4>Observación general</h4>
+            <p>{{ ev.observacion }}</p>
+        </section>
+    </ng-template>
 
 
     <router-outlet></router-outlet>

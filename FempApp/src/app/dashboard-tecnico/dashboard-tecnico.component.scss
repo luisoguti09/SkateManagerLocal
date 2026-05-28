@@ -773,16 +773,27 @@
   }
 }
 
-@media (max-width: 900px) {
-  .filters-grid {
-    grid-template-columns: 1fr;
-  }
+.historial-results-section {
+  margin-top: 22px;
 
+  h3 {
+    color: #ffffff;
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin: 0 0 12px;
+  }
+}
+
+.historial-item {
+  grid-template-columns: 1.4fr auto auto;
+}
+
+@media (max-width: 900px) {
   .historial-item {
     grid-template-columns: 1fr;
   }
 
-  .historial-resumen {
-    justify-content: flex-start;
+  .btn-ver-detalle {
+    width: fit-content;
   }
 }

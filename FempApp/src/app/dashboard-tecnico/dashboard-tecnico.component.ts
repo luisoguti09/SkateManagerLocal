@@ -100,6 +100,9 @@ export class DashboardTecnicoComponent implements OnInit {
   public cargando: boolean = false;
   public historialTecnico: any[] = [];
   public evaluacionHistorialSeleccionada: any = null;
+  public historialResultadosBusqueda: any[] = [];
+  public deportistasMap: Record<number, any> = {};
+  public historialListadoCompleto: any[] = [];
 
   ngOnInit(): void {
     this.evaluacionForm = this.fb.group({
@@ -498,17 +501,83 @@ export class DashboardTecnicoComponent implements OnInit {
   }
 
   cargarHistorialTecnico(): void {
-    this.evaluacionesService.getEvaluaciones(this.filtrosHistorial).subscribe({
-      next: (res) => {
+    this.evaluacionesService.getEvaluaciones().subscribe({
+      next: (res: any[]) => {
         this.historialTecnico = res || [];
+        this.aplicarFiltrosHistorialFrontend();
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error cargando historial técnico:', err);
+
         this.snackBar.open('Error al cargar historial técnico', 'Cerrar', {
           duration: 3000
         });
       }
     });
+  }
+
+  aplicarFiltrosHistorialFrontend(): void {
+    const buscar = this.normalizarTexto(this.filtrosHistorial.buscar);
+    const tipoEvaluacion = this.filtrosHistorial.tipoEvaluacion;
+    const fechaDesde = this.filtrosHistorial.fechaDesde;
+    const fechaHasta = this.filtrosHistorial.fechaHasta;
+
+    let base = [...this.historialTecnico];
+
+    if (tipoEvaluacion) {
+      base = base.filter((ev: any) => ev.tipoEvaluacion === tipoEvaluacion);
+    }
+
+    if (fechaDesde) {
+      const desde = new Date(fechaDesde);
+      base = base.filter((ev: any) => {
+        const fecha = new Date(ev.fechaEvaluacion || ev.createdAt);
+        return fecha >= desde;
+      });
+    }
+
+    if (fechaHasta) {
+      const hasta = new Date(fechaHasta);
+      hasta.setHours(23, 59, 59, 999);
+
+      base = base.filter((ev: any) => {
+        const fecha = new Date(ev.fechaEvaluacion || ev.createdAt);
+        return fecha <= hasta;
+      });
+    }
+
+    this.historialListadoCompleto = base;
+
+    if (!buscar) {
+      this.historialResultadosBusqueda = [];
+      return;
+    }
+
+    this.historialResultadosBusqueda = base.filter((ev: any) => {
+      const dep = this.deportistas.find((d: any) => Number(d.id) === Number(ev.deportistaId));
+
+      const nombre = this.normalizarTexto(dep?.apellidoYNombre || dep?.nombre || '');
+      const dni = this.normalizarTexto(dep?.documentoN || dep?.dni || '');
+      const club = this.normalizarTexto(dep?.club || '');
+      const categoria = this.normalizarTexto(dep?.categoria || '');
+
+      return (
+        nombre.includes(buscar) ||
+        dni.includes(buscar) ||
+        club.includes(buscar) ||
+        categoria.includes(buscar)
+      );
+    });
+  }
+
+  normalizarTexto(value: any): string {
+    return String(value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\./g, '')
+      .replace(/-/g, '')
+      .trim();
   }
 
   limpiarFiltrosHistorial(): void {
@@ -519,7 +588,8 @@ export class DashboardTecnicoComponent implements OnInit {
       fechaHasta: ''
     };
 
-    this.cargarHistorialTecnico();
+    this.evaluacionHistorialSeleccionada = null;
+    this.aplicarFiltrosHistorialFrontend();
   }
 
   getNombreDeportistaPorId(deportistaId: number): string {
