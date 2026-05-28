@@ -28,14 +28,24 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev_only_change_me';
 router.post('/register', async (req, res) => {
   try {
     const { email, password, dni, nombre, edad, rolId, categoria, nivel } = req.body;
+    const dniNormalizado = String(dni || '').replace(/\D/g, '');
 
-    if (!email || !password || !dni || !rolId) {
+    if (!email || !password || !dniNormalizado || !rolId) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
 
     // email o dni ya usados
-    const yaExiste = await Usuario.findOne({ where: { [Op.or]: [{ email }, { dni }] } });
-    if (yaExiste) return res.status(400).json({ error: 'Ya existe un usuario con ese correo o DNI' });
+    const dniConPuntos = dniNormalizado.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+    const yaExiste = await Usuario.findOne({
+      where: {
+        [Op.or]: [
+          { email },
+          { dni: dniNormalizado },
+          { dni: dniConPuntos }
+        ]
+      }
+    });
 
     // rol válido
     const rol = await Rol.findByPk(rolId);
@@ -70,7 +80,7 @@ router.post('/register', async (req, res) => {
       edad,
       email,
       password,
-      dni,
+      dni: dniNormalizado,
       rol: rolCanon,
       rolId: rol.id,
       categoria: isDep ? (categoria ?? '') : '',
@@ -128,7 +138,9 @@ router.post('/login', async (req, res) => {
       usuario.estado !== 'aprobado'
     ) {
       return res.status(403).json({
-        error: 'Cuenta pendiente de aprobación',
+        code: 'ACCOUNT_PENDING_APPROVAL',
+        error: 'Tu cuenta todavía no fue aprobada.',
+        message: 'Cuando un administrador la habilite, vas a poder ingresar.',
         estado: usuario.estado,
         rol: usuario.rol
       });

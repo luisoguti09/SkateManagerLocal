@@ -16,6 +16,17 @@ const db = require('../models');
 const { Op } = require('sequelize');
 
 
+function normalizarDni(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function formatearDniConPuntos(value) {
+  const limpio = normalizarDni(value);
+
+  if (!limpio) return '';
+
+  return limpio.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
 
 // === Configuración de Multer para carga de imágenes ===
 const storage = multer.diskStorage({
@@ -115,20 +126,20 @@ router.get('/',
         attrs.push('displayName');
       } else {
         if (has('apellido')) attrs.push('apellido');
-        if (has('nombre'))   attrs.push('nombre');
+        if (has('nombre')) attrs.push('nombre');
       }
 
-      if (has('email'))     attrs.push('email');
-      if (has('rol'))       attrs.push('rol');
-      if (has('aprobado'))  attrs.push('aprobado');
-      if (has('estado'))    attrs.push('estado');
+      if (has('email')) attrs.push('email');
+      if (has('rol')) attrs.push('rol');
+      if (has('aprobado')) attrs.push('aprobado');
+      if (has('estado')) attrs.push('estado');
 
       // Orden seguro
       const order = [];
-      if (has('apellido'))       order.push(['apellido', 'ASC']);
-      if (has('nombre'))         order.push(['nombre', 'ASC']);
+      if (has('apellido')) order.push(['apellido', 'ASC']);
+      if (has('nombre')) order.push(['nombre', 'ASC']);
       else if (has('displayName')) order.push(['displayName', 'ASC']);
-      else if (has('email'))     order.push(['email', 'ASC']);
+      else if (has('email')) order.push(['email', 'ASC']);
 
       const usuarios = await Usuario.findAll({ where, attributes: attrs, order });
       res.json(usuarios);
@@ -203,8 +214,18 @@ router.delete('/:dni/fotoPerfil', async (req, res) => {
 
 router.get('/dni/:dni', async (req, res) => {
   try {
-    const { dni } = req.params;
-    const usuario = await Usuario.findOne({ where: { dni } });
+    const dniLimpio = normalizarDni(req.params.dni);
+    const dniConPuntos = formatearDniConPuntos(dniLimpio);
+
+    const usuario = await Usuario.findOne({
+      where: {
+        [Op.or]: [
+          { dni: dniLimpio },
+          { dni: dniConPuntos }
+        ]
+      }
+    });
+
     return res.json(usuario || null);
   } catch (e) {
     console.error('Error /usuarios/dni/:dni', e);
@@ -236,8 +257,8 @@ router.get('/:dni/eventos', async (req, res) => {
 });
 
 
-router.post('/:id/qr', verifyToken,  
-  requireRole('administrador','tecnico','deportista'), async (req, res) => {
+router.post('/:id/qr', verifyToken,
+  requireRole('administrador', 'tecnico', 'deportista'), async (req, res) => {
     const { id } = req.params;
     if (+id !== req.user.id && req.user.rol !== 'administrador')
       return res.status(403).json({ error: 'No autorizado' });
@@ -252,8 +273,8 @@ router.post('/:id/qr', verifyToken,
     res.json({ token });
   });
 
-router.get('/:id/qr.png', verifyToken,  
-  requireRole('administrador','tecnico','deportista'), async (req, res) => {
+router.get('/:id/qr.png', verifyToken,
+  requireRole('administrador', 'tecnico', 'deportista'), async (req, res) => {
     const { id } = req.params;
     const transparent = req.query.transparent === '1';
     if (+id !== req.user.id && req.user.rol !== 'administrador')
@@ -268,10 +289,10 @@ router.get('/:id/qr.png', verifyToken,
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
-    const opts = { 
+    const opts = {
       width: 512, margin: 1,
-       ...(transparent ? { color: { dark:'#000000', light:'#0000' } } : {}) 
-      };
+      ...(transparent ? { color: { dark: '#000000', light: '#0000' } } : {})
+    };
     QRCode.toFileStream(res, token, opts);
   });
 
@@ -381,7 +402,7 @@ router.post('/:eventId/checkin', authOptional, async (req, res) => {
   }
 
   // validar inscripción (UsuarioEventos)
-  const ue = await UsuarioEventos.findOne({ where: { EventoId: id, UsuarioId: userId }});
+  const ue = await UsuarioEventos.findOne({ where: { EventoId: id, UsuarioId: userId } });
   if (!ue) return res.status(400).json({ error: 'No inscripto' });
 
   try {

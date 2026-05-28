@@ -2,11 +2,24 @@
 const express = require('express');
 const router = express.Router();
 const Evento = require('../models/evento.model');
-const {authMiddleware} = require('../middleware/auth.middleware');
+const { authMiddleware } = require('../middleware/auth.middleware');
 const Padron = require('../models/padron.model');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { Op } = require('sequelize');
+
+function normalizarDni(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function formatearDniConPuntos(value) {
+  const limpio = normalizarDni(value);
+
+  if (!limpio) return '';
+
+  return limpio.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
 
 // Obtener todos los patinadores registrados (authMiddleware)
 router.get('/', async (req, res) => {
@@ -20,14 +33,21 @@ router.get('/', async (req, res) => {
 // Obtener todos los patinadores registrados (authMiddleware)
 router.get('/:dni', async (req, res) => {
   try {
-    const { dni } = req.params;
+    const dniLimpio = normalizarDni(req.params.dni);
+    const dniConPuntos = formatearDniConPuntos(dniLimpio);
+
     const padron = await Padron.findOne({
       where: {
-          documentoN: dni
+        [Op.or]: [
+          { documentoN: dniLimpio },
+          { documentoN: dniConPuntos }
+        ]
       }
     });
-    res.json(padron);
+
+    res.json(padron || null);
   } catch (error) {
+    console.error('Error buscando DNI en padrón:', error);
     res.status(500).json({ error: 'No se encuentra el DNI en la base de datos!' });
   }
 });
@@ -35,15 +55,16 @@ router.get('/:dni', async (req, res) => {
 // Crear un nuevo registro de deportista
 router.post('/', async (req, res) => {
   try {
-    const { 
-        licNacionalNumero, documentoN, apellidoYNombre, fechadeNacimiento, sexo, 
-        nacionalidad, club, categoria, funcion, domicilio, cP, localidad,
-        provincia, telefono, tipoLicencia, federeada
+    const {
+      licNacionalNumero, documentoN, apellidoYNombre, fechadeNacimiento, sexo,
+      nacionalidad, club, categoria, funcion, domicilio, cP, localidad,
+      provincia, telefono, tipoLicencia, federeada
     } = req.body;
-    const nuevoDeportista = await Padron.create({ 
-        licNacionalNumero, documentoN, apellidoYNombre, fechadeNacimiento, sexo, 
-        nacionalidad, club, categoria, funcion, domicilio, cP, localidad,
-        provincia, telefono, tipoLicencia, federeada });
+    const nuevoDeportista = await Padron.create({
+      licNacionalNumero, documentoN, apellidoYNombre, fechadeNacimiento, sexo,
+      nacionalidad, club, categoria, funcion, domicilio, cP, localidad,
+      provincia, telefono, tipoLicencia, federeada
+    });
     res.status(201).json(nuevoDeportista);
   } catch (error) {
     res.status(500).json({ error: 'Error al crear el deportista' });
@@ -63,19 +84,20 @@ router.post('/massive-insert', async (req, res) => {
     } = req.body;*/
 
     const fullPadron = req.body;
-    fullPadron.forEach(async (p)=>{
-       const { 
-        licNacionalNumero, documentoN, apellidoYNombre, fechadeNacimiento, sexo, 
+    fullPadron.forEach(async (p) => {
+      const {
+        licNacionalNumero, documentoN, apellidoYNombre, fechadeNacimiento, sexo,
         nacionalidad, club, categoria, funcion, domicilio, cP, localidad,
         provincia, telefono, tipoLicencia, federeada
-      } =p;
-      const nuevoDeportista = await Padron.create({ 
-        licNacionalNumero, documentoN, apellidoYNombre, fechadeNacimiento, sexo, 
+      } = p;
+      const nuevoDeportista = await Padron.create({
+        licNacionalNumero, documentoN, apellidoYNombre, fechadeNacimiento, sexo,
         nacionalidad, club, categoria, funcion, domicilio, cP, localidad,
-        provincia, telefono, tipoLicencia, federeada });
+        provincia, telefono, tipoLicencia, federeada
+      });
     })
-   
-        const finalize = {"success": true};
+
+    const finalize = { "success": true };
     res.status(201).json(finalize);
   } catch (error) {
     res.status(500).json({ error: 'Error al crear el deportista' });
@@ -134,6 +156,6 @@ router.delete('/:id/profile-picture', (req, res) => {
   }
 });
 
-  
+
 
 module.exports = router;
