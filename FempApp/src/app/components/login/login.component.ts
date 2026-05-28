@@ -9,6 +9,7 @@ import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { RegistroService } from '../../services/registro.service';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 
 
@@ -26,6 +27,7 @@ import { AuthService } from '../../services/auth.service';
     MatButtonModule,
     RouterOutlet,
     RouterLink,
+    MatSnackBarModule
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
@@ -37,7 +39,7 @@ export class LoginComponent implements OnInit {
   private fb = inject(FormBuilder);
   private regService = inject(RegistroService);
   private authService = inject(AuthService);
-
+  private snackBar = inject(MatSnackBar);
   public form!: FormGroup;
 
   ngOnInit() {
@@ -111,7 +113,50 @@ export class LoginComponent implements OnInit {
         }
       },
       error: (e) => {
-        console.error('Login fallido:', e.error?.error || e.message);
+        console.error('Login fallido:', e);
+
+        if (e.status === 403 && e.error?.code === 'ACCOUNT_PENDING_APPROVAL') {
+          this.authService.logout();
+
+          this.snackBar.open(
+            e.error?.message || 'Tu cuenta todavía no fue aprobada. Cuando un administrador la habilite, vas a poder ingresar.',
+            'Entendido',
+            {
+              duration: 6000,
+              horizontalPosition: 'center',
+              verticalPosition: 'top',
+              panelClass: ['snackbar-warning']
+            }
+          );
+
+          this.router.navigate(['/login']);
+          return;
+        }
+
+        if (e.status === 400 || e.status === 401) {
+          this.snackBar.open(
+            'Email o contraseña incorrectos.',
+            'Cerrar',
+            {
+              duration: 4000,
+              horizontalPosition: 'center',
+              verticalPosition: 'top',
+              panelClass: ['snackbar-error']
+            }
+          );
+          return;
+        }
+
+        this.snackBar.open(
+          'No se pudo iniciar sesión. Intentá nuevamente.',
+          'Cerrar',
+          {
+            duration: 4000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+            panelClass: ['snackbar-error']
+          }
+        );
       }
     });
   }

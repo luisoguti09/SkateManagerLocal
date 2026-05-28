@@ -119,8 +119,12 @@ export class RegistroComponent {
   }
 
   buscar() {
-    const dni = this.form.get('dni')?.value?.toString().trim();
+    const dniRaw = this.form.get('dni')?.value?.toString().trim() || '';
+    const dni = dniRaw.replace(/\D/g, '');
+
     if (!dni) return;
+
+    this.form.patchValue({ dni });
 
     this.errorMsg = '';
     this.successMsg = '';
@@ -130,7 +134,7 @@ export class RegistroComponent {
       next: ({ padron, usuario }) => {
         this.pers = padron || null;
 
-        if (usuario) {          // ya existe cuenta con ese DNI
+        if (usuario) {
           this.empadronada = '';
           this.errorMsg = 'Ya existe una cuenta con ese DNI.';
           return;
@@ -154,13 +158,17 @@ export class RegistroComponent {
     const rolId = this.form.get('rolId')?.value;
     const deportista = 1;
     const tecnico = 3;
+    
+    const dniFormulario = this.form.get('dni')?.value?.toString() || '';
+    const dniPadron = this.pers?.documentoN?.toString() || '';
+    const dniNormalizado = (esEmpadronada ? dniPadron : dniFormulario).replace(/\D/g, '');
 
     const payload: any = {
       nombre: esEmpadronada ? this.pers?.apellidoYNombre : this.form.get('nombre')?.value,
       edad: esEmpadronada ? 14 : this.form.get('edad')?.value,   // poné la lógica real si aplica
       email: this.form.get('email')?.value,
       password: this.form.get('password')?.value,
-      dni: esEmpadronada ? this.pers?.documentoN : this.form.get('dni')?.value,
+      dni: dniNormalizado,
       rolId
     };
 

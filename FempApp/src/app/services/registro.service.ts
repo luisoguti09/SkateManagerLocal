@@ -19,15 +19,17 @@ export interface RegistroPayload {
 @Injectable({ providedIn: 'root' })
 export class RegistroService {
   private http = inject(HttpClient);
-  private apURL = environment.SERVER_API; 
+  private apURL = environment.SERVER_API;
 
 
   buscar(dni: string) {
+    const dniNormalizado = String(dni || '').replace(/\D/g, '');
+
     return forkJoin({
-      padron: this.http.get(`${this.apURL}/Padron/${dni}`).pipe(
+      padron: this.http.get(`${this.apURL}/Padron/${dniNormalizado}`).pipe(
         catchError(err => err.status === 404 ? of(null) : throwError(() => err))
       ),
-      usuario: this.http.get(`${this.apURL}/usuarios/dni/${dni}`).pipe(
+      usuario: this.http.get(`${this.apURL}/usuarios/dni/${dniNormalizado}`).pipe(
         catchError(err => err.status === 404 ? of(null) : throwError(() => err))
       )
     });
@@ -57,4 +59,3 @@ export class RegistroService {
 
 
 
- 

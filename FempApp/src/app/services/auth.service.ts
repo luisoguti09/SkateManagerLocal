@@ -2,12 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
-import { Observable, of } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { PerfilEditable } from '../interfaces/PerfilEditable';
 import { BehaviorSubject } from 'rxjs';
 
-type RolNombre = 'administrador' | 'tecnico' | 'deportista'| 'tesoreria';
+type RolNombre = 'administrador' | 'tecnico' | 'deportista' | 'tesoreria';
 
 const ROLE_BY_ID: Record<number, RolNombre> = {
   1: 'deportista',
@@ -61,14 +61,22 @@ export class AuthService {
   login(email: string, password: string): Observable<any> {
     return this.http.post<any>(`${this.apiURL}/auth/login`, { email, password }).pipe(
       tap((res) => {
-        if (res.token && res.rolId) {
-          localStorage.setItem(this.tokenKey, res.token);
-          localStorage.setItem(this.rolKey, res.rolId);
-          localStorage.setItem('user_rol_nombre', res.usuario?.rol || '');
-          localStorage.setItem('usuario', JSON.stringify(res.usuario));
+        const rolId = res?.rolId || res?.usuario?.rolId;
 
-          this.loggedUser = res.usuario;
-          this.setLoggedUser(this.normalizeFoto(res.usuario));
+        if (res?.token && rolId && res?.usuario) {
+          localStorage.setItem(this.tokenKey, res.token);
+          localStorage.setItem(this.rolKey, String(rolId));
+          localStorage.setItem('user_rol_nombre', res.usuario?.rol || '');
+
+          const usuarioNormalizado = {
+            ...res.usuario,
+            rolId
+          };
+
+          localStorage.setItem('usuario', JSON.stringify(usuarioNormalizado));
+
+          this.loggedUser = usuarioNormalizado;
+          this.setLoggedUser(this.normalizeFoto(usuarioNormalizado));
         }
       }),
       catchError(err => {
@@ -77,7 +85,8 @@ export class AuthService {
         console.error('Message:', err?.message);
         console.error('URL:', err?.url);
         console.error('Error body:', err?.error);
-        return of(null);
+
+        return throwError(() => err);
       })
     );
   }

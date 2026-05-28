@@ -1,6 +1,6 @@
 @use '@angular/material' as mat;
-@use '../m3-theme.scss' as m3;            
-@use './styles/admin-tokens' as *;  
+@use '../m3-theme.scss' as m3;
+@use './styles/admin-tokens' as *;
 
 /* 2) inicialización material */
 @include mat.core();
@@ -11,7 +11,7 @@
 }
 
 :root {
-  --brand-gradient: linear-gradient(180deg,#0B5ED7 0%, #0E32EF 42%, #002B7A 100%);
+  --brand-gradient: linear-gradient(180deg, #0B5ED7 0%, #0E32EF 42%, #002B7A 100%);
 }
 
 
@@ -20,7 +20,11 @@
 @import "leaflet/dist/leaflet.css";
 
 
-html, body { height: 100%; }
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
@@ -40,38 +44,54 @@ body {
   background: #0d47a1;
   color: #fff;
 }
+
 .mat-toolbar .mat-icon,
 .mat-toolbar .mat-mdc-icon-button,
 .mat-toolbar a[mat-button],
-.mat-toolbar button { color: #fff ; }
+.mat-toolbar button {
+  color: #fff;
+}
 
 /* Cards/tablas sobre blanco */
-.mat-mdc-card, .mat-elevation-z1, .card {
-  background: #fff ;
+.mat-mdc-card,
+.mat-elevation-z1,
+.card {
+  background: #fff;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
 }
 
 /* Labels/inputs bien oscuros (accesibilidad) */
-.mat-mdc-form-field .mdc-floating-label { color: rgba(0,0,0,.87); }
-.mat-mdc-form-field .mdc-text-field__input { color: rgba(0,0,0,.87); }
-::placeholder { color: rgba(0,0,0,.54); }
+.mat-mdc-form-field .mdc-floating-label {
+  color: rgba(0, 0, 0, .87);
+}
+
+.mat-mdc-form-field .mdc-text-field__input {
+  color: rgba(0, 0, 0, .87);
+}
+
+::placeholder {
+  color: rgba(0, 0, 0, .54);
+}
 
 /* Bordes del outline un poco más visibles */
 .mdc-text-field--outlined .mdc-notched-outline__leading,
 .mdc-text-field--outlined .mdc-notched-outline__notch,
 .mdc-text-field--outlined .mdc-notched-outline__trailing {
-  border-color: rgba(0,0,0,.22);
+  border-color: rgba(0, 0, 0, .22);
 }
 
 /* utilitario */
-.card { @include card; }
+.card {
+  @include card;
+}
 
 /* Toasts de éxito / error (MDC) */
 .snack-ok {
   --mdc-snackbar-container-color: #2e7d32;
   --mdc-snackbar-supporting-text-color: #fff;
 }
+
 .snack-err {
   --mdc-snackbar-container-color: #c62828;
   --mdc-snackbar-supporting-text-color: #fff;
@@ -86,8 +106,35 @@ body {
 
 .mat-card {
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
 }
 
-app-admin-shell .mat-drawer-container { background: var(--brand-gradient); }
-app-admin-shell .mat-drawer-content  { background: transparent; }
+.snackbar-warning {
+  --mdc-snackbar-container-color: #fff7ed;
+  --mdc-snackbar-supporting-text-color: #9a3412;
+  --mat-snack-bar-button-color: #c2410c;
+
+  border: 1px solid rgba(251, 146, 60, 0.45);
+  border-radius: 14px;
+  font-weight: 600;
+  box-shadow: 0 14px 35px rgba(124, 45, 18, 0.18);
+}
+
+.snackbar-error {
+  --mdc-snackbar-container-color: #fef2f2;
+  --mdc-snackbar-supporting-text-color: #991b1b;
+  --mat-snack-bar-button-color: #b91c1c;
+
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-radius: 14px;
+  font-weight: 600;
+  box-shadow: 0 14px 35px rgba(127, 29, 29, 0.18);
+}
+
+app-admin-shell .mat-drawer-container {
+  background: var(--brand-gradient);
+}
+
+app-admin-shell .mat-drawer-content {
+  background: transparent;
+}
