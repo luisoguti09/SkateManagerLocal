@@ -99,6 +99,7 @@ export class DashboardTecnicoComponent implements OnInit {
   public evaluacionForm!: FormGroup;
   public cargando: boolean = false;
   public historialTecnico: any[] = [];
+  public evaluacionHistorialSeleccionada: any = null;
 
   ngOnInit(): void {
     this.evaluacionForm = this.fb.group({
@@ -525,6 +526,14 @@ export class DashboardTecnicoComponent implements OnInit {
     const dep = this.deportistas.find((d: any) => Number(d.id) === Number(deportistaId));
 
     return dep?.apellidoYNombre || dep?.nombre || `ID ${deportistaId}`;
+  }
+
+  seleccionarEvaluacionHistorial(ev: any): void {
+    this.evaluacionHistorialSeleccionada = ev;
+  }
+
+  cerrarDetalleHistorial(): void {
+    this.evaluacionHistorialSeleccionada = null;
   }
 
   logout(): void {
