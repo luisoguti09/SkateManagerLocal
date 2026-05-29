@@ -107,6 +107,161 @@ router.post('/', async (req, res) => {
     }
 });
 
+router.get('/evolucion/elemento', async (req, res) => {
+    try {
+        const { deportistaId, elementoId } = req.query;
+
+        if (!deportistaId || !elementoId) {
+            return res.status(400).json({
+                error: 'deportistaId y elementoId son obligatorios'
+            });
+        }
+
+        const registros = await EvaluacionElemento.findAll({
+            where: {
+                elementoId
+            },
+            include: [
+                {
+                    model: Evaluacion,
+                    as: 'evaluacion',
+                    where: {
+                        deportistaId
+                    },
+                    attributes: [
+                        'id',
+                        'deportistaId',
+                        'tipoEvaluacion',
+                        'origen',
+                        'fechaEvaluacion',
+                        'createdAt'
+                    ]
+                },
+                {
+                    model: Elemento,
+                    as: 'elemento',
+                    attributes: [
+                        'id',
+                        'nombre',
+                        'codigo',
+                        'valorBase',
+                        'disciplina',
+                        'categoria'
+                    ]
+                }
+            ],
+            order: [[{ model: Evaluacion, as: 'evaluacion' }, 'createdAt', 'ASC']]
+        });
+
+        const data = registros.map((r) => {
+            const nota = r.nota !== null ? Number(r.nota) : null;
+            const valorBase = r.elemento?.valorBase !== null && r.elemento?.valorBase !== undefined
+                ? Number(r.elemento.valorBase)
+                : null;
+
+            const valorEstimado =
+                nota !== null && Number.isFinite(nota) && valorBase !== null && Number.isFinite(valorBase)
+                    ? Number((valorBase * (nota / 100)).toFixed(2))
+                    : null;
+
+            return {
+                evaluacionId: r.evaluacion?.id,
+                fecha: r.evaluacion?.fechaEvaluacion || r.evaluacion?.createdAt,
+                tipoEvaluacion: r.evaluacion?.tipoEvaluacion,
+                origen: r.evaluacion?.origen,
+                nota,
+                estadoTecnico: r.estadoTecnico,
+                observacion: r.observacion,
+                elementoId: r.elemento?.id,
+                elemento: r.elemento?.nombre,
+                codigo: r.elemento?.codigo,
+                valorBase,
+                valorEstimado
+            };
+        });
+
+        res.json(data);
+    } catch (error) {
+        console.error('Error obteniendo evolución por elemento:', error);
+        res.status(500).json({
+            error: 'Error obteniendo evolución por elemento'
+        });
+    }
+});
+
+router.get('/evolucion/componente', async (req, res) => {
+    try {
+        const { deportistaId, componenteId } = req.query;
+
+        if (!deportistaId || !componenteId) {
+            return res.status(400).json({
+                error: 'deportistaId y componenteId son obligatorios'
+            });
+        }
+
+        const registros = await EvaluacionComponente.findAll({
+            where: {
+                componenteId
+            },
+            include: [
+                {
+                    model: Evaluacion,
+                    as: 'evaluacion',
+                    where: {
+                        deportistaId
+                    },
+                    attributes: [
+                        'id',
+                        'deportistaId',
+                        'tipoEvaluacion',
+                        'origen',
+                        'fechaEvaluacion',
+                        'createdAt'
+                    ]
+                },
+                {
+                    model: Componente,
+                    as: 'componente',
+                    attributes: [
+                        'id',
+                        'nombre',
+                        'puntajeMinimo',
+                        'puntajeMaximo',
+                        'disciplina',
+                        'categoria'
+                    ]
+                }
+            ],
+            order: [[{ model: Evaluacion, as: 'evaluacion' }, 'createdAt', 'ASC']]
+        });
+
+        const data = registros.map((r) => {
+            const nota = r.nota !== null ? Number(r.nota) : null;
+
+            return {
+                evaluacionId: r.evaluacion?.id,
+                fecha: r.evaluacion?.fechaEvaluacion || r.evaluacion?.createdAt,
+                tipoEvaluacion: r.evaluacion?.tipoEvaluacion,
+                origen: r.evaluacion?.origen,
+                nota,
+                estadoTecnico: r.estadoTecnico,
+                observacion: r.observacion,
+                componenteId: r.componente?.id,
+                componente: r.componente?.nombre,
+                puntajeMinimo: r.componente?.puntajeMinimo,
+                puntajeMaximo: r.componente?.puntajeMaximo
+            };
+        });
+
+        res.json(data);
+    } catch (error) {
+        console.error('Error obteniendo evolución por componente:', error);
+        res.status(500).json({
+            error: 'Error obteniendo evolución por componente'
+        });
+    }
+});
+
 router.get('/deportista/:deportistaId', async (req, res) => {
     try {
         const evaluaciones = await Evaluacion.findAll({

@@ -179,4 +179,35 @@ if (db.Padron && db.ClubSede) {
   });
 }
 
+// Relaciones de Evaluaciones
+Evaluacion.hasMany(EvaluacionElemento, {
+  foreignKey: 'evaluacionId',
+  as: 'elementos'
+});
+
+EvaluacionElemento.belongsTo(Evaluacion, {
+  foreignKey: 'evaluacionId',
+  as: 'evaluacion'
+});
+
+EvaluacionElemento.belongsTo(Elemento, {
+  foreignKey: 'elementoId',
+  as: 'elemento'
+});
+
+Evaluacion.hasMany(EvaluacionComponente, {
+  foreignKey: 'evaluacionId',
+  as: 'componentes'
+});
+
+EvaluacionComponente.belongsTo(Evaluacion, {
+  foreignKey: 'evaluacionId',
+  as: 'evaluacion'
+});
+
+EvaluacionComponente.belongsTo(Componente, {
+  foreignKey: 'componenteId',
+  as: 'componente'
+});
+
 module.exports = db;
