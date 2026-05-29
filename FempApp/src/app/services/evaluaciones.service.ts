@@ -30,4 +30,22 @@ export class EvaluacionesService {
     return this.http.get<any[]>(`${this.apiUrl}`, { params });
   }
 
+  getEvolucionElemento(deportistaId: number, elementoId: number) {
+    return this.http.get<any[]>(`${this.apiUrl}/evolucion/elemento`, {
+      params: {
+        deportistaId,
+        elementoId
+      }
+    });
+  }
+
+  getEvolucionComponente(deportistaId: number, componenteId: number) {
+    return this.http.get<any[]>(`${this.apiUrl}/evolucion/componente`, {
+      params: {
+        deportistaId,
+        componenteId
+      }
+    });
+  }
+
 }
