@@ -334,6 +334,7 @@ export class DashboardTecnicoComponent implements OnInit {
   agregarElemento(): void {
     this.elementosEvaluados.push({
       elementoId: null,
+      elementoSearch: '',
       nota: null,
       observacion: ''
     });
@@ -345,6 +346,45 @@ export class DashboardTecnicoComponent implements OnInit {
       nota: null,
       observacion: ''
     });
+  }
+
+  normalizarBusqueda(value: any): string {
+    return String(value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  filtrarElementosParaFila(valor: string): any[] {
+    const term = this.normalizarBusqueda(valor);
+
+    const base = this.getElementosFiltradosPorTipo();
+
+    if (!term) {
+      return base.slice(0, 25);
+    }
+
+    return base
+      .filter((e: any) => {
+        const nombre = this.normalizarBusqueda(e.nombre);
+        const codigo = this.normalizarBusqueda(e.codigo);
+        const disciplina = this.normalizarBusqueda(e.disciplina);
+        const categoria = this.normalizarBusqueda(e.categoria);
+
+        return (
+          nombre.includes(term) ||
+          codigo.includes(term) ||
+          disciplina.includes(term) ||
+          categoria.includes(term)
+        );
+      })
+      .slice(0, 25);
+  }
+
+  seleccionarElementoFila(fila: any, elemento: any): void {
+    fila.elementoId = elemento.id;
+    fila.elementoSearch = `${elemento.nombre}${elemento.codigo ? ' · ' + elemento.codigo : ''}`;
   }
 
   getNombreElemento(id: number): string {
@@ -604,6 +644,54 @@ export class DashboardTecnicoComponent implements OnInit {
 
   cerrarDetalleHistorial(): void {
     this.evaluacionHistorialSeleccionada = null;
+  }
+
+  getElementosFiltradosPorTipo(): any[] {
+    const tipoEvaluacion = this.evaluacionForm.value.tipoEvaluacion || 'LIBRE';
+
+    return this.elementos
+      .filter((e: any) => {
+        const disciplina = String(e.disciplina || '').toUpperCase();
+        const activo = e.activo === true || e.activo === 1;
+
+        if (!activo) return false;
+
+        if (tipoEvaluacion === 'LIBRE') {
+          return disciplina === 'LIBRE' || disciplina === 'GENERAL';
+        }
+
+        if (tipoEvaluacion === 'FO') {
+          return disciplina === 'FO' || disciplina === 'FIGURAS' || disciplina === 'GENERAL';
+        }
+
+        if (tipoEvaluacion === 'DANZA') {
+          return disciplina === 'DANZA' || disciplina === 'GENERAL';
+        }
+
+        return false;
+      })
+      .sort((a: any, b: any) => {
+        const nombreA = String(a.nombre || '');
+        const nombreB = String(b.nombre || '');
+        return nombreA.localeCompare(nombreB);
+      });
+  }
+
+  getComponentesActivos(): any[] {
+    return this.componentes
+      .filter((c: any) => c.activo === true || c.activo === 1)
+      .sort((a: any, b: any) => {
+        const orden = ['Skating Skills', 'Transitions', 'Performance', 'Choreography'];
+
+        const indexA = orden.indexOf(a.nombre);
+        const indexB = orden.indexOf(b.nombre);
+
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+
+        return String(a.nombre || '').localeCompare(String(b.nombre || ''));
+      });
   }
 
   logout(): void {

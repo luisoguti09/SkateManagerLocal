@@ -140,11 +140,18 @@
                     <div class="evaluacion-row-main">
                         <mat-form-field appearance="outline" class="elemento-field">
                             <mat-label>Elemento técnico</mat-label>
-                            <mat-select [(ngModel)]="el.elementoId" [ngModelOptions]="{ standalone: true }">
-                                <mat-option *ngFor="let e of elementos" [value]="e.id">
+
+                            <input matInput [(ngModel)]="el.elementoSearch" [ngModelOptions]="{ standalone: true }"
+                                [matAutocomplete]="autoElemento" placeholder="Buscar elemento por nombre o código">
+
+                            <mat-autocomplete #autoElemento="matAutocomplete">
+                                <mat-option *ngFor="let e of filtrarElementosParaFila(el.elementoSearch)"
+                                    [value]="e.nombre" (click)="seleccionarElementoFila(el, e)">
                                     {{ e.nombre }}
+                                    <span *ngIf="e.codigo"> · {{ e.codigo }}</span>
+                                    <small *ngIf="e.disciplina"> · {{ e.disciplina }}</small>
                                 </mat-option>
-                            </mat-select>
+                            </mat-autocomplete>
                         </mat-form-field>
 
                         <mat-form-field appearance="outline" class="nota-field">
@@ -187,7 +194,7 @@
                         <mat-form-field appearance="outline" class="elemento-field">
                             <mat-label>Componente</mat-label>
                             <mat-select [(ngModel)]="comp.componenteId" [ngModelOptions]="{ standalone: true }">
-                                <mat-option *ngFor="let c of componentes" [value]="c.id">
+                                <mat-option *ngFor="let c of getComponentesActivos()" [value]="c.id">
                                     {{ c.nombre }}
                                 </mat-option>
                             </mat-select>
