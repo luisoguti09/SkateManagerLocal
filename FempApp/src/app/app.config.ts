@@ -4,15 +4,14 @@ import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { routes } from './app.routes';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-// { authInterceptor } from './core/auth.interceptor';
+import { authInterceptor } from './core/auth.interceptor';
 
 
 export const appConfig: ApplicationConfig = {
   providers: [provideZoneChangeDetection({ eventCoalescing: true }),
   provideRouter(routes),
   provideAnimationsAsync(),
-  //provideHttpClient(withInterceptors([authInterceptor])),
-  provideHttpClient(),
+  provideHttpClient(withInterceptors([authInterceptor])),
   importProvidersFrom(MatSnackBarModule)
   ]
 };
