@@ -65,6 +65,7 @@ if (db.Usuario && db.PerfilDeportivo) {
   });
 }
 
+// Relaciones de Evaluaciones
 if (db.Evaluacion && db.EvaluacionElemento) {
   db.Evaluacion.hasMany(db.EvaluacionElemento, {
     foreignKey: 'evaluacionId',
@@ -72,7 +73,8 @@ if (db.Evaluacion && db.EvaluacionElemento) {
   });
 
   db.EvaluacionElemento.belongsTo(db.Evaluacion, {
-    foreignKey: 'evaluacionId'
+    foreignKey: 'evaluacionId',
+    as: 'evaluacion'
   });
 }
 
@@ -83,7 +85,8 @@ if (db.Evaluacion && db.EvaluacionComponente) {
   });
 
   db.EvaluacionComponente.belongsTo(db.Evaluacion, {
-    foreignKey: 'evaluacionId'
+    foreignKey: 'evaluacionId',
+    as: 'evaluacion'
   });
 }
 
@@ -178,36 +181,5 @@ if (db.Padron && db.ClubSede) {
     as: 'sedeNormalizada'
   });
 }
-
-// Relaciones de Evaluaciones
-Evaluacion.hasMany(EvaluacionElemento, {
-  foreignKey: 'evaluacionId',
-  as: 'elementos'
-});
-
-EvaluacionElemento.belongsTo(Evaluacion, {
-  foreignKey: 'evaluacionId',
-  as: 'evaluacion'
-});
-
-EvaluacionElemento.belongsTo(Elemento, {
-  foreignKey: 'elementoId',
-  as: 'elemento'
-});
-
-Evaluacion.hasMany(EvaluacionComponente, {
-  foreignKey: 'evaluacionId',
-  as: 'componentes'
-});
-
-EvaluacionComponente.belongsTo(Evaluacion, {
-  foreignKey: 'evaluacionId',
-  as: 'evaluacion'
-});
-
-EvaluacionComponente.belongsTo(Componente, {
-  foreignKey: 'componenteId',
-  as: 'componente'
-});
 
 module.exports = db;
