@@ -73,7 +73,12 @@ const allowedOrigins = [
   //'https://fempapp-production.up.railway.app',
   //'https://fempapp-production.up.railway.app:8080',
   'https://fempapp-develop.up.railway.app',
-  'https://fempapp-develop.up.railway.app:8080'
+  'https://fempapp-develop.up.railway.app:8080',
+  'https://fempapp-back-develop.up.railway.app',
+  'https://fempapp-back-develop.up.railway.app:8080',
+  'http://localhost:8100',
+  'http://localhost',
+  'capacitor://localhost',
 ];
 
 app.use(cors({
