@@ -26,10 +26,11 @@ Chart.register(
 
 @Component({
   selector: 'app-tecnico-grafico-componentes',
+  standalone: true,
   templateUrl: './tecnico-grafico-componentes.component.html',
   styleUrls: ['./tecnico-grafico-componentes.component.scss'],
   imports: [
-    MatCardModule,
+    MatCardModule
   ]
 })
 export class TecnicoGraficoComponentesComponent implements AfterViewInit, OnChanges {

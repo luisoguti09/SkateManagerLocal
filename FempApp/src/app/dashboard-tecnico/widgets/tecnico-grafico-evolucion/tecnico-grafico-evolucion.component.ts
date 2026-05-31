@@ -18,6 +18,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
+import { MatCardModule } from '@angular/material/card';
 
 Chart.register(
   CategoryScale,
@@ -31,10 +32,11 @@ Chart.register(
 
 @Component({
   selector: 'app-tecnico-grafico-evolucion',
+  standalone: true,
   templateUrl: './tecnico-grafico-evolucion.component.html',
   styleUrls: ['./tecnico-grafico-evolucion.component.scss'],
   imports: [
-
+    MatCardModule
   ]
 })
 export class TecnicoGraficoEvolucionComponent implements AfterViewInit, OnChanges {

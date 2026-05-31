@@ -1,22 +1,22 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-tecnico-accesos-rapidos',
+  standalone: true,
   templateUrl: './tecnico-accesos-rapidos.component.html',
   styleUrls: ['./tecnico-accesos-rapidos.component.scss'],
   imports: [
     CommonModule,
+    RouterModule,
     MatCardModule,
-    MatIconModule,
-    RouterModule
+    MatIconModule
   ]
 })
 export class TecnicoAccesosRapidosComponent {
-
   accesos = [
     {
       titulo: 'Componentes',
