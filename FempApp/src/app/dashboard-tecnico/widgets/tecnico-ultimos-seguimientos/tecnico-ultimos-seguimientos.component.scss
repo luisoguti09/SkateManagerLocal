@@ -1,6 +1,10 @@
 .seguimientos-card {
-    border-radius: 16px;
+    border-radius: 18px;
     padding: 8px;
+    background: #111827;
+    color: #e5e7eb;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
 
     &__header {
         margin-bottom: 16px;
@@ -9,12 +13,13 @@
             margin: 0 0 6px;
             font-size: 20px;
             font-weight: 600;
+            color: #f8fafc;
         }
 
         p {
             margin: 0;
             font-size: 14px;
-            color: #6b7280;
+            color: #94a3b8;
         }
     }
 }
@@ -25,6 +30,15 @@
 
 table {
     width: 100%;
+    background: transparent;
+}
+
+th {
+    color: #cbd5e1;
+}
+
+td {
+    color: #e5e7eb;
 }
 
 .progreso-cell {
@@ -40,12 +54,12 @@ table {
     span {
         min-width: 42px;
         font-size: 13px;
-        color: #4b5563;
+        color: #cbd5e1;
     }
 }
 
 .seguimientos-empty {
     padding: 16px 0;
-    color: #6b7280;
+    color: #94a3b8;
     font-size: 14px;
 }

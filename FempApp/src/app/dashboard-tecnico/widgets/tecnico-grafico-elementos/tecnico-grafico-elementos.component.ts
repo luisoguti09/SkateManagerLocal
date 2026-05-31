@@ -4,10 +4,12 @@ import {
   ElementRef,
   Input,
   OnChanges,
+  OnDestroy,
   SimpleChanges,
   ViewChild
 } from '@angular/core';
 import { DashboardTecnicoData } from '../../../interfaces/dashboard-tecnico-data';
+import { MatCardModule } from '@angular/material/card';
 import {
   Chart,
   ArcElement,
@@ -15,27 +17,18 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-import { MatCardModule } from '@angular/material/card';
 
-Chart.register(
-  ArcElement,
-  DoughnutController,
-  Tooltip,
-  Legend
-);
+Chart.register(ArcElement, DoughnutController, Tooltip, Legend);
 
 @Component({
   selector: 'app-tecnico-grafico-elementos',
   standalone: true,
   templateUrl: './tecnico-grafico-elementos.component.html',
   styleUrls: ['./tecnico-grafico-elementos.component.scss'],
-  imports: [
-    MatCardModule
-  ]
+  imports: [MatCardModule]
 })
-export class TecnicoGraficoElementosComponent implements AfterViewInit, OnChanges {
+export class TecnicoGraficoElementosComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() data!: DashboardTecnicoData['distribucionElementos'];
-
   @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
 
   private chart: Chart | null = null;
@@ -52,15 +45,23 @@ export class TecnicoGraficoElementosComponent implements AfterViewInit, OnChange
     }
   }
 
+  ngOnDestroy(): void {
+    this.destroyChart();
+  }
+
+  private destroyChart(): void {
+    if (this.chart) {
+      this.chart.destroy();
+      this.chart = null;
+    }
+  }
+
   private renderChart(): void {
     if (!this.chartCanvas || !this.data?.length) {
       return;
     }
 
-    if (this.chart) {
-      this.chart.destroy();
-      this.chart = null;
-    }
+    this.destroyChart();
 
     const context = this.chartCanvas.nativeElement.getContext('2d');
     if (!context) {
@@ -73,16 +74,29 @@ export class TecnicoGraficoElementosComponent implements AfterViewInit, OnChange
         labels: this.data.map(item => item.label),
         datasets: [
           {
-            data: this.data.map(item => item.value)
+            data: this.data.map(item => item.value),
+            backgroundColor: [
+              '#38bdf8',
+              '#818cf8',
+              '#f97316',
+              '#22c55e',
+              '#facc15'
+            ],
+            borderColor: '#111827',
+            borderWidth: 2
           }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         plugins: {
           legend: {
-            position: 'bottom'
+            position: 'bottom',
+            labels: {
+              color: '#cbd5e1'
+            }
           }
         }
       }

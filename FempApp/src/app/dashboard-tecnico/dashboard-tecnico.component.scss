@@ -1,5 +1,8 @@
 .dashboard-tecnico {
+  min-height: 100vh;
   padding: 24px;
+  background: linear-gradient(180deg, #0b1220 0%, #111827 50%, #0f172a 100%);
+  color: #e5e7eb;
 }
 
 .dashboard-header {
@@ -9,20 +12,21 @@
     margin: 0 0 8px;
     font-size: 28px;
     font-weight: 700;
+    color: #f8fafc;
   }
 
   p {
     margin: 0;
-    color: #6b7280;
+    color: #94a3b8;
   }
 }
 
 .dashboard-state {
   padding: 24px 0;
-  color: #6b7280;
+  color: #cbd5e1;
 
   &--error {
-    color: #c62828;
+    color: #f87171;
   }
 }
 
@@ -37,5 +41,11 @@
 @media (max-width: 1100px) {
   .dashboard-graficos {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard-tecnico {
+    padding: 16px;
   }
 }

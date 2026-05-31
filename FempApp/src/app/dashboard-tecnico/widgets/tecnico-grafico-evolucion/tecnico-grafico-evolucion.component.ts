@@ -4,10 +4,12 @@ import {
   ElementRef,
   Input,
   OnChanges,
+  OnDestroy,
   SimpleChanges,
   ViewChild
 } from '@angular/core';
 import { DashboardTecnicoData } from '../../../interfaces/dashboard-tecnico-data';
+import { MatCardModule } from '@angular/material/card';
 import {
   Chart,
   CategoryScale,
@@ -18,7 +20,6 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-import { MatCardModule } from '@angular/material/card';
 
 Chart.register(
   CategoryScale,
@@ -35,14 +36,10 @@ Chart.register(
   standalone: true,
   templateUrl: './tecnico-grafico-evolucion.component.html',
   styleUrls: ['./tecnico-grafico-evolucion.component.scss'],
-  imports: [
-    MatCardModule
-  ]
+  imports: [MatCardModule]
 })
-export class TecnicoGraficoEvolucionComponent implements AfterViewInit, OnChanges {
-
+export class TecnicoGraficoEvolucionComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() data!: DashboardTecnicoData['evolucionMensual'];
-
   @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
 
   private chart: Chart | null = null;
@@ -59,15 +56,23 @@ export class TecnicoGraficoEvolucionComponent implements AfterViewInit, OnChange
     }
   }
 
+  ngOnDestroy(): void {
+    this.destroyChart();
+  }
+
+  private destroyChart(): void {
+    if (this.chart) {
+      this.chart.destroy();
+      this.chart = null;
+    }
+  }
+
   private renderChart(): void {
     if (!this.chartCanvas || !this.data?.length) {
       return;
     }
 
-    if (this.chart) {
-      this.chart.destroy();
-      this.chart = null;
-    }
+    this.destroyChart();
 
     const context = this.chartCanvas.nativeElement.getContext('2d');
     if (!context) {
@@ -83,21 +88,44 @@ export class TecnicoGraficoEvolucionComponent implements AfterViewInit, OnChange
             label: 'Evolución mensual',
             data: this.data.map(item => item.value),
             tension: 0.35,
-            fill: false
+            fill: false,
+            borderColor: '#60a5fa',
+            backgroundColor: '#60a5fa',
+            pointBackgroundColor: '#93c5fd',
+            pointBorderColor: '#93c5fd',
+            pointRadius: 4,
+            pointHoverRadius: 5
           }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         plugins: {
           legend: {
-            display: true
+            labels: {
+              color: '#cbd5e1'
+            }
           }
         },
         scales: {
+          x: {
+            ticks: {
+              color: '#94a3b8'
+            },
+            grid: {
+              color: 'rgba(148, 163, 184, 0.12)'
+            }
+          },
           y: {
-            beginAtZero: true
+            beginAtZero: true,
+            ticks: {
+              color: '#94a3b8'
+            },
+            grid: {
+              color: 'rgba(148, 163, 184, 0.12)'
+            }
           }
         }
       }
