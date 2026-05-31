@@ -1,0 +1,16 @@
+<div class="resumen-cards" *ngIf="resumen">
+  <mat-card class="resumen-card" *ngFor="let card of cards">
+    <div class="resumen-card__header">
+      <mat-icon>{{ card.icono }}</mat-icon>
+      <span>{{ card.titulo }}</span>
+    </div>
+
+    <div class="resumen-card__value">
+      {{ card.valor }}
+    </div>
+
+    <div class="resumen-card__detail">
+      {{ card.detalle }}
+    </div>
+  </mat-card>
+</div>

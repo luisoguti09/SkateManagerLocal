@@ -22,7 +22,6 @@ import { EventosService } from '../../services/eventos.service';
   imports: [
     CommonModule,
     FormsModule,
-
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,

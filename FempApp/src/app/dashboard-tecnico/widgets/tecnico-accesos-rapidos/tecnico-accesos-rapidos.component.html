@@ -1,0 +1,19 @@
+<mat-card class="accesos-card">
+    <div class="accesos-card__header">
+        <h2>Accesos rápidos</h2>
+        <p>Acciones frecuentes del área técnica</p>
+    </div>
+
+    <div class="accesos-grid">
+        <a class="acceso-item" *ngFor="let acceso of accesos" [routerLink]="acceso.ruta">
+            <div class="acceso-item__icon">
+                <mat-icon>{{ acceso.icono }}</mat-icon>
+            </div>
+
+            <div class="acceso-item__content">
+                <div class="acceso-item__title">{{ acceso.titulo }}</div>
+                <div class="acceso-item__description">{{ acceso.descripcion }}</div>
+            </div>
+        </a>
+    </div>
+</mat-card>

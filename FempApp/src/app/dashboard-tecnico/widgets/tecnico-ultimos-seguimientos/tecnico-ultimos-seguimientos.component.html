@@ -1,0 +1,59 @@
+<mat-card class="seguimientos-card">
+    <div class="seguimientos-card__header">
+        <h2>Últimos seguimientos</h2>
+        <p>Resumen de las evaluaciones técnicas más recientes.</p>
+    </div>
+
+    <div class="seguimientos-table" *ngIf="items?.length; else emptyState">
+        <table mat-table [dataSource]="items">
+
+            <ng-container matColumnDef="nombreCompleto">
+                <th mat-header-cell *matHeaderCellDef>Deportista</th>
+                <td mat-cell *matCellDef="let item">
+                    {{ item.nombreCompleto }}
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="disciplina">
+                <th mat-header-cell *matHeaderCellDef>Disciplina</th>
+                <td mat-cell *matCellDef="let item">
+                    {{ item.disciplina }}
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="nivel">
+                <th mat-header-cell *matHeaderCellDef>Nivel</th>
+                <td mat-cell *matCellDef="let item">
+                    {{ item.nivel }}
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="fechaUltimaEvaluacion">
+                <th mat-header-cell *matHeaderCellDef>Última evaluación</th>
+                <td mat-cell *matCellDef="let item">
+                    {{ item.fechaUltimaEvaluacion | date:'dd/MM/yyyy' }}
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="progreso">
+                <th mat-header-cell *matHeaderCellDef>Progreso</th>
+                <td mat-cell *matCellDef="let item">
+                    <div class="progreso-cell">
+                        <mat-progress-bar mode="determinate" [value]="item.progreso">
+                        </mat-progress-bar>
+                        <span>{{ item.progreso }}%</span>
+                    </div>
+                </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+    </div>
+
+    <ng-template #emptyState>
+        <div class="seguimientos-empty">
+            No hay seguimientos recientes para mostrar.
+        </div>
+    </ng-template>
+</mat-card>

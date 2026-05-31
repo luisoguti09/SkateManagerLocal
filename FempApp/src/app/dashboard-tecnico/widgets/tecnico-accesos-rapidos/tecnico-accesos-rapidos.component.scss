@@ -1,0 +1,83 @@
+.accesos-card {
+    border-radius: 16px;
+    padding: 8px;
+    margin-bottom: 24px;
+
+    &__header {
+        margin-bottom: 16px;
+
+        h2 {
+            margin: 0 0 6px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+    }
+}
+
+.accesos-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+}
+
+.acceso-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    transition: 0.2s ease-in-out;
+    color: inherit;
+    background: #fff;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    &__icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: #f3f4f6;
+    }
+
+    &__content {
+        min-width: 0;
+    }
+
+    &__title {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    &__description {
+        font-size: 13px;
+        color: #6b7280;
+    }
+}
+
+@media (max-width: 1100px) {
+    .accesos-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+    .accesos-grid {
+        grid-template-columns: 1fr;
+    }
+}

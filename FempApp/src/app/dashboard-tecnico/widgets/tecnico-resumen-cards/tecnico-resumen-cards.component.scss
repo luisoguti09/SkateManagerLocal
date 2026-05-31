@@ -1,0 +1,44 @@
+.resumen-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.resumen-card {
+  border-radius: 16px;
+  padding: 8px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #5f6368;
+    font-size: 14px;
+    margin-bottom: 14px;
+  }
+
+  &__value {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+
+  &__detail {
+    font-size: 13px;
+    color: #6b7280;
+  }
+}
+
+@media (max-width: 1200px) {
+  .resumen-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .resumen-cards {
+    grid-template-columns: 1fr;
+  }
+}

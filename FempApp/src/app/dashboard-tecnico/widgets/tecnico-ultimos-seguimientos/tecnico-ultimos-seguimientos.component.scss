@@ -1,0 +1,51 @@
+.seguimientos-card {
+    border-radius: 16px;
+    padding: 8px;
+
+    &__header {
+        margin-bottom: 16px;
+
+        h2 {
+            margin: 0 0 6px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        p {
+            margin: 0;
+            font-size: 14px;
+            color: #6b7280;
+        }
+    }
+}
+
+.seguimientos-table {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+}
+
+.progreso-cell {
+    min-width: 140px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    mat-progress-bar {
+        flex: 1;
+    }
+
+    span {
+        min-width: 42px;
+        font-size: 13px;
+        color: #4b5563;
+    }
+}
+
+.seguimientos-empty {
+    padding: 16px 0;
+    color: #6b7280;
+    font-size: 14px;
+}
