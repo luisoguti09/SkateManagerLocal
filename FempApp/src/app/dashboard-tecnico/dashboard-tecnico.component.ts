@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { TecnicoResumenCardsComponent } from './widgets/tecnico-resumen-cards/tecnico-resumen-cards.component';
 import { TecnicoAccesosRapidosComponent } from './widgets/tecnico-accesos-rapidos/tecnico-accesos-rapidos.component';
 import { TecnicoGraficoEvolucionComponent } from './widgets/tecnico-grafico-evolucion/tecnico-grafico-evolucion.component';
@@ -25,17 +25,19 @@ import { DashboardTecnicoService } from '../services/dashboard-tecnico.service.s
   styleUrls: ['./dashboard-tecnico.component.scss']
 })
 export class DashboardTecnicoComponent implements OnInit {
-  dashboardData: DashboardTecnicoData | null = null;
-  loading = true;
-  error = false;
+  
+  private readonly dashboardTecnicoService = inject(DashboardTecnicoService);
 
-  constructor(private dashboardTecnicoService: DashboardTecnicoService) {}
+  public dashboardData: DashboardTecnicoData | null = null;
+  public loading: boolean = true;
+  public error: boolean = false;
+  public showCharts: boolean = false;
 
   ngOnInit(): void {
     this.loadDashboard();
   }
 
-  loadDashboard(): void {
+  public loadDashboard(): void {
     this.loading = true;
     this.error = false;
 
@@ -51,4 +53,9 @@ export class DashboardTecnicoComponent implements OnInit {
       }
     });
   }
+
+  public toggleCharts(): void {
+    this.showCharts = !this.showCharts;
+  }
+
 }

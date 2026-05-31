@@ -4,32 +4,50 @@
         <p>Resumen general del seguimiento técnico y evolución deportiva.</p>
     </div>
 
-    <div *ngIf="loading" class="dashboard-state">
+    @if (loading) {
+    <div class="dashboard-state">
         Cargando dashboard técnico...
     </div>
+    }
 
-    <div *ngIf="error" class="dashboard-state dashboard-state--error">
+    @if (error) {
+    <div class="dashboard-state dashboard-state--error">
         Ocurrió un error al cargar la información.
     </div>
+    }
 
-    <ng-container *ngIf="!loading && !error && dashboardData as data">
-        <app-tecnico-resumen-cards [resumen]="data.resumen">
-        </app-tecnico-resumen-cards>
+    @if (!loading && !error && dashboardData; as data) {
+    <app-tecnico-resumen-cards [resumen]="data.resumen">
+    </app-tecnico-resumen-cards>
 
-        <app-tecnico-accesos-rapidos></app-tecnico-accesos-rapidos>
+    <app-tecnico-accesos-rapidos></app-tecnico-accesos-rapidos>
 
-        <div class="dashboard-graficos">
-            <app-tecnico-grafico-evolucion [data]="data.evolucionMensual">
-            </app-tecnico-grafico-evolucion>
+    <div class="dashboard-charts-toggle">
+        <button type="button" class="charts-toggle-btn" (click)="toggleCharts()">
+            {{ showCharts ? 'Ocultar gráficos' : 'Ver gráficos' }}
+        </button>
+    </div>
 
-            <app-tecnico-grafico-componentes [data]="data.distribucionComponentes">
-            </app-tecnico-grafico-componentes>
+    @if (showCharts) {
+    @defer {
+    <div class="dashboard-graficos">
+        <app-tecnico-grafico-evolucion [data]="data.evolucionMensual">
+        </app-tecnico-grafico-evolucion>
 
-            <app-tecnico-grafico-elementos [data]="data.distribucionElementos">
-            </app-tecnico-grafico-elementos>
-        </div>
+        <app-tecnico-grafico-componentes [data]="data.distribucionComponentes">
+        </app-tecnico-grafico-componentes>
 
-        <app-tecnico-ultimos-seguimientos [items]="data.ultimosSeguimientos">
-        </app-tecnico-ultimos-seguimientos>
-    </ng-container>
+        <app-tecnico-grafico-elementos [data]="data.distribucionElementos">
+        </app-tecnico-grafico-elementos>
+    </div>
+    } @placeholder {
+    <div class="dashboard-state">
+        Preparando gráficos...
+    </div>
+    }
+    }
+
+    <app-tecnico-ultimos-seguimientos [items]="data.ultimosSeguimientos">
+    </app-tecnico-ultimos-seguimientos>
+    }
 </section>
