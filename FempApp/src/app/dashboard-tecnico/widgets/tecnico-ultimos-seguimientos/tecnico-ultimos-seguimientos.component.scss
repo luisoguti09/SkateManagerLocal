@@ -1,10 +1,10 @@
 .seguimientos-card {
     border-radius: 18px;
     padding: 8px;
-    background: #111827;
-    color: #e5e7eb;
-    border: 1px solid rgba(148, 163, 184, 0.15);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    background: linear-gradient(180deg, #0a1f57 0%, #0c245f 100%);
+    color: #ffffff;
+    border: 1px solid rgba(147, 197, 253, 0.16);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
 
     &__header {
         margin-bottom: 16px;
@@ -13,13 +13,13 @@
             margin: 0 0 6px;
             font-size: 20px;
             font-weight: 600;
-            color: #f8fafc;
+            color: #ffffff;
         }
 
         p {
             margin: 0;
             font-size: 14px;
-            color: #94a3b8;
+            color: #bfdbfe;
         }
     }
 }
@@ -34,11 +34,11 @@ table {
 }
 
 th {
-    color: #cbd5e1;
+    color: #dbeafe;
 }
 
 td {
-    color: #e5e7eb;
+    color: #ffffff;
 }
 
 .progreso-cell {
@@ -54,12 +54,12 @@ td {
     span {
         min-width: 42px;
         font-size: 13px;
-        color: #cbd5e1;
+        color: #dbeafe;
     }
 }
 
 .seguimientos-empty {
     padding: 16px 0;
-    color: #94a3b8;
+    color: #bfdbfe;
     font-size: 14px;
 }

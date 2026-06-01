@@ -1,5 +1,85 @@
+.accesos-card {
+    border-radius: 18px;
+    padding: 8px;
+    margin-bottom: 24px;
+    background: linear-gradient(180deg, #0a1f57 0%, #0c245f 100%);
+    color: #ffffff;
+    border: 1px solid rgba(147, 197, 253, 0.16);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+
+    &__header {
+        margin-bottom: 16px;
+
+        h2 {
+            margin: 0 0 6px;
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        p {
+            margin: 0;
+            color: #bfdbfe;
+            font-size: 14px;
+        }
+    }
+}
+
+.accesos-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+}
+
+.acceso-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    padding: 16px;
+    border: 1px solid rgba(147, 197, 253, 0.14);
+    border-radius: 14px;
+    transition: 0.2s ease-in-out;
+    color: inherit;
+    background: rgba(7, 18, 51, 0.55);
+
+    &:hover {
+        transform: translateY(-2px);
+        border-color: rgba(147, 197, 253, 0.35);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+    }
+
+    &__icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: rgba(59, 130, 246, 0.18);
+        color: #93c5fd;
+    }
+
+    &__content {
+        min-width: 0;
+    }
+
+    &__title {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: #ffffff;
+    }
+
+    &__description {
+        font-size: 13px;
+        color: #bfdbfe;
+    }
+}
+
 .acceso-item--disabled {
-    opacity: 0.65;
+    opacity: 0.7;
     cursor: not-allowed;
 }
 
@@ -10,6 +90,18 @@
     border-radius: 999px;
     font-size: 11px;
     font-weight: 600;
-    background: rgba(245, 158, 11, 0.12);
-    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.14);
+    color: #fcd34d;
+}
+
+@media (max-width: 1100px) {
+    .accesos-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+    .accesos-grid {
+        grid-template-columns: 1fr;
+    }
 }
