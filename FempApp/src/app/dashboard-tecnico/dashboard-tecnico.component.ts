@@ -9,6 +9,8 @@ import { TecnicoUltimosSeguimientosComponent } from './widgets/tecnico-ultimos-s
 import { DashboardTecnicoData } from '../interfaces/dashboard-tecnico-data';
 import { DashboardTecnicoService } from '../services/dashboard-tecnico.service.service';
 
+type ActiveChart = 'evolucion' | 'componentes' | 'elementos' | null;
+
 @Component({
   selector: 'app-dashboard-tecnico',
   standalone: true,
@@ -25,13 +27,12 @@ import { DashboardTecnicoService } from '../services/dashboard-tecnico.service.s
   styleUrls: ['./dashboard-tecnico.component.scss']
 })
 export class DashboardTecnicoComponent implements OnInit {
-  
   private readonly dashboardTecnicoService = inject(DashboardTecnicoService);
 
   public dashboardData: DashboardTecnicoData | null = null;
   public loading: boolean = true;
   public error: boolean = false;
-  public showCharts: boolean = false;
+  public activeChart: ActiveChart = null;
 
   ngOnInit(): void {
     this.loadDashboard();
@@ -47,15 +48,14 @@ export class DashboardTecnicoComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        console.error('Error loading technical dashboard', err);
+        console.error('Error loading dashboard tecnico', err);
         this.error = true;
         this.loading = false;
       }
     });
   }
 
-  public toggleCharts(): void {
-    this.showCharts = !this.showCharts;
+  public toggleChart(chart: Exclude<ActiveChart, null>): void {
+    this.activeChart = this.activeChart === chart ? null : chart;
   }
-
 }

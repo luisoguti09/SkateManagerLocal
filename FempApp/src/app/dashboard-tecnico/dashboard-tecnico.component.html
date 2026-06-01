@@ -17,34 +17,43 @@
     }
 
     @if (!loading && !error && dashboardData; as data) {
-    <app-tecnico-resumen-cards [resumen]="data.resumen">
-    </app-tecnico-resumen-cards>
+    <app-tecnico-resumen-cards [resumen]="data.resumen"></app-tecnico-resumen-cards>
 
     <app-tecnico-accesos-rapidos></app-tecnico-accesos-rapidos>
 
     <div class="dashboard-charts-toggle">
-        <button type="button" class="charts-toggle-btn" (click)="toggleCharts()">
-            {{ showCharts ? 'Ocultar gráficos' : 'Ver gráficos' }}
+        <button type="button" class="charts-toggle-btn" (click)="toggleChart('evolucion')">
+            {{ activeChart === 'evolucion' ? 'Ocultar evolución' : 'Ver evolución' }}
+        </button>
+
+        <button type="button" class="charts-toggle-btn" (click)="toggleChart('componentes')">
+            {{ activeChart === 'componentes' ? 'Ocultar componentes' : 'Ver componentes' }}
+        </button>
+
+        <button type="button" class="charts-toggle-btn" (click)="toggleChart('elementos')">
+            {{ activeChart === 'elementos' ? 'Ocultar elementos' : 'Ver elementos' }}
         </button>
     </div>
 
-    @if (showCharts) {
-    @defer {
-    <div class="dashboard-graficos">
+    @if (activeChart === 'evolucion') {
+    <div class="dashboard-graficos dashboard-graficos--single">
         <app-tecnico-grafico-evolucion [data]="data.evolucionMensual">
         </app-tecnico-grafico-evolucion>
+    </div>
+    }
 
+    @if (activeChart === 'componentes') {
+    <div class="dashboard-graficos dashboard-graficos--single">
         <app-tecnico-grafico-componentes [data]="data.distribucionComponentes">
         </app-tecnico-grafico-componentes>
+    </div>
+    }
 
+    @if (activeChart === 'elementos') {
+    <div class="dashboard-graficos dashboard-graficos--single">
         <app-tecnico-grafico-elementos [data]="data.distribucionElementos">
         </app-tecnico-grafico-elementos>
     </div>
-    } @placeholder {
-    <div class="dashboard-state">
-        Preparando gráficos...
-    </div>
-    }
     }
 
     <app-tecnico-ultimos-seguimientos [items]="data.ultimosSeguimientos">
