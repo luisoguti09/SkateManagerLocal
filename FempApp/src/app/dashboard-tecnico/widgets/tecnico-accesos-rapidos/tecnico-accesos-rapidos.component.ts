@@ -4,6 +4,15 @@ import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 
+interface AccesoRapido {
+  titulo: string;
+  descripcion: string;
+  icono: string;
+  ruta?: string;
+  enabled: boolean;
+  badge?: string;
+}
+
 @Component({
   selector: 'app-tecnico-accesos-rapidos',
   standalone: true,
@@ -17,30 +26,41 @@ import { MatIconModule } from '@angular/material/icon';
   ]
 })
 export class TecnicoAccesosRapidosComponent {
-  accesos = [
+  accesos: AccesoRapido[] = [
     {
-      titulo: 'Componentes',
-      descripcion: 'Administrar componentes técnicos',
-      icono: 'widgets',
-      ruta: '/componentes'
-    },
-    {
-      titulo: 'Elementos',
-      descripcion: 'Administrar elementos técnicos',
-      icono: 'category',
-      ruta: '/elementos'
-    },
-    {
-      titulo: 'Deportistas',
-      descripcion: 'Ver seguimiento de deportistas',
-      icono: 'groups',
-      ruta: '/deportist'
+      titulo: 'Evaluaciones',
+      descripcion: 'Ingresar a la evaluación técnica',
+      icono: 'fact_check',
+      ruta: '/evaluaciones',
+      enabled: true
     },
     {
       titulo: 'Asistencias',
       descripcion: 'Consultar asistencias',
       icono: 'event_available',
-      ruta: '/asistencias'
+      ruta: '/asistencias',
+      enabled: true
+    },
+    {
+      titulo: 'Componentes',
+      descripcion: 'Administrar componentes técnicos',
+      icono: 'widgets',
+      enabled: false,
+      badge: 'Revisar acceso'
+    },
+    {
+      titulo: 'Elementos',
+      descripcion: 'Administrar elementos técnicos',
+      icono: 'category',
+      enabled: false,
+      badge: 'Revisar acceso'
+    },
+    {
+      titulo: 'Deportistas',
+      descripcion: 'Seguimiento de deportistas',
+      icono: 'groups',
+      enabled: false,
+      badge: 'Revisar acceso'
     }
   ];
 }

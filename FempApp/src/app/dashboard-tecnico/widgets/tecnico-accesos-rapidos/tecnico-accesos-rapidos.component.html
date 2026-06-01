@@ -5,7 +5,9 @@
     </div>
 
     <div class="accesos-grid">
-        <a class="acceso-item" *ngFor="let acceso of accesos" [routerLink]="acceso.ruta">
+        @for (acceso of accesos; track acceso.titulo) {
+        @if (acceso.enabled) {
+        <a class="acceso-item" [routerLink]="acceso.ruta">
             <div class="acceso-item__icon">
                 <mat-icon>{{ acceso.icono }}</mat-icon>
             </div>
@@ -15,5 +17,23 @@
                 <div class="acceso-item__description">{{ acceso.descripcion }}</div>
             </div>
         </a>
+        } @else {
+        <div class="acceso-item acceso-item--disabled">
+            <div class="acceso-item__icon">
+                <mat-icon>{{ acceso.icono }}</mat-icon>
+            </div>
+
+            <div class="acceso-item__content">
+                <div class="acceso-item__title">
+                    {{ acceso.titulo }}
+                    @if (acceso.badge) {
+                    <span class="acceso-item__badge">{{ acceso.badge }}</span>
+                    }
+                </div>
+                <div class="acceso-item__description">{{ acceso.descripcion }}</div>
+            </div>
+        </div>
+        }
+        }
     </div>
 </mat-card>

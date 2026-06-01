@@ -1,91 +1,15 @@
-.accesos-card {
-    border-radius: 18px;
-    padding: 8px;
-    margin-bottom: 24px;
-    background: #111827;
-    color: #e5e7eb;
-    border: 1px solid rgba(148, 163, 184, 0.15);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
-
-    &__header {
-        margin-bottom: 16px;
-
-        h2 {
-            margin: 0 0 6px;
-            font-size: 20px;
-            font-weight: 600;
-            color: #f8fafc;
-        }
-
-        p {
-            margin: 0;
-            color: #94a3b8;
-            font-size: 14px;
-        }
-    }
+.acceso-item--disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
 }
 
-.accesos-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-}
-
-.acceso-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    text-decoration: none;
-    padding: 16px;
-    border: 1px solid rgba(148, 163, 184, 0.15);
-    border-radius: 14px;
-    transition: 0.2s ease-in-out;
-    color: inherit;
-    background: #0f172a;
-
-    &:hover {
-        transform: translateY(-2px);
-        border-color: rgba(59, 130, 246, 0.35);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.22);
-    }
-
-    &__icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 44px;
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        background: rgba(59, 130, 246, 0.12);
-        color: #93c5fd;
-    }
-
-    &__content {
-        min-width: 0;
-    }
-
-    &__title {
-        font-size: 15px;
-        font-weight: 600;
-        margin-bottom: 4px;
-        color: #f8fafc;
-    }
-
-    &__description {
-        font-size: 13px;
-        color: #94a3b8;
-    }
-}
-
-@media (max-width: 1100px) {
-    .accesos-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 700px) {
-    .accesos-grid {
-        grid-template-columns: 1fr;
-    }
+.acceso-item__badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
 }

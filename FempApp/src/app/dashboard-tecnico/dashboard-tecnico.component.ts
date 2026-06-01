@@ -2,14 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { TecnicoResumenCardsComponent } from './widgets/tecnico-resumen-cards/tecnico-resumen-cards.component';
 import { TecnicoAccesosRapidosComponent } from './widgets/tecnico-accesos-rapidos/tecnico-accesos-rapidos.component';
-import { TecnicoGraficoEvolucionComponent } from './widgets/tecnico-grafico-evolucion/tecnico-grafico-evolucion.component';
-import { TecnicoGraficoComponentesComponent } from './widgets/tecnico-grafico-componentes/tecnico-grafico-componentes.component';
-import { TecnicoGraficoElementosComponent } from './widgets/tecnico-grafico-elementos/tecnico-grafico-elementos.component';
 import { TecnicoUltimosSeguimientosComponent } from './widgets/tecnico-ultimos-seguimientos/tecnico-ultimos-seguimientos.component';
 import { DashboardTecnicoData } from '../interfaces/dashboard-tecnico-data';
 import { DashboardTecnicoService } from '../services/dashboard-tecnico.service.service';
-
-type ActiveChart = 'evolucion' | 'componentes' | 'elementos' | null;
 
 @Component({
   selector: 'app-dashboard-tecnico',
@@ -18,9 +13,6 @@ type ActiveChart = 'evolucion' | 'componentes' | 'elementos' | null;
     CommonModule,
     TecnicoResumenCardsComponent,
     TecnicoAccesosRapidosComponent,
-    TecnicoGraficoEvolucionComponent,
-    TecnicoGraficoComponentesComponent,
-    TecnicoGraficoElementosComponent,
     TecnicoUltimosSeguimientosComponent
   ],
   templateUrl: './dashboard-tecnico.component.html',
@@ -30,9 +22,8 @@ export class DashboardTecnicoComponent implements OnInit {
   private readonly dashboardTecnicoService = inject(DashboardTecnicoService);
 
   public dashboardData: DashboardTecnicoData | null = null;
-  public loading: boolean = true;
-  public error: boolean = false;
-  public activeChart: ActiveChart = null;
+  public loading = true;
+  public error = false;
 
   ngOnInit(): void {
     this.loadDashboard();
@@ -53,9 +44,5 @@ export class DashboardTecnicoComponent implements OnInit {
         this.loading = false;
       }
     });
-  }
-
-  public toggleChart(chart: Exclude<ActiveChart, null>): void {
-    this.activeChart = this.activeChart === chart ? null : chart;
   }
 }
