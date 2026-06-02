@@ -1,4 +1,3 @@
-// src/app/services/registro.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, of, throwError } from 'rxjs';
@@ -12,15 +11,16 @@ export interface RegistroPayload {
   password: string;
   dni: string | number;
   rolId: number;
-  categoria?: string; // solo deportista
-  nivel?: string;     // solo técnico
+  categoria?: string;
+  nivel?: string;
+  clubId?: number | null;
+  club?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
 export class RegistroService {
   private http = inject(HttpClient);
   private apURL = environment.SERVER_API;
-
 
   buscar(dni: string) {
     const dniNormalizado = String(dni || '').replace(/\D/g, '');
@@ -35,12 +35,10 @@ export class RegistroService {
     });
   }
 
-  /** Registrar usuario con payload (opcional: categoria/nivel según rol) */
   guardar(payload: RegistroPayload) {
     return this.http.post(`${this.apURL}/auth/register`, payload);
   }
 
-  /** Compatibilidad temporal (si algo del front viejo sigue llamando con params sueltos) */
   guardarCompat(
     nombre: string,
     edad: number,
@@ -55,7 +53,10 @@ export class RegistroService {
   getRoles() {
     return this.http.get<any[]>(`${this.apURL}/roles`);
   }
-}
 
+  getClubes() {
+    return this.http.get<any[]>(`${this.apURL}/clubes`);
+  }
+}
 
 

@@ -1,5 +1,12 @@
 import { Component, inject } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { RegistroService } from '../../services/registro.service';
 import { MatButtonModule } from '@angular/material/button';
@@ -16,6 +23,11 @@ import { finalize } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatIcon, MatIconModule } from '@angular/material/icon';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { Observable, map, startWith } from 'rxjs';
+import { PadronRegistro } from '../../interfaces/padron-registro.interface';
+import { ClubOption } from '../../interfaces/club-option.interface';
+
 
 
 @Component({
@@ -36,7 +48,9 @@ import { MatIcon, MatIconModule } from '@angular/material/icon';
     RegistroFastComponent,
     MatSelectModule,
     MatProgressSpinnerModule,
-    MatIconModule, MatIcon
+    MatIconModule,
+    MatIcon,
+    MatAutocompleteModule
   ],
   templateUrl: './registro.component.html',
   styleUrl: './registro.component.scss'
@@ -45,21 +59,25 @@ export class RegistroComponent {
 
   public form!: FormGroup;
 
-
   private router = inject(Router);
   private http = inject(HttpClient);
   private snack = inject(MatSnackBar);
   private fb = inject(FormBuilder);
   private regServ = inject(RegistroService);
 
-  public empadronada: string = "";
-  public pers: any;
+  public empadronada: string = '';
   public roles: any[] = [];
   public errorMsg: string = '';
   public successMsg: string = '';
   public cargando: boolean = false;
-  public cargandoBuscar = false;
-  loading = false;
+  public cargandoBuscar: boolean = false;
+  public loading: boolean = false;
+
+  public clubesFiltrados$!: Observable<any[]>;
+  public clubSearchControl = new FormControl<ClubOption | string | null>(null);
+  public clubes: ClubOption[] = [];
+  public clubSeleccionado: ClubOption | null = null;
+  public pers: PadronRegistro | null = null;
 
 
   ngOnInit() {
@@ -73,11 +91,22 @@ export class RegistroComponent {
       rolId: new FormControl(null, [Validators.required]),
       categoria: [{ value: '', disabled: true }],
       nivel: [{ value: '', disabled: true }],
+      clubId: new FormControl<number | null>(null)
     });
 
     this.regServ.getRoles().subscribe({
-      next: res => this.roles = res,
+      next: res => (this.roles = res),
       error: err => console.log('Error al obtener roles', err)
+    });
+
+    this.regServ.getClubes().subscribe({
+      next: clubes => {
+        this.clubes = clubes ?? [];
+        this.inicializarFiltroClubes();
+      },
+      error: err => {
+        console.error('Error al obtener clubes', err);
+      }
     });
 
     this.form.get('rolId')!.valueChanges.subscribe(rolId => this.configurarPorRol(rolId));
@@ -87,12 +116,15 @@ export class RegistroComponent {
     const categoria = this.form.get('categoria')!;
     const nivel = this.form.get('nivel')!;
 
-    categoria.clearValidators(); categoria.disable(); categoria.setValue('');
-    nivel.clearValidators(); nivel.disable(); nivel.setValue('');
+    categoria.clearValidators();
+    categoria.disable();
+    categoria.setValue('');
 
+    nivel.clearValidators();
+    nivel.disable();
+    nivel.setValue('');
 
     const deportista = 1;
-    const administrador = 2;
     const tecnico = 3;
 
     if (rolId === deportista) {
@@ -107,15 +139,57 @@ export class RegistroComponent {
     nivel.updateValueAndValidity({ emitEvent: false });
   }
 
-  verificarPass() {
-    if (this.form?.get('password')?.value == this.form?.get('confirmPass')?.value) {
-      return true;
-    } else {
-      error: (e: { error: { error: any; }; }) => {
-        console.log(e.error.error);
-      };
-      return false;
+  private normalizarTexto(value: any): string {
+    return String(value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  private inicializarFiltroClubes(): void {
+    this.clubesFiltrados$ = this.clubSearchControl.valueChanges.pipe(
+      startWith('' as ClubOption | string | null),
+      map((value: ClubOption | string | null) => {
+        const texto = typeof value === 'string'
+          ? value
+          : this.displayClub(value);
+
+        return this.filtrarClubes(texto || '');
+      })
+    );
+  }
+
+  private filtrarClubes(texto: string): any[] {
+    const filtro = this.normalizarTexto(texto);
+
+    if (!filtro) {
+      return this.clubes.slice(0, 25);
     }
+
+    return this.clubes
+      .filter((club: any) => {
+        const nombre = this.normalizarTexto(club?.nombre);
+        const sede = this.normalizarTexto(
+          (club?.sedes || []).map((s: any) => s.nombre).join(' ')
+        );
+
+        return nombre.includes(filtro) || sede.includes(filtro);
+      })
+      .slice(0, 25);
+  }
+
+  public displayClub = (club: ClubOption | string | null): string => {
+    if (!club) return '';
+    if (typeof club === 'string') return club;
+    return club.nombre || '';
+  };
+
+  public onClubSelected(club: any): void {
+    this.clubSeleccionado = club;
+    this.form.patchValue({
+      clubId: club?.id ?? null
+    });
   }
 
   buscar() {
@@ -131,7 +205,8 @@ export class RegistroComponent {
     this.cargandoBuscar = true;
 
     this.regServ.buscar(dni).subscribe({
-      next: ({ padron, usuario }) => {
+
+      next: ({ padron, usuario }: { padron: PadronRegistro | null; usuario: any | null }) => {
         this.pers = padron || null;
 
         if (usuario) {
@@ -141,13 +216,23 @@ export class RegistroComponent {
         }
 
         this.empadronada = padron ? 'EMPADRONADA' : 'NO_EMPADRONADA';
+
+        if (padron?.club) {
+          const clubPadron = this.clubes.find((c: ClubOption) => {
+            return this.normalizarTexto(c.nombre) === this.normalizarTexto(padron.club);
+          });
+
+          if (clubPadron) {
+            this.clubSeleccionado = clubPadron;
+            this.clubSearchControl.setValue(clubPadron);
+            this.form.patchValue({ clubId: clubPadron.id });
+          }
+        }
       },
-      error: () => this.errorMsg = 'No se pudo buscar el DNI.',
-      complete: () => this.cargandoBuscar = false
+      error: () => (this.errorMsg = 'No se pudo buscar el DNI.'),
+      complete: () => (this.cargandoBuscar = false)
     });
   }
-
-
 
   guardar() {
     this.errorMsg = '';
@@ -158,33 +243,34 @@ export class RegistroComponent {
     const rolId = this.form.get('rolId')?.value;
     const deportista = 1;
     const tecnico = 3;
-    
+
     const dniFormulario = this.form.get('dni')?.value?.toString() || '';
     const dniPadron = this.pers?.documentoN?.toString() || '';
     const dniNormalizado = (esEmpadronada ? dniPadron : dniFormulario).replace(/\D/g, '');
 
     const payload: any = {
       nombre: esEmpadronada ? this.pers?.apellidoYNombre : this.form.get('nombre')?.value,
-      edad: esEmpadronada ? 14 : this.form.get('edad')?.value,   // poné la lógica real si aplica
+      edad: esEmpadronada ? 14 : this.form.get('edad')?.value,
       email: this.form.get('email')?.value,
       password: this.form.get('password')?.value,
       dni: dniNormalizado,
-      rolId
+      rolId,
+      clubId: this.form.get('clubId')?.value ?? null,
+      club: this.clubSeleccionado?.nombre ?? this.pers?.club ?? null
     };
 
-    // Campos condicionales por rol
     if (rolId === deportista) payload.categoria = this.form.get('categoria')?.value;
     if (rolId === tecnico) payload.nivel = this.form.get('nivel')?.value;
 
-    // (Opcional) validación simple de pass
     if (this.form.get('password')?.value !== this.form.get('confirmPass')?.value) {
       this.cargando = false;
       this.errorMsg = 'Las contraseñas no coinciden.';
       return;
     }
 
-    this.regServ.guardar(payload)
-      .pipe(finalize(() => this.cargando = false))
+    this.regServ
+      .guardar(payload)
+      .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: () => {
           this.successMsg = 'Registro exitoso. Serás redirigido al login.';
@@ -193,8 +279,7 @@ export class RegistroComponent {
             this.router.navigate(['']);
           }, 2000);
         },
-        error: (e) => {
-
+        error: e => {
           this.errorMsg = e?.error?.message || e?.error?.error || 'Ocurrió un error al registrar.';
         }
       });
@@ -203,8 +288,4 @@ export class RegistroComponent {
   volver(): void {
     this.router.navigate(['/login']);
   }
-
-
 }
-
-

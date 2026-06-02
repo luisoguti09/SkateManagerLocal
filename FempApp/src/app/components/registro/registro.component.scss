@@ -157,3 +157,20 @@ mat-progress-spinner {
     padding-top: 20px;
   }
 }
+
+.club-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.25;
+
+  strong {
+    font-size: 0.95rem;
+    color: #0f172a;
+  }
+
+  small {
+    font-size: 0.78rem;
+    color: #64748b;
+  }
+}
