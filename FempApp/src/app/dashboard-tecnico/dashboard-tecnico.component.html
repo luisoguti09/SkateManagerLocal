@@ -49,6 +49,15 @@
             </button>
         </mat-card>
 
+        <mat-card class="module-card">
+            <mat-icon>insights</mat-icon>
+            <h2>Análisis técnico</h2>
+            <p>Visualizar evolución general, comparativas y progreso deportivo.</p>
+            <button type="button" mat-raised-button color="primary" (click)="abrirModulo('analisis-tecnico')">
+                Ver análisis
+            </button>
+        </mat-card>
+
         <mat-card class="module-card wide">
             <mat-icon>timeline</mat-icon>
             <h2>Evaluación y evolución</h2>
@@ -250,6 +259,15 @@
     <section *ngIf="mostrarModulo() === 'eventos'" class="modulo-panel">
         <h2>Eventos</h2>
         <p>Este módulo todavía no está conectado. Próximo paso: traer eventos acá.</p>
+    </section>
+
+    <section *ngIf="mostrarModulo() === 'analisis-tecnico'" class="modulo-panel">
+        <h2>Análisis técnico</h2>
+        <p class="section-subtitle">
+            Evolución general de la Federación y comparativas técnicas.
+        </p>
+
+        <app-tecnico-grafico-evolucion [data]="evolucionMensualGeneral"></app-tecnico-grafico-evolucion>
     </section>
 
     <section class="metricas-grid" *ngIf="evaluaciones.length > 0">
@@ -466,8 +484,6 @@
 
     <app-tecnico-ultimos-seguimientos [items]="ultimosSeguimientos">
     </app-tecnico-ultimos-seguimientos>
-
-    <app-tecnico-grafico-evolucion [data]="evolucionMensualGeneral"></app-tecnico-grafico-evolucion>
 
     <router-outlet></router-outlet>
 </div>
