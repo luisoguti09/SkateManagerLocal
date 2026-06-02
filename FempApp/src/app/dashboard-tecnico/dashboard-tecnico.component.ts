@@ -105,6 +105,14 @@ export class DashboardTecnicoComponent implements OnInit {
     fechaDesde: '',
     fechaHasta: ''
   };
+  public evolucionMock = [
+    { mes: 'Ene', valor: 58 },
+    { mes: 'Feb', valor: 63 },
+    { mes: 'Mar', valor: 61 },
+    { mes: 'Abr', valor: 70 },
+    { mes: 'May', valor: 74 },
+    { mes: 'Jun', valor: 79 }
+  ];
 
   public evaluacionForm!: FormGroup;
   public cargando: boolean = false;

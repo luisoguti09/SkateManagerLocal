@@ -1,134 +1,112 @@
+import { CommonModule } from '@angular/common';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import {
-  AfterViewInit,
-  Component,
-  ElementRef,
-  Input,
-  OnChanges,
-  OnDestroy,
-  SimpleChanges,
-  ViewChild
-} from '@angular/core';
-import { DashboardTecnicoData } from '../../../interfaces/dashboard-tecnico-data';
-import { MatCardModule } from '@angular/material/card';
-import {
-  Chart,
-  CategoryScale,
-  LinearScale,
-  LineController,
-  LineElement,
-  PointElement,
-  Tooltip,
-  Legend
-} from 'chart.js';
+  NgApexchartsModule,
+  ApexAxisChartSeries,
+  ApexChart,
+  ApexDataLabels,
+  ApexStroke,
+  ApexXAxis,
+  ApexYAxis,
+  ApexGrid,
+  ApexTooltip,
+  ApexLegend
+} from 'ng-apexcharts';
 
-Chart.register(
-  CategoryScale,
-  LinearScale,
-  LineController,
-  LineElement,
-  PointElement,
-  Tooltip,
-  Legend
-);
+export type EvolucionMensualItem = {
+  mes: string;
+  valor: number;
+};
+
+export type EvolucionChartOptions = {
+  series: ApexAxisChartSeries;
+  chart: ApexChart;
+  dataLabels: ApexDataLabels;
+  stroke: ApexStroke;
+  xaxis: ApexXAxis;
+  yaxis: ApexYAxis;
+  grid: ApexGrid;
+  tooltip: ApexTooltip;
+  legend: ApexLegend;
+};
 
 @Component({
   selector: 'app-tecnico-grafico-evolucion',
   standalone: true,
+  imports: [CommonModule, NgApexchartsModule],
   templateUrl: './tecnico-grafico-evolucion.component.html',
-  styleUrls: ['./tecnico-grafico-evolucion.component.scss'],
-  imports: [MatCardModule]
+  styleUrls: ['./tecnico-grafico-evolucion.component.scss']
 })
-export class TecnicoGraficoEvolucionComponent implements AfterViewInit, OnChanges, OnDestroy {
-  @Input() data!: DashboardTecnicoData['evolucionMensual'];
-  @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
+export class TecnicoGraficoEvolucionComponent implements OnChanges {
+  @Input() data: EvolucionMensualItem[] = [];
 
-  private chart: Chart | null = null;
-  private viewInitialized = false;
-
-  ngAfterViewInit(): void {
-    this.viewInitialized = true;
-    this.renderChart();
-  }
+  public chartOptions: EvolucionChartOptions = {
+    series: [
+      {
+        name: 'Evolución mensual',
+        data: []
+      }
+    ],
+    chart: {
+      type: 'line',
+      height: 320,
+      toolbar: {
+        show: false
+      },
+      animations: {
+        enabled: true
+      },
+      zoom: {
+        enabled: false
+      }
+    },
+    dataLabels: {
+      enabled: false
+    },
+    stroke: {
+      curve: 'smooth',
+      width: 3
+    },
+    xaxis: {
+      categories: []
+    },
+    yaxis: {
+      min: 0,
+      max: 100,
+      decimalsInFloat: 0
+    },
+    grid: {
+      show: true
+    },
+    tooltip: {
+      enabled: true
+    },
+    legend: {
+      show: true
+    }
+  };
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['data'] && this.viewInitialized) {
-      this.renderChart();
+    if (changes['data']) {
+      this.actualizarGrafico();
     }
   }
 
-  ngOnDestroy(): void {
-    this.destroyChart();
-  }
+  private actualizarGrafico(): void {
+    const items = Array.isArray(this.data) ? this.data : [];
 
-  private destroyChart(): void {
-    if (this.chart) {
-      this.chart.destroy();
-      this.chart = null;
-    }
-  }
-
-  private renderChart(): void {
-    if (!this.chartCanvas || !this.data?.length) {
-      return;
-    }
-
-    this.destroyChart();
-
-    const context = this.chartCanvas.nativeElement.getContext('2d');
-    if (!context) {
-      return;
-    }
-
-    this.chart = new Chart(context, {
-      type: 'line',
-      data: {
-        labels: this.data.map(item => item.label),
-        datasets: [
-          {
-            label: 'Evolución mensual',
-            data: this.data.map(item => item.value),
-            tension: 0.35,
-            fill: false,
-            borderColor: '#60a5fa',
-            backgroundColor: '#60a5fa',
-            pointBackgroundColor: '#93c5fd',
-            pointBorderColor: '#93c5fd',
-            pointRadius: 4,
-            pointHoverRadius: 5
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        plugins: {
-          legend: {
-            labels: {
-              color: '#cbd5e1'
-            }
-          }
-        },
-        scales: {
-          x: {
-            ticks: {
-              color: '#94a3b8'
-            },
-            grid: {
-              color: 'rgba(148, 163, 184, 0.12)'
-            }
-          },
-          y: {
-            beginAtZero: true,
-            ticks: {
-              color: '#94a3b8'
-            },
-            grid: {
-              color: 'rgba(148, 163, 184, 0.12)'
-            }
-          }
+    this.chartOptions = {
+      ...this.chartOptions,
+      series: [
+        {
+          name: 'Evolución mensual',
+          data: items.map(item => item.valor)
         }
+      ],
+      xaxis: {
+        ...this.chartOptions.xaxis,
+        categories: items.map(item => item.mes)
       }
-    });
+    };
   }
 }

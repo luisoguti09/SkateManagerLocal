@@ -1,10 +1,11 @@
-<mat-card class="grafico-card">
+<div class="grafico-card">
     <div class="grafico-card__header">
-        <h3>Evolución mensual</h3>
-        <p>Seguimiento de evaluaciones o progresión técnica.</p>
+        <h2>Evolución mensual</h2>
+        <p>Seguimiento técnico en base a evaluaciones reales.</p>
     </div>
 
-    <div class="grafico-card__body">
-        <canvas #chartCanvas></canvas>
-    </div>
-</mat-card>
+    <apx-chart [series]="chartOptions.series" [chart]="chartOptions.chart" [dataLabels]="chartOptions.dataLabels"
+        [stroke]="chartOptions.stroke" [xaxis]="chartOptions.xaxis" [yaxis]="chartOptions.yaxis"
+        [grid]="chartOptions.grid" [tooltip]="chartOptions.tooltip" [legend]="chartOptions.legend">
+    </apx-chart>
+</div>

@@ -1,31 +1,25 @@
 .grafico-card {
     border-radius: 18px;
-    padding: 8px;
-    height: 100%;
-    background: #111827;
-    color: #e5e7eb;
-    border: 1px solid rgba(148, 163, 184, 0.15);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    padding: 20px;
+    background: linear-gradient(180deg, #0a1f57 0%, #0c245f 100%);
+    color: #ffffff;
+    border: 1px solid rgba(147, 197, 253, 0.16);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
 
     &__header {
         margin-bottom: 12px;
 
-        h3 {
-            margin: 0 0 4px;
-            font-size: 18px;
+        h2 {
+            margin: 0 0 6px;
+            font-size: 20px;
             font-weight: 600;
-            color: #f8fafc;
+            color: #ffffff;
         }
 
         p {
             margin: 0;
-            font-size: 13px;
-            color: #94a3b8;
+            color: #bfdbfe;
+            font-size: 14px;
         }
-    }
-
-    &__body {
-        position: relative;
-        height: 320px;
     }
 }
