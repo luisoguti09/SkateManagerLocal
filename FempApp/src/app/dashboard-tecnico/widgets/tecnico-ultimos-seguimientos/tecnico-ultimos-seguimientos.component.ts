@@ -1,9 +1,9 @@
 import { Component, Input } from '@angular/core';
-import { DashboardTecnicoData } from '../../../interfaces/dashboard-tecnico-data';
+import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { CommonModule } from '@angular/common';
+import { UltimoSeguimiento } from '../../../interfaces/ultimo-seguimiento.interface';
 
 @Component({
   selector: 'app-tecnico-ultimos-seguimientos',
@@ -18,13 +18,17 @@ import { CommonModule } from '@angular/common';
   ]
 })
 export class TecnicoUltimosSeguimientosComponent {
-  @Input() items!: DashboardTecnicoData['ultimosSeguimientos'];
+
+  @Input() items!: UltimoSeguimiento[];
 
   displayedColumns: string[] = [
     'nombreCompleto',
     'disciplina',
     'nivel',
     'fechaUltimaEvaluacion',
+    'cantidadElementos',
+    'cantidadComponentes',
     'progreso'
   ];
+
 }

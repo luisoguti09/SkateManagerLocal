@@ -22,6 +22,8 @@ import { ElementosService } from '../services/elementos.service';
 import { ComponentesService } from '../services/componentes.service';
 import { EvaluacionesService } from '../services/evaluaciones.service';
 import { AuthService } from '../services/auth.service';
+import { UltimoSeguimiento } from '../interfaces/ultimo-seguimiento.interface';
+import { TecnicoUltimosSeguimientosComponent } from './widgets/tecnico-ultimos-seguimientos/tecnico-ultimos-seguimientos.component';
 
 type ModuloTecnico =
   | 'eventos'
@@ -48,7 +50,8 @@ type ModuloTecnico =
     MatSnackBarModule,
     MatTableModule,
     MatIconModule,
-    MatAutocompleteModule
+    MatAutocompleteModule,
+    TecnicoUltimosSeguimientosComponent
   ],
   templateUrl: './dashboard-tecnico.component.html',
   styleUrls: ['./dashboard-tecnico.component.scss']
@@ -84,6 +87,13 @@ export class DashboardTecnicoComponent implements OnInit {
   public elementosDeclarados: any[] = [];
   public deportistaSearchControl = new FormControl('');
   public deportistasFiltrados$!: Observable<any[]>;
+  public ultimosSeguimientos: UltimoSeguimiento[] = [];
+  public resumenTecnico = {
+    deportistasActivos: 0,
+    evaluacionesMes: 0,
+    componentesActivos: 0,
+    elementosActivos: 0
+  };
   public tiposEvaluacion = [
     { value: 'LIBRE', label: 'Libre' },
     { value: 'FO', label: 'F.O. / Figuras Obligatorias' },
@@ -139,6 +149,14 @@ export class DashboardTecnicoComponent implements OnInit {
 
         this.inicializarFiltroDeportistas();
 
+        this.resumenTecnico = {
+          deportistasActivos: this.deportistas.length,
+          evaluacionesMes: 0,
+          componentesActivos: this.componentes.filter((c: any) => c.activo === true || c.activo === 1).length,
+          elementosActivos: this.elementos.filter((e: any) => e.activo === true || e.activo === 1).length
+        };
+
+        this.cargarHistorialTecnicoInicial();
         this.cargando = false;
       },
       error: (err) => {
@@ -162,6 +180,88 @@ export class DashboardTecnicoComponent implements OnInit {
     if (modulo === 'historial-tecnico') {
       this.cargarHistorialTecnico();
     }
+  }
+
+  private cargarHistorialTecnicoInicial(): void {
+    this.evaluacionesService.getEvaluaciones().subscribe({
+      next: (evaluaciones: any[]) => {
+        this.historialTecnico = evaluaciones || [];
+        this.resumenTecnico.evaluacionesMes = this.contarEvaluacionesMesActual(this.historialTecnico);
+        this.ultimosSeguimientos = this.construirUltimosSeguimientos(this.historialTecnico);
+        this.aplicarFiltrosHistorialFrontend();
+      },
+      error: (err) => {
+        console.error('Error cargando historial técnico inicial:', err);
+        this.ultimosSeguimientos = [];
+      }
+    });
+  }
+
+  private contarEvaluacionesMesActual(evaluaciones: any[]): number {
+    const hoy = new Date();
+    const mes = hoy.getMonth();
+    const anio = hoy.getFullYear();
+
+    return (evaluaciones || []).filter((ev: any) => {
+      const fecha = new Date(ev.fechaEvaluacion || ev.createdAt);
+      return fecha.getMonth() === mes && fecha.getFullYear() === anio;
+    }).length;
+  }
+
+  private construirUltimosSeguimientos(evaluaciones: any[]): UltimoSeguimiento[] {
+    const mapa = new Map<number, UltimoSeguimiento>();
+
+    for (const ev of evaluaciones || []) {
+      const deportistaId = Number(ev.deportistaId);
+      if (!deportistaId) continue;
+
+      const fecha = new Date(ev.fechaEvaluacion || ev.createdAt);
+      const actual = mapa.get(deportistaId);
+
+      if (!actual || actual.fechaUltimaEvaluacion.getTime() < fecha.getTime()) {
+        const elementos = Array.isArray(ev.elementos) ? ev.elementos : [];
+        const componentes = Array.isArray(ev.componentes) ? ev.componentes : [];
+
+        const notas = [
+          ...elementos
+            .map((el: any) => Number(el.nota))
+            .filter((n: number) => Number.isFinite(n)),
+          ...componentes
+            .map((comp: any) => Number(comp.nota))
+            .filter((n: number) => Number.isFinite(n))
+        ];
+
+        const progreso = notas.length
+          ? Math.round(notas.reduce((acc: number, n: number) => acc + n, 0) / notas.length)
+          : 0;
+
+        const deportista = this.deportistas.find(
+          (d: any) => Number(d.id) === deportistaId
+        );
+
+        mapa.set(deportistaId, {
+          deportistaId,
+          nombreCompleto:
+            deportista?.apellidoYNombre ||
+            deportista?.nombre ||
+            `ID ${deportistaId}`,
+          disciplina: ev.tipoEvaluacion || 'LIBRE',
+          nivel: deportista?.nivel || deportista?.categoria || '-',
+          fechaUltimaEvaluacion: fecha,
+          progreso,
+          cantidadElementos: elementos.length,
+          cantidadComponentes: componentes.length,
+          observacion: ev.observacion || ''
+        });
+      }
+    }
+
+    return Array.from(mapa.values())
+      .sort(
+        (a, b) =>
+          b.fechaUltimaEvaluacion.getTime() - a.fechaUltimaEvaluacion.getTime()
+      )
+      .slice(0, 8);
   }
 
   guardarEvaluacion(): void {
