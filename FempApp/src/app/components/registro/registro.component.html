@@ -99,8 +99,8 @@
               <mat-option *ngFor="let club of clubesFiltrados$ | async" [value]="club">
                 <div class="club-option">
                   <strong>{{ club.nombre }}</strong>
-                  <small *ngIf="club.sedes?.length">
-                    {{ club.sedes.length }} sede{{ club.sedes.length > 1 ? 's' : '' }}
+                  <small *ngIf="club.sedes?.length as totalSedes">
+                    {{ totalSedes }} sede{{ totalSedes > 1 ? 's' : '' }}
                   </small>
                 </div>
               </mat-option>
