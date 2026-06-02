@@ -24,6 +24,7 @@ import { EvaluacionesService } from '../services/evaluaciones.service';
 import { AuthService } from '../services/auth.service';
 import { UltimoSeguimiento } from '../interfaces/ultimo-seguimiento.interface';
 import { TecnicoUltimosSeguimientosComponent } from './widgets/tecnico-ultimos-seguimientos/tecnico-ultimos-seguimientos.component';
+import { TecnicoGraficoEvolucionComponent } from './widgets/tecnico-grafico-evolucion/tecnico-grafico-evolucion.component';
 
 type ModuloTecnico =
   | 'eventos'
@@ -51,7 +52,8 @@ type ModuloTecnico =
     MatTableModule,
     MatIconModule,
     MatAutocompleteModule,
-    TecnicoUltimosSeguimientosComponent
+    TecnicoUltimosSeguimientosComponent,
+    TecnicoGraficoEvolucionComponent
   ],
   templateUrl: './dashboard-tecnico.component.html',
   styleUrls: ['./dashboard-tecnico.component.scss']
