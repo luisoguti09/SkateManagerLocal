@@ -63,6 +63,15 @@
 
     </section>
 
+    <section *ngIf="mostrarModulo() === 'analisis-tecnico'" class="modulo-panel">
+        <h2>Análisis técnico</h2>
+        <p class="section-subtitle">
+            Evolución general, comparativas y análisis por deportista.
+        </p>
+
+        <app-tecnico-grafico-evolucion [data]="evolucionMock"></app-tecnico-grafico-evolucion>
+    </section>
+
     <section *ngIf="mostrarModulo() === 'deportistas'" class="modulo-panel">
         <h2>Deportistas</h2>
 
@@ -467,7 +476,9 @@
     <app-tecnico-ultimos-seguimientos [items]="ultimosSeguimientos">
     </app-tecnico-ultimos-seguimientos>
 
-    <app-tecnico-grafico-evolucion [data]="evolucionMock"></app-tecnico-grafico-evolucion>
+    <app-tecnico-grafico-evolucion [data]="evolucionMensualGeneral">
+
+    </app-tecnico-grafico-evolucion>
 
     <router-outlet></router-outlet>
 </div>

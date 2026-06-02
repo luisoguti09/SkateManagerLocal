@@ -25,6 +25,7 @@ import { AuthService } from '../services/auth.service';
 import { UltimoSeguimiento } from '../interfaces/ultimo-seguimiento.interface';
 import { TecnicoUltimosSeguimientosComponent } from './widgets/tecnico-ultimos-seguimientos/tecnico-ultimos-seguimientos.component';
 import { TecnicoGraficoEvolucionComponent } from './widgets/tecnico-grafico-evolucion/tecnico-grafico-evolucion.component';
+import { VariacionElemento } from '../interfaces/variacion-elemento.interface';
 
 type ModuloTecnico =
   | 'eventos'
@@ -33,6 +34,7 @@ type ModuloTecnico =
   | 'componentes'
   | 'evaluacion'
   | 'historial-tecnico'
+  | 'analisis-tecnico'
   | null;
 
 @Component({
@@ -107,15 +109,8 @@ export class DashboardTecnicoComponent implements OnInit {
     fechaDesde: '',
     fechaHasta: ''
   };
-  public evolucionMock = [
-    { mes: 'Ene', valor: 58 },
-    { mes: 'Feb', valor: 63 },
-    { mes: 'Mar', valor: 61 },
-    { mes: 'Abr', valor: 70 },
-    { mes: 'May', valor: 74 },
-    { mes: 'Jun', valor: 79 }
-  ];
 
+  public evolucionMensualGeneral: { mes: string; valor: number }[] = [];
   public evaluacionForm!: FormGroup;
   public cargando: boolean = false;
   public historialTecnico: any[] = [];
@@ -123,6 +118,7 @@ export class DashboardTecnicoComponent implements OnInit {
   public historialResultadosBusqueda: any[] = [];
   public deportistasMap: Record<number, any> = {};
   public historialListadoCompleto: any[] = [];
+  public variacionesElementosDeportista: VariacionElemento[] = [];
 
   ngOnInit(): void {
     this.evaluacionForm = this.fb.group({
@@ -198,6 +194,7 @@ export class DashboardTecnicoComponent implements OnInit {
         this.historialTecnico = evaluaciones || [];
         this.resumenTecnico.evaluacionesMes = this.contarEvaluacionesMesActual(this.historialTecnico);
         this.ultimosSeguimientos = this.construirUltimosSeguimientos(this.historialTecnico);
+        this.evolucionMensualGeneral = this.construirEvolucionMensualGeneral(this.historialTecnico);
         this.aplicarFiltrosHistorialFrontend();
       },
       error: (err) => {
@@ -503,6 +500,7 @@ export class DashboardTecnicoComponent implements OnInit {
   getNombreComponente(id: number): string {
     return this.componentes.find(c => c.id === id)?.nombre || `Componente ${id}`;
   }
+
   seleccionarDeportista(deportista: any): void {
     this.deportistaSeleccionado = deportista;
 
@@ -513,6 +511,9 @@ export class DashboardTecnicoComponent implements OnInit {
     this.mostrarModulo.set('evaluacion');
 
     this.cargarEvaluaciones(deportista.id);
+
+    this.variacionesElementosDeportista =
+      this.construirVariacionPorElemento(deportista.id);
   }
 
   getTotalEvaluaciones(): number {
@@ -621,6 +622,9 @@ export class DashboardTecnicoComponent implements OnInit {
     });
 
     this.cargarEvaluaciones(deportista.id);
+
+    this.variacionesElementosDeportista =
+      this.construirVariacionPorElemento(deportista.id);
   }
 
   getEstadoTecnicoDesdeNota(nota: number | string | null | undefined): string {
@@ -814,6 +818,110 @@ export class DashboardTecnicoComponent implements OnInit {
         if (indexB !== -1) return 1;
 
         return String(a.nombre || '').localeCompare(String(b.nombre || ''));
+      });
+  }
+
+  private construirVariacionPorElemento(deportistaId: number): VariacionElemento[] {
+    const evaluacionesDeportista = (this.historialTecnico || [])
+      .filter((ev: any) => Number(ev.deportistaId) === Number(deportistaId))
+      .sort((a: any, b: any) => {
+        const fechaA = new Date(a.fechaEvaluacion || a.createdAt).getTime();
+        const fechaB = new Date(b.fechaEvaluacion || b.createdAt).getTime();
+        return fechaB - fechaA;
+      });
+
+    if (evaluacionesDeportista.length === 0) {
+      return [];
+    }
+
+    const ultima = evaluacionesDeportista[0];
+    const anterior = evaluacionesDeportista[1] || null;
+
+    const elementosUltima = Array.isArray(ultima?.elementos) ? ultima.elementos : [];
+    const elementosAnterior = Array.isArray(anterior?.elementos) ? anterior.elementos : [];
+
+    return elementosUltima
+      .map((elActual: any) => {
+        const elementoId = Number(elActual.elementoId);
+        const elementoAnterior = elementosAnterior.find(
+          (elPrev: any) => Number(elPrev.elementoId) === elementoId
+        );
+
+        const notaActual = Number.isFinite(Number(elActual?.nota)) ? Number(elActual.nota) : null;
+        const notaAnterior = elementoAnterior && Number.isFinite(Number(elementoAnterior?.nota))
+          ? Number(elementoAnterior.nota)
+          : null;
+
+        const variacion =
+          notaActual !== null && notaAnterior !== null
+            ? notaActual - notaAnterior
+            : 0;
+
+        return {
+          elementoId,
+          elementoNombre:
+            elActual?.elemento?.nombre ||
+            this.getNombreElemento(elementoId),
+          notaAnterior,
+          notaActual,
+          variacion,
+          fechaAnterior: anterior ? new Date(anterior.fechaEvaluacion || anterior.createdAt) : null,
+          fechaActual: ultima ? new Date(ultima.fechaEvaluacion || ultima.createdAt) : null
+        } as VariacionElemento;
+      })
+      .sort((a: VariacionElemento, b: VariacionElemento) =>
+        Math.abs(b.variacion) - Math.abs(a.variacion)
+      );
+  }
+
+  private construirEvolucionMensualGeneral(evaluaciones: any[]): { mes: string; valor: number }[] {
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+    const acumuladoPorMes = new Map<string, { total: number; cantidad: number; orden: number }>();
+
+    for (const ev of evaluaciones || []) {
+      const fecha = new Date(ev.fechaEvaluacion || ev.createdAt);
+      if (Number.isNaN(fecha.getTime())) continue;
+
+      const elementos = Array.isArray(ev.elementos) ? ev.elementos : [];
+      const componentes = Array.isArray(ev.componentes) ? ev.componentes : [];
+
+      const notas = [
+        ...elementos
+          .map((el: any) => Number(el.nota))
+          .filter((n: number) => Number.isFinite(n)),
+        ...componentes
+          .map((comp: any) => Number(comp.nota))
+          .filter((n: number) => Number.isFinite(n))
+      ];
+
+      if (!notas.length) continue;
+
+      const indiceEvaluacion = notas.reduce((acc: number, n: number) => acc + n, 0) / notas.length;
+
+      const key = `${fecha.getFullYear()}-${fecha.getMonth()}`;
+      const actual = acumuladoPorMes.get(key);
+
+      if (actual) {
+        actual.total += indiceEvaluacion;
+        actual.cantidad += 1;
+      } else {
+        acumuladoPorMes.set(key, {
+          total: indiceEvaluacion,
+          cantidad: 1,
+          orden: new Date(fecha.getFullYear(), fecha.getMonth(), 1).getTime()
+        });
+      }
+    }
+
+    return Array.from(acumuladoPorMes.entries())
+      .sort((a, b) => a[1].orden - b[1].orden)
+      .map(([key, value]) => {
+        const [anio, mesIndex] = key.split('-').map(Number);
+        return {
+          mes: `${meses[mesIndex]} ${anio}`,
+          valor: Math.round(value.total / value.cantidad)
+        };
       });
   }
 
