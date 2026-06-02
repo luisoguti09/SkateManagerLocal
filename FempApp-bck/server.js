@@ -126,6 +126,7 @@ app.use('/perfiles-deportivos', perfilesDeportivosRouter);
 app.use('/evaluaciones', evaluacionesRouter);
 app.use('/clubes', clubesRouter);
 app.use('/padron-import', padronImportRouter);
+app.use('/clubes', require('./routes/clubes.router'));
 //app.use('/api/osm', osmRouter);
 
 
