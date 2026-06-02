@@ -104,6 +104,10 @@
                   </small>
                 </div>
               </mat-option>
+
+              <mat-option *ngIf="(clubesFiltrados$ | async)?.length === 0" disabled>
+                No se encontraron clubes
+              </mat-option>
             </mat-autocomplete>
           </mat-form-field>
 

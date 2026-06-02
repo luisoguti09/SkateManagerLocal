@@ -73,7 +73,7 @@ export class RegistroComponent {
   public cargandoBuscar: boolean = false;
   public loading: boolean = false;
 
-  public clubesFiltrados$!: Observable<any[]>;
+  public clubesFiltrados$!: Observable<ClubOption[]>;
   public clubSearchControl = new FormControl<ClubOption | string | null>(null);
   public clubes: ClubOption[] = [];
   public clubSeleccionado: ClubOption | null = null;
@@ -185,10 +185,10 @@ export class RegistroComponent {
     return club.nombre || '';
   };
 
-  public onClubSelected(club: any): void {
+  public onClubSelected(club: ClubOption): void {
     this.clubSeleccionado = club;
     this.form.patchValue({
-      clubId: club?.id ?? null
+      clubId: club.id
     });
   }
 

@@ -1,106 +1,27 @@
-.btn-volver-registro {
-  position: absolute;
-  top: 32px;
-  left: 32px;
-  z-index: 10;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-
-  min-height: 40px;
-  padding: 0 18px;
-
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.7) !important;
-  background: rgba(255, 255, 255, 0.16) !important;
-
-  border-radius: 999px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.14);
-
-  transition: all 0.2s ease;
-
-  mat-icon {
-    margin: 0;
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    color: #ffffff;
-  }
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.26) !important;
-    transform: translateX(-2px);
-  }
-}
-
-.regContainer {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 2rem;
-  background: rgb(2, 70, 206);
-  background: linear-gradient(90deg,
-      rgba(2, 70, 206, 1) 0%,
-      rgba(132, 162, 223, 1) 32%,
-      rgba(2, 70, 206, 1) 100%);
-}
-
-.error-message {
-  background-color: #ffcccc;
-  color: #b00020;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  font-weight: bold;
-}
-
-.success-message {
-  background-color: #c8facc;
-  color: #256029;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  font-weight: bold;
-}
-
-mat-progress-spinner {
-  vertical-align: middle;
-  margin-right: 8px;
-}
-
-/* Estilos de MatCard */
-
 .reg-card {
-  width: 400px;
+  width: 420px;
   max-width: 100%;
-  background-color: #f1f1f1;
+  background: rgba(241, 245, 249, 0.96);
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
 
   mat-card-header {
     display: flex;
     align-items: center;
-    padding: 24px;
+    padding: 24px 24px 8px;
 
     .logo-header-image {
       margin-right: 16px;
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background-color: #eee;
+      background-color: #e2e8f0;
     }
   }
 
   mat-card-title {
     font-size: 20px;
-    font-weight: bold;
+    font-weight: 700;
 
     .cardImg {
       width: 100%;
@@ -110,67 +31,71 @@ mat-progress-spinner {
 
   mat-card-subtitle {
     margin-top: 8px;
-    font-size: 16px;
+    font-size: 15px;
+    color: #475569;
     display: flex;
     align-items: center;
     flex-direction: column;
   }
 
   mat-card-content {
-    padding: 16px;
-
-    .reg-form {
-      display: flex;
-      flex-direction: column;
-
-      .mat-form-field {
-        margin-bottom: 16px;
-        width: 100%;
-      }
-    }
+    padding: 16px 24px 24px;
   }
 
-  mat-card-actions {
+  .reg-form,
+  .account_details form {
     display: flex;
     flex-direction: column;
-    padding: 16px;
-
-    button {
-      width: 100%;
-
-      &:first-child {
-        background-color: #007bff;
-        color: #fff;
-      }
-
-      &:last-child {
-        background: rgb(0, 0, 0);
-        background: linear-gradient(0deg, rgba(0, 0, 0, 1) 0%,
-            rgba(120, 114, 114, 1) 50%, rgba(0, 0, 0, 1) 100%);
-      }
-    }
+    gap: 12px;
   }
 
   .account_details {
     margin-top: 20px;
-    border-top: 1px solid #ccc;
+    border-top: 1px solid #cbd5e1;
     padding-top: 20px;
   }
 }
 
-.club-option {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  line-height: 1.25;
+.example-full-width,
+mat-form-field {
+  width: 100%;
+}
 
-  strong {
-    font-size: 0.95rem;
-    color: #0f172a;
-  }
+::ng-deep .mat-mdc-form-field {
+  width: 100%;
+}
 
-  small {
-    font-size: 0.78rem;
-    color: #64748b;
-  }
+::ng-deep .mat-mdc-text-field-wrapper {
+  background: #ffffff !important;
+  border-radius: 12px !important;
+}
+
+::ng-deep .mdc-notched-outline__leading,
+::ng-deep .mdc-notched-outline__notch,
+::ng-deep .mdc-notched-outline__trailing {
+  border-color: #cbd5e1 !important;
+}
+
+::ng-deep .mat-mdc-form-field:hover .mdc-notched-outline__leading,
+::ng-deep .mat-mdc-form-field:hover .mdc-notched-outline__notch,
+::ng-deep .mat-mdc-form-field:hover .mdc-notched-outline__trailing {
+  border-color: #2563eb !important;
+}
+
+::ng-deep .mat-mdc-form-field-focus-overlay {
+  background: transparent !important;
+}
+
+::ng-deep .mat-mdc-input-element,
+::ng-deep .mat-mdc-select-value-text {
+  color: #0f172a !important;
+}
+
+::ng-deep .mdc-floating-label,
+::ng-deep .mat-mdc-form-field .mat-mdc-floating-label {
+  color: #64748b !important;
+}
+
+::ng-deep .mat-mdc-select-arrow {
+  color: #475569 !important;
 }
