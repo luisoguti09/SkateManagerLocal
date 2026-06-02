@@ -1,59 +1,74 @@
+.regContainer {
+  min-height: 100vh;
+  padding: 24px;
+  background: linear-gradient(180deg, #0d47c9 0%, #114fe0 45%, #0f3fb5 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.btn-volver-registro {
+  align-self: flex-start;
+  margin-bottom: 16px;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  border-radius: 999px !important;
+}
+
 .reg-card {
-  width: 420px;
-  max-width: 100%;
-  background: rgba(241, 245, 249, 0.96);
-  border-radius: 22px;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+  width: 100%;
+  max-width: 520px;
+  border-radius: 24px !important;
+  background: #e5e7eb !important;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18) !important;
+  overflow: hidden;
+}
 
-  mat-card-header {
-    display: flex;
-    align-items: center;
-    padding: 24px 24px 8px;
+.reg-card mat-card-header {
+  display: flex;
+  justify-content: center;
+  padding: 24px 24px 8px;
+  text-align: center;
+}
 
-    .logo-header-image {
-      margin-right: 16px;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background-color: #e2e8f0;
-    }
-  }
+.reg-card mat-card-title {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
 
-  mat-card-title {
-    font-size: 20px;
-    font-weight: 700;
+.cardImg {
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
 
-    .cardImg {
-      width: 100%;
-      height: auto;
-    }
-  }
+.reg-card mat-card-subtitle {
+  margin-top: 10px;
+  color: #334155 !important;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 500;
+}
 
-  mat-card-subtitle {
-    margin-top: 8px;
-    font-size: 15px;
-    color: #475569;
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-  }
+.reg-card mat-card-content {
+  padding: 8px 24px 24px !important;
+}
 
-  mat-card-content {
-    padding: 16px 24px 24px;
-  }
+.reg-form,
+.account_details form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
-  .reg-form,
-  .account_details form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .account_details {
-    margin-top: 20px;
-    border-top: 1px solid #cbd5e1;
-    padding-top: 20px;
-  }
+.account_details {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #cbd5e1;
 }
 
 .example-full-width,
@@ -61,41 +76,132 @@ mat-form-field {
   width: 100%;
 }
 
-::ng-deep .mat-mdc-form-field {
-  width: 100%;
+mat-card-actions {
+  padding: 8px 0 16px !important;
 }
 
-::ng-deep .mat-mdc-text-field-wrapper {
-  background: #ffffff !important;
-  border-radius: 12px !important;
+mat-card-actions section,
+.account_details section {
+  display: flex;
+  justify-content: center;
 }
 
-::ng-deep .mdc-notched-outline__leading,
-::ng-deep .mdc-notched-outline__notch,
-::ng-deep .mdc-notched-outline__trailing {
-  border-color: #cbd5e1 !important;
+button[mat-raised-button] {
+  border-radius: 999px !important;
+  min-width: 120px;
+  font-weight: 600;
 }
 
-::ng-deep .mat-mdc-form-field:hover .mdc-notched-outline__leading,
-::ng-deep .mat-mdc-form-field:hover .mdc-notched-outline__notch,
-::ng-deep .mat-mdc-form-field:hover .mdc-notched-outline__trailing {
-  border-color: #2563eb !important;
+.error-message {
+  margin-top: 8px;
+  color: #b91c1c;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-::ng-deep .mat-mdc-form-field-focus-overlay {
-  background: transparent !important;
+.success-message {
+  margin-top: 8px;
+  color: #166534;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-::ng-deep .mat-mdc-input-element,
-::ng-deep .mat-mdc-select-value-text {
+.club-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.25;
+
+  strong {
+    font-size: 0.95rem;
+    color: #0f172a;
+  }
+
+  small {
+    font-size: 0.78rem;
+    color: #64748b;
+  }
+}
+
+/* Angular Material MDC */
+/* input del autocomplete de club */
+::ng-deep input[matInput],
+::ng-deep .mat-mdc-input-element {
   color: #0f172a !important;
+  caret-color: #0f172a !important;
 }
 
+/* placeholder */
+::ng-deep .mat-mdc-input-element::placeholder {
+  color: #64748b !important;
+  opacity: 1;
+}
+
+/* texto del label */
 ::ng-deep .mdc-floating-label,
 ::ng-deep .mat-mdc-form-field .mat-mdc-floating-label {
   color: #64748b !important;
 }
 
-::ng-deep .mat-mdc-select-arrow {
+/* wrapper del field */
+::ng-deep .mat-mdc-text-field-wrapper {
+  background: #f8fafc !important;
+  border-radius: 12px !important;
+}
+
+/* icono search */
+::ng-deep .mat-icon {
   color: #475569 !important;
+}
+
+/* opciones del panel autocomplete */
+::ng-deep .mat-mdc-autocomplete-panel {
+  background: #ffffff !important;
+}
+
+::ng-deep .mat-mdc-option .mdc-list-item__primary-text {
+  color: #0f172a !important;
+}
+
+::ng-deep .mat-mdc-option:hover {
+  background: #e8edff !important;
+}
+
+::ng-deep .mat-mdc-option.mdc-list-item--selected,
+::ng-deep .mat-mdc-option.mat-mdc-option-active {
+  background: #dbeafe !important;
+}
+
+::ng-deep .mat-mdc-option.mat-mdc-option-active .mdc-list-item__primary-text,
+::ng-deep .mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text {
+  color: #0f172a !important;
+}
+
+.club-field {
+  ::ng-deep .mat-mdc-input-element {
+    color: #0f172a !important;
+    font-weight: 500;
+  }
+
+  ::ng-deep .mat-mdc-input-element::placeholder {
+    color: #64748b !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .regContainer {
+    padding: 16px;
+  }
+
+  .reg-card {
+    max-width: 100%;
+  }
+
+  .reg-card mat-card-content {
+    padding: 8px 16px 20px !important;
+  }
+
+  .cardImg {
+    max-width: 240px;
+  }
 }
