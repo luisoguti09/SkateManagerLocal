@@ -63,7 +63,7 @@
 
     </section>
 
-    <!-- <section *ngIf="mostrarModulo() === 'deportistas'" class="modulo-panel">
+    <section *ngIf="mostrarModulo() === 'deportistas'" class="modulo-panel">
         <h2>Deportistas</h2>
 
         <div *ngFor="let d of deportistas" class="list-item clickable" (click)="seleccionarDeportista(d)">
@@ -71,7 +71,7 @@
             <p>DNI: {{ d.documentoN || d.dni || 'Sin DNI' }}</p>
             <p>Club: {{ d.club || 'Sin club' }}</p>
         </div>
-    </section-->
+    </section>
 
     <mat-card class="evaluacion-card" *ngIf="mostrarModulo() === 'evaluacion'">
         <h2>Evaluación Técnica</h2>
