@@ -247,16 +247,6 @@
 
     </mat-card>
 
-    <section *ngIf="mostrarModulo() === 'deportistas'" class="modulo-panel">
-        <h2>Deportistas</h2>
-
-        <div *ngFor="let d of deportistas" class="list-item">
-            <strong>{{ d.apellidoYNombre || d.nombre || 'Sin nombre' }}</strong>
-            <p>DNI: {{ d.documentoN || d.dni || 'Sin DNI' }}</p>
-            <p>Club: {{ d.club || 'Sin club' }}</p>
-        </div>
-    </section>
-
     <section *ngIf="mostrarModulo() === 'eventos'" class="modulo-panel">
         <h2>Eventos</h2>
         <p>Este módulo todavía no está conectado. Próximo paso: traer eventos acá.</p>
