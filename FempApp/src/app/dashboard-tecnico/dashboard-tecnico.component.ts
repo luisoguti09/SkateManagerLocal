@@ -119,6 +119,7 @@ export class DashboardTecnicoComponent implements OnInit {
   public deportistasMap: Record<number, any> = {};
   public historialListadoCompleto: any[] = [];
   public variacionesElementosDeportista: VariacionElemento[] = [];
+  public deportistaAnalisisId: number | null = null;
 
   ngOnInit(): void {
     this.evaluacionForm = this.fb.group({
@@ -923,6 +924,18 @@ export class DashboardTecnicoComponent implements OnInit {
           valor: Math.round(value.total / value.cantidad)
         };
       });
+  }
+
+  seleccionarDeportistaParaAnalisis(deportistaId: number | null): void {
+    this.deportistaAnalisisId = deportistaId;
+
+    if (!deportistaId) {
+      this.variacionesElementosDeportista = [];
+      return;
+    }
+
+    this.variacionesElementosDeportista =
+      this.construirVariacionPorElemento(deportistaId);
   }
 
   logout(): void {
