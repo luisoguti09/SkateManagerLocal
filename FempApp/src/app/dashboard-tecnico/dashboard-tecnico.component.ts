@@ -120,6 +120,8 @@ export class DashboardTecnicoComponent implements OnInit {
   public historialListadoCompleto: any[] = [];
   public variacionesElementosDeportista: VariacionElemento[] = [];
   public deportistaAnalisisId: number | null = null;
+  public deportistaAnalisisSearchControl = new FormControl('');
+  public deportistasAnalisisFiltrados$!: Observable<any[]>;
 
   ngOnInit(): void {
     this.evaluacionForm = this.fb.group({
@@ -155,6 +157,7 @@ export class DashboardTecnicoComponent implements OnInit {
         this.componentes = componentes;
 
         this.inicializarFiltroDeportistas();
+        this.inicializarFiltroDeportistasAnalisis();
 
         this.resumenTecnico = {
           deportistasActivos: this.deportistas.length,
@@ -936,6 +939,45 @@ export class DashboardTecnicoComponent implements OnInit {
 
     this.variacionesElementosDeportista =
       this.construirVariacionPorElemento(deportistaId);
+  }
+
+  inicializarFiltroDeportistasAnalisis(): void {
+    this.deportistasAnalisisFiltrados$ = this.deportistaAnalisisSearchControl.valueChanges.pipe(
+      startWith(''),
+      map(value => {
+        const texto = typeof value === 'string'
+          ? value
+          : this.getNombreDeportista(value);
+
+        return this.filtrarDeportistas(texto || '');
+      })
+    );
+  }
+
+  displayDeportistaAnalisis = (deportista: any): string => {
+    if (!deportista) return '';
+
+    const nombre = deportista.apellidoYNombre || deportista.nombre || 'Sin nombre';
+    const dni = deportista.documentoN || deportista.dni || 'Sin DNI';
+
+    return `${nombre} - DNI: ${dni}`;
+  };
+
+  onDeportistaAnalisisSelected(deportista: any): void {
+    if (!deportista) {
+      this.deportistaAnalisisId = null;
+      this.variacionesElementosDeportista = [];
+      return;
+    }
+
+    this.deportistaAnalisisId = deportista.id;
+    this.seleccionarDeportistaParaAnalisis(deportista.id);
+  }
+
+  limpiarAnalisisDeportista(): void {
+    this.deportistaAnalisisId = null;
+    this.deportistaAnalisisSearchControl.setValue('');
+    this.variacionesElementosDeportista = [];
   }
 
   logout(): void {

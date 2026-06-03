@@ -268,49 +268,68 @@
         </p>
 
         <app-tecnico-grafico-evolucion [data]="evolucionMensualGeneral"></app-tecnico-grafico-evolucion>
-    </section>
 
-    <section class="analisis-subpanel">
-        <h3>Comparativa por elemento</h3>
-        <p class="section-subtitle">
-            Compará la última evaluación contra la anterior para una deportista.
-        </p>
-
-        <mat-form-field appearance="outline" class="full-width deportista-autocomplete">
-            <mat-label>Seleccionar deportista para análisis</mat-label>
-
-            <mat-select [value]="deportistaAnalisisId"
-                (selectionChange)="seleccionarDeportistaParaAnalisis($event.value)">
-                <mat-option [value]="null">Seleccioná una deportista</mat-option>
-                <mat-option *ngFor="let d of deportistas" [value]="d.id">
-                    {{ d.apellidoYNombre || d.nombre || 'Sin nombre' }}
-                </mat-option>
-            </mat-select>
-        </mat-form-field>
-
-        <div *ngIf="variacionesElementosDeportista.length > 0; else sinComparativa">
-            <div class="historial-item" *ngFor="let item of variacionesElementosDeportista">
+        <section class="analisis-subpanel">
+            <div class="analisis-subpanel__header">
                 <div>
-                    <strong>{{ item.elementoNombre }}</strong>
-                    <p>
-                        Anterior: {{ item.notaAnterior ?? '-' }}
-                        · Actual: {{ item.notaActual ?? '-' }}
+                    <h3>Comparativa por elemento</h3>
+                    <p class="section-subtitle">
+                        Compará la última evaluación contra la anterior para una deportista.
                     </p>
                 </div>
 
-                <div class="historial-resumen">
-                    <span *ngIf="item.variacion > 0">+{{ item.variacion }}</span>
-                    <span *ngIf="item.variacion === 0">{{ item.variacion }}</span>
-                    <span *ngIf="item.variacion < 0">{{ item.variacion }}</span>
+                <button mat-stroked-button type="button" *ngIf="deportistaAnalisisId"
+                    (click)="limpiarAnalisisDeportista()">
+                    Limpiar
+                </button>
+            </div>
+
+            <mat-form-field appearance="outline" class="full-width deportista-autocomplete">
+                <mat-label>Buscar deportista para análisis</mat-label>
+
+                <input type="text" matInput placeholder="Escribí nombre, DNI o club"
+                    [formControl]="deportistaAnalisisSearchControl" [matAutocomplete]="autoDeportistaAnalisis">
+
+                <mat-icon matSuffix>search</mat-icon>
+
+                <mat-autocomplete #autoDeportistaAnalisis="matAutocomplete" [displayWith]="displayDeportistaAnalisis"
+                    (optionSelected)="onDeportistaAnalisisSelected($event.option.value)">
+                    <mat-option *ngFor="let d of deportistasAnalisisFiltrados$ | async" [value]="d">
+                        <div class="deportista-option">
+                            <strong>{{ d.apellidoYNombre || d.nombre || 'Sin nombre' }}</strong>
+                            <small>
+                                DNI: {{ d.documentoN || d.dni || 'Sin DNI' }}
+                                · {{ d.club || 'Sin club' }}
+                            </small>
+                        </div>
+                    </mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <div *ngIf="variacionesElementosDeportista.length > 0; else sinComparativa">
+                <div class="historial-item" *ngFor="let item of variacionesElementosDeportista">
+                    <div>
+                        <strong>{{ item.elementoNombre }}</strong>
+                        <p>
+                            Anterior: {{ item.notaAnterior ?? '-' }}
+                            · Actual: {{ item.notaActual ?? '-' }}
+                        </p>
+                    </div>
+
+                    <div class="historial-resumen">
+                        <span *ngIf="item.variacion > 0">+{{ item.variacion }}</span>
+                        <span *ngIf="item.variacion === 0">{{ item.variacion }}</span>
+                        <span *ngIf="item.variacion < 0">{{ item.variacion }}</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <ng-template #sinComparativa>
-            <mat-card class="empty-card">
-                Seleccioná una deportista para ver la comparativa por elemento.
-            </mat-card>
-        </ng-template>
+            <ng-template #sinComparativa>
+                <mat-card class="empty-card">
+                    Seleccioná una deportista para ver la comparativa por elemento.
+                </mat-card>
+            </ng-template>
+        </section>
     </section>
 
     <section class="metricas-grid" *ngIf="evaluaciones.length > 0">
