@@ -26,6 +26,7 @@ import { UltimoSeguimiento } from '../interfaces/ultimo-seguimiento.interface';
 import { TecnicoUltimosSeguimientosComponent } from './widgets/tecnico-ultimos-seguimientos/tecnico-ultimos-seguimientos.component';
 import { TecnicoGraficoEvolucionComponent } from './widgets/tecnico-grafico-evolucion/tecnico-grafico-evolucion.component';
 import { VariacionElemento } from '../interfaces/variacion-elemento.interface';
+import { VariacionComponente } from '../interfaces/variacion-componente.interface';
 
 type ModuloTecnico =
   | 'eventos'
@@ -55,7 +56,7 @@ type ModuloTecnico =
     MatIconModule,
     MatAutocompleteModule,
     TecnicoUltimosSeguimientosComponent,
-    TecnicoGraficoEvolucionComponent
+    TecnicoGraficoEvolucionComponent,
   ],
   templateUrl: './dashboard-tecnico.component.html',
   styleUrls: ['./dashboard-tecnico.component.scss']
@@ -122,6 +123,10 @@ export class DashboardTecnicoComponent implements OnInit {
   public deportistaAnalisisId: number | null = null;
   public deportistaAnalisisSearchControl = new FormControl('');
   public deportistasAnalisisFiltrados$!: Observable<any[]>;
+  public deportistaAnalisisComponenteId: number | null = null;
+  public deportistaAnalisisComponenteSearchControl = new FormControl('');
+  public deportistasAnalisisComponentesFiltrados$!: Observable<any[]>;
+  public variacionesComponentesDeportista: VariacionComponente[] = [];
 
   ngOnInit(): void {
     this.evaluacionForm = this.fb.group({
@@ -158,6 +163,7 @@ export class DashboardTecnicoComponent implements OnInit {
 
         this.inicializarFiltroDeportistas();
         this.inicializarFiltroDeportistasAnalisis();
+        this.inicializarFiltroDeportistasAnalisisComponente();
 
         this.resumenTecnico = {
           deportistasActivos: this.deportistas.length,
@@ -978,6 +984,100 @@ export class DashboardTecnicoComponent implements OnInit {
     this.deportistaAnalisisId = null;
     this.deportistaAnalisisSearchControl.setValue('');
     this.variacionesElementosDeportista = [];
+  }
+
+  inicializarFiltroDeportistasAnalisisComponente(): void {
+    this.deportistasAnalisisComponentesFiltrados$ =
+      this.deportistaAnalisisComponenteSearchControl.valueChanges.pipe(
+        startWith(''),
+        map(value => {
+          const texto = typeof value === 'string'
+            ? value
+            : this.getNombreDeportista(value);
+
+          return this.filtrarDeportistas(texto || '');
+        })
+      );
+  }
+
+  displayDeportistaAnalisisComponente = (deportista: any): string => {
+    if (!deportista) return '';
+
+    const nombre = deportista.apellidoYNombre || deportista.nombre || 'Sin nombre';
+    const dni = deportista.documentoN || deportista.dni || 'Sin DNI';
+
+    return `${nombre} - DNI: ${dni}`;
+  };
+
+  private construirVariacionPorComponente(deportistaId: number): VariacionComponente[] {
+    const evaluacionesDeportista = (this.historialTecnico || [])
+      .filter((ev: any) => Number(ev.deportistaId) === Number(deportistaId))
+      .sort((a: any, b: any) => {
+        const fechaA = new Date(a.fechaEvaluacion || a.createdAt).getTime();
+        const fechaB = new Date(b.fechaEvaluacion || b.createdAt).getTime();
+        return fechaB - fechaA;
+      });
+
+    if (evaluacionesDeportista.length === 0) {
+      return [];
+    }
+
+    const ultima = evaluacionesDeportista[0];
+    const anterior = evaluacionesDeportista[1] || null;
+
+    const componentesUltima = Array.isArray(ultima?.componentes) ? ultima.componentes : [];
+    const componentesAnterior = Array.isArray(anterior?.componentes) ? anterior.componentes : [];
+
+    return componentesUltima
+      .map((compActual: any) => {
+        const componenteId = Number(compActual.componenteId);
+        const componenteAnterior = componentesAnterior.find(
+          (compPrev: any) => Number(compPrev.componenteId) === componenteId
+        );
+
+        const notaActual = Number.isFinite(Number(compActual?.nota)) ? Number(compActual.nota) : null;
+        const notaAnterior = componenteAnterior && Number.isFinite(Number(componenteAnterior?.nota))
+          ? Number(componenteAnterior.nota)
+          : null;
+
+        const variacion =
+          notaActual !== null && notaAnterior !== null
+            ? notaActual - notaAnterior
+            : 0;
+
+        return {
+          componenteId,
+          componenteNombre:
+            compActual?.componente?.nombre ||
+            this.getNombreComponente(componenteId),
+          notaAnterior,
+          notaActual,
+          variacion,
+          fechaAnterior: anterior ? new Date(anterior.fechaEvaluacion || anterior.createdAt) : null,
+          fechaActual: ultima ? new Date(ultima.fechaEvaluacion || ultima.createdAt) : null
+        } as VariacionComponente;
+      })
+      .sort((a: VariacionComponente, b: VariacionComponente) =>
+        Math.abs(b.variacion) - Math.abs(a.variacion)
+      );
+  }
+
+  onDeportistaAnalisisComponenteSelected(deportista: any): void {
+    if (!deportista) {
+      this.deportistaAnalisisComponenteId = null;
+      this.variacionesComponentesDeportista = [];
+      return;
+    }
+
+    this.deportistaAnalisisComponenteId = deportista.id;
+    this.variacionesComponentesDeportista =
+      this.construirVariacionPorComponente(deportista.id);
+  }
+
+  limpiarAnalisisComponenteDeportista(): void {
+    this.deportistaAnalisisComponenteId = null;
+    this.deportistaAnalisisComponenteSearchControl.setValue('');
+    this.variacionesComponentesDeportista = [];
   }
 
   logout(): void {

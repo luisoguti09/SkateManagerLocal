@@ -330,6 +330,71 @@
                 </mat-card>
             </ng-template>
         </section>
+
+        <section class="analisis-subpanel">
+            <div class="analisis-subpanel__header">
+                <div>
+                    <h3>Comparativa por componente</h3>
+                    <p class="section-subtitle">
+                        Compará la última evaluación contra la anterior para una deportista.
+                    </p>
+                </div>
+
+                <button mat-stroked-button type="button" *ngIf="deportistaAnalisisComponenteId"
+                    (click)="limpiarAnalisisComponenteDeportista()">
+                    Limpiar
+                </button>
+            </div>
+
+            <mat-form-field appearance="outline" class="full-width deportista-autocomplete">
+                <mat-label>Buscar deportista para análisis de componente</mat-label>
+
+                <input type="text" matInput placeholder="Escribí nombre, DNI o club"
+                    [formControl]="deportistaAnalisisComponenteSearchControl"
+                    [matAutocomplete]="autoDeportistaAnalisisComponente">
+
+                <mat-icon matSuffix>search</mat-icon>
+
+                <mat-autocomplete #autoDeportistaAnalisisComponente="matAutocomplete"
+                    [displayWith]="displayDeportistaAnalisisComponente"
+                    (optionSelected)="onDeportistaAnalisisComponenteSelected($event.option.value)">
+                    <mat-option *ngFor="let d of deportistasAnalisisComponentesFiltrados$ | async" [value]="d">
+                        <div class="deportista-option">
+                            <strong>{{ d.apellidoYNombre || d.nombre || 'Sin nombre' }}</strong>
+                            <small>
+                                DNI: {{ d.documentoN || d.dni || 'Sin DNI' }}
+                                · {{ d.club || 'Sin club' }}
+                            </small>
+                        </div>
+                    </mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <div *ngIf="variacionesComponentesDeportista.length > 0; else sinComparativaComponentes">
+                <div class="historial-item" *ngFor="let item of variacionesComponentesDeportista">
+                    <div>
+                        <strong>{{ item.componenteNombre }}</strong>
+                        <p>
+                            Anterior: {{ item.notaAnterior ?? '-' }}
+                            · Actual: {{ item.notaActual ?? '-' }}
+                        </p>
+                    </div>
+
+                    <div class="historial-resumen">
+                        <span *ngIf="item.variacion > 0">+{{ item.variacion }}</span>
+                        <span *ngIf="item.variacion === 0">{{ item.variacion }}</span>
+                        <span *ngIf="item.variacion < 0">{{ item.variacion }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <ng-template #sinComparativaComponentes>
+                <mat-card class="empty-card">
+                    Seleccioná una deportista para ver la comparativa por componente.
+                </mat-card>
+            </ng-template>
+        </section>
+
     </section>
 
     <section class="metricas-grid" *ngIf="evaluaciones.length > 0">
