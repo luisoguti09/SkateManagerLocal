@@ -272,6 +272,42 @@
         <section class="analisis-subpanel">
             <div class="analisis-subpanel__header">
                 <div>
+                    <h3>Comparativa entre clubes</h3>
+                    <p class="section-subtitle">
+                        Promedio técnico de los últimos 90 días versus los 90 días anteriores.
+                    </p>
+                </div>
+            </div>
+
+            <div *ngIf="comparativaClubes.length > 0; else sinComparativaClubes">
+                <div class="historial-item" *ngFor="let item of comparativaClubes">
+                    <div>
+                        <strong>{{ item.club }}</strong>
+                        <p>
+                            Promedio actual: {{ item.promedioActual }}
+                            · Anterior: {{ item.promedioAnterior }}
+                            · Evaluaciones: {{ item.cantidadEvaluaciones }}
+                        </p>
+                    </div>
+
+                    <div class="historial-resumen">
+                        <span *ngIf="item.variacion > 0">+{{ item.variacion }}</span>
+                        <span *ngIf="item.variacion === 0">{{ item.variacion }}</span>
+                        <span *ngIf="item.variacion < 0">{{ item.variacion }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <ng-template #sinComparativaClubes>
+                <mat-card class="empty-card">
+                    Todavía no hay evaluaciones suficientes para comparar clubes.
+                </mat-card>
+            </ng-template>
+        </section>
+
+        <section class="analisis-subpanel">
+            <div class="analisis-subpanel__header">
+                <div>
                     <h3>Comparativa por elemento</h3>
                     <p class="section-subtitle">
                         Compará la última evaluación contra la anterior para una deportista.

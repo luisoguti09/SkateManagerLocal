@@ -27,6 +27,7 @@ import { TecnicoUltimosSeguimientosComponent } from './widgets/tecnico-ultimos-s
 import { TecnicoGraficoEvolucionComponent } from './widgets/tecnico-grafico-evolucion/tecnico-grafico-evolucion.component';
 import { VariacionElemento } from '../interfaces/variacion-elemento.interface';
 import { VariacionComponente } from '../interfaces/variacion-componente.interface';
+import { ComparativaClub } from '../interfaces/comparativa-club.interface';
 
 type ModuloTecnico =
   | 'eventos'
@@ -127,6 +128,7 @@ export class DashboardTecnicoComponent implements OnInit {
   public deportistaAnalisisComponenteSearchControl = new FormControl('');
   public deportistasAnalisisComponentesFiltrados$!: Observable<any[]>;
   public variacionesComponentesDeportista: VariacionComponente[] = [];
+  public comparativaClubes: ComparativaClub[] = [];
 
   ngOnInit(): void {
     this.evaluacionForm = this.fb.group({
@@ -164,6 +166,7 @@ export class DashboardTecnicoComponent implements OnInit {
         this.inicializarFiltroDeportistas();
         this.inicializarFiltroDeportistasAnalisis();
         this.inicializarFiltroDeportistasAnalisisComponente();
+        
 
         this.resumenTecnico = {
           deportistasActivos: this.deportistas.length,
@@ -206,6 +209,7 @@ export class DashboardTecnicoComponent implements OnInit {
         this.ultimosSeguimientos = this.construirUltimosSeguimientos(this.historialTecnico);
         this.evolucionMensualGeneral = this.construirEvolucionMensualGeneral(this.historialTecnico);
         this.aplicarFiltrosHistorialFrontend();
+        this.comparativaClubes = this.construirComparativaClubes(this.historialTecnico);
       },
       error: (err) => {
         console.error('Error cargando historial técnico inicial:', err);
@@ -1078,6 +1082,94 @@ export class DashboardTecnicoComponent implements OnInit {
     this.deportistaAnalisisComponenteId = null;
     this.deportistaAnalisisComponenteSearchControl.setValue('');
     this.variacionesComponentesDeportista = [];
+  }
+
+  private construirComparativaClubes(evaluaciones: any[]): ComparativaClub[] {
+    const hoy = new Date();
+    const inicioActual = new Date(hoy);
+    inicioActual.setDate(hoy.getDate() - 90);
+
+    const inicioAnterior = new Date(inicioActual);
+    inicioAnterior.setDate(inicioActual.getDate() - 90);
+
+    const clubsMap = new Map<string, {
+      totalActual: number;
+      cantidadActual: number;
+      totalAnterior: number;
+      cantidadAnterior: number;
+    }>();
+
+    for (const ev of evaluaciones || []) {
+      const fecha = new Date(ev.fechaEvaluacion || ev.createdAt);
+      if (Number.isNaN(fecha.getTime())) continue;
+
+      const deportista = this.deportistas.find(
+        (d: any) => Number(d.id) === Number(ev.deportistaId)
+      );
+
+      const club = String(deportista?.club || '').trim() || 'Sin club';
+
+      const indice = this.calcularIndiceEvaluacion(ev);
+      if (indice === null) continue;
+
+      if (!clubsMap.has(club)) {
+        clubsMap.set(club, {
+          totalActual: 0,
+          cantidadActual: 0,
+          totalAnterior: 0,
+          cantidadAnterior: 0
+        });
+      }
+
+      const item = clubsMap.get(club)!;
+
+      if (fecha >= inicioActual && fecha <= hoy) {
+        item.totalActual += indice;
+        item.cantidadActual += 1;
+      } else if (fecha >= inicioAnterior && fecha < inicioActual) {
+        item.totalAnterior += indice;
+        item.cantidadAnterior += 1;
+      }
+    }
+
+    return Array.from(clubsMap.entries())
+      .map(([club, data]) => {
+        const promedioActual = data.cantidadActual
+          ? Math.round(data.totalActual / data.cantidadActual)
+          : 0;
+
+        const promedioAnterior = data.cantidadAnterior
+          ? Math.round(data.totalAnterior / data.cantidadAnterior)
+          : 0;
+
+        return {
+          club,
+          promedioActual,
+          promedioAnterior,
+          variacion: promedioActual - promedioAnterior,
+          cantidadEvaluaciones: data.cantidadActual
+        } as ComparativaClub;
+      })
+      .filter((item: ComparativaClub) => item.cantidadEvaluaciones > 0)
+      .sort((a: ComparativaClub, b: ComparativaClub) => b.promedioActual - a.promedioActual);
+  }
+
+  private calcularIndiceEvaluacion(ev: any): number | null {
+    const elementos = Array.isArray(ev?.elementos) ? ev.elementos : [];
+    const componentes = Array.isArray(ev?.componentes) ? ev.componentes : [];
+
+    const notas = [
+      ...elementos
+        .map((el: any) => Number(el.nota))
+        .filter((n: number) => Number.isFinite(n)),
+      ...componentes
+        .map((comp: any) => Number(comp.nota))
+        .filter((n: number) => Number.isFinite(n))
+    ];
+
+    if (!notas.length) return null;
+
+    return notas.reduce((acc: number, n: number) => acc + n, 0) / notas.length;
   }
 
   logout(): void {
