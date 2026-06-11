@@ -65,6 +65,31 @@ if (db.Usuario && db.PerfilDeportivo) {
   });
 }
 
+// PerfilDeportivo -> Club / ClubSede
+if (db.PerfilDeportivo && db.Club) {
+  db.PerfilDeportivo.belongsTo(db.Club, {
+    foreignKey: 'clubId',
+    as: 'clubEntidad'
+  });
+
+  db.Club.hasMany(db.PerfilDeportivo, {
+    foreignKey: 'clubId',
+    as: 'perfilesDeportivos'
+  });
+}
+
+if (db.PerfilDeportivo && db.ClubSede) {
+  db.PerfilDeportivo.belongsTo(db.ClubSede, {
+    foreignKey: 'clubSedeId',
+    as: 'clubSede'
+  });
+
+  db.ClubSede.hasMany(db.PerfilDeportivo, {
+    foreignKey: 'clubSedeId',
+    as: 'perfilesDeportivos'
+  });
+}
+
 // Relaciones de Evaluaciones
 if (db.Evaluacion && db.EvaluacionElemento) {
   db.Evaluacion.hasMany(db.EvaluacionElemento, {
