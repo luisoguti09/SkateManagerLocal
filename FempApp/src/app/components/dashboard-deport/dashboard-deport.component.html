@@ -57,7 +57,7 @@
           <div class="eventos-grid">
             <mat-card class="evento-card" *ngFor="let evento of eventosDisponibles; trackBy: trackById" @fadeInCard>
               <mat-card-header>
-                <mat-card-title>{{ evento.titulo }}</mat-card-title>
+                <mat-card-title>{{ evento.nombre || evento.titulo }}</mat-card-title>
                 <mat-card-subtitle>{{ evento.fechaInicio | date:'dd/MM/yyyy' }}</mat-card-subtitle>
               </mat-card-header>
 

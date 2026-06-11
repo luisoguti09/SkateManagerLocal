@@ -16,7 +16,7 @@
         <div class="eventos-grid">
           <mat-card class="evento-card" *ngFor="let ev of eventos; trackBy: trackById">
             <mat-card-header>
-              <mat-card-title>{{ ev.titulo }}</mat-card-title>
+              <p><strong>Nombre:</strong> {{ evento.nombre || evento.titulo }}</p>
               <mat-card-subtitle>{{ ev.fechaInicio | date:'dd/MM/yyyy' }}</mat-card-subtitle>
             </mat-card-header>
 
@@ -82,7 +82,7 @@
         </div>
 
         <h2>Info del Evento</h2>
-        <p><strong>Nombre:</strong> {{ evento.titulo }}</p>
+        <p><strong>Nombre:</strong> {{ evento.nombre || evento.titulo }}</p>
         <p><strong>Lugar:</strong> {{ evento.lugar }}</p>
         <p><strong>Descripción:</strong> {{ evento.descripcion }}</p>
         <div class="evento-actions">
