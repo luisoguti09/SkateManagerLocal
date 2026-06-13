@@ -78,6 +78,7 @@ export class EventsListComponent implements OnInit {
         };
       });
 
+      console.log('[EVENTS LIST NUEVA VERSION] normalizados:', normalizados);
       console.log('Eventos normalizados:', normalizados);
       this.data = normalizados;
     });
