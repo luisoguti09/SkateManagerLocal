@@ -50,19 +50,36 @@ export class EventsListComponent implements OnInit {
 
   load() {
     this.ev.getEventos().subscribe(evts => {
-      this.data = (evts ?? []).map((e: any) => {
+      const normalizados = (evts ?? []).map((e: any, index: number) => {
+        const nombre = e.nombre || e.titulo || 'Sin nombre';
         const fechaRaw = e.fecha ?? e.fechaInicio ?? null;
-        const fechaValida =
-          fechaRaw && !Number.isNaN(new Date(fechaRaw).getTime())
-            ? fechaRaw
-            : null;
+
+        let fechaMostrable: Date | null = null;
+
+        if (fechaRaw) {
+          const parsed = new Date(fechaRaw);
+          if (!Number.isNaN(parsed.getTime())) {
+            fechaMostrable = parsed;
+          } else {
+            console.warn('[EVENTO CON FECHA INVALIDA]', {
+              index,
+              id: e.id,
+              nombre,
+              fechaRaw,
+              evento: e
+            });
+          }
+        }
 
         return {
           ...e,
-          nombre: e.nombre || e.titulo || 'Sin nombre',
-          fechaMostrable: fechaValida
+          nombre,
+          fechaMostrable
         };
       });
+
+      console.log('Eventos normalizados:', normalizados);
+      this.data = normalizados;
     });
   }
 
