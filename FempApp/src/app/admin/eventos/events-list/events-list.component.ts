@@ -49,7 +49,21 @@ export class EventsListComponent implements OnInit {
   }
 
   load() {
-    this.ev.getEventos().subscribe(evts => this.data = evts ?? []);
+    this.ev.getEventos().subscribe(evts => {
+      this.data = (evts ?? []).map((e: any) => {
+        const fechaRaw = e.fecha ?? e.fechaInicio ?? null;
+        const fechaValida =
+          fechaRaw && !Number.isNaN(new Date(fechaRaw).getTime())
+            ? fechaRaw
+            : null;
+
+        return {
+          ...e,
+          nombre: e.nombre || e.titulo || 'Sin nombre',
+          fechaMostrable: fechaValida
+        };
+      });
+    });
   }
 
 
