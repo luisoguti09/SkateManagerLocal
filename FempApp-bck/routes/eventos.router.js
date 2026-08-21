@@ -183,6 +183,7 @@ router.get('/usuarios/:usuarioId/eventos', async (req, res) => {
 // Permite una o varias participaciones deportivas en el mismo evento.
 // Regla de duplicado: EventoId + UsuarioId + perfilDeportivoId.
 router.post('/:eventoId/inscribir', async (req, res) => {
+  console.log('[INSCRIPCION MULTIPERFIL] endpoint nuevo activo');
   try {
     const { eventoId } = req.params;
     const { usuarioId, perfilDeportivoId, perfilDeportivoIds } = req.body;
@@ -205,7 +206,8 @@ router.post('/:eventoId/inscribir', async (req, res) => {
 
     if (!perfilesIdsNormalizados.length) {
       return res.status(400).json({
-        error: 'Debe seleccionar al menos un perfil deportivo'
+        error: 'Debe seleccionar al menos un perfil deportivo',
+        version: 'multiperfil'
       });
     }
 
