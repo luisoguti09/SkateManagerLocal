@@ -19,44 +19,89 @@ const authOptional = (req, res, next) => {
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 
+function normalizarFecha(valor) {
+  if (!valor) return null;
 
+  const parsed = new Date(valor);
+  if (Number.isNaN(parsed.getTime())) return null;
 
+  return parsed;
+}
 
+function mapEventoPayload(body = {}) {
+  const titulo = body.titulo ?? body.nombre ?? null;
+  const descripcion = body.descripcion ?? '';
+  const fechaInicio = normalizarFecha(body.fechaInicio ?? body.fecha);
+  const fechaFin = normalizarFecha(body.fechaFin);
+  const lugar = body.lugar ?? null;
 
+  return {
+    titulo,
+    descripcion,
+    fechaInicio,
+    fechaFin,
+    lugar
+  };
+}
 
-// Obtener todos los eventos
+function mapEventoResponse(evento) {
+  if (!evento) return null;
+
+  const plain = evento.toJSON ? evento.toJSON() : evento;
+
+  return {
+    ...plain,
+
+    nombre: plain.titulo ?? null,
+    fecha: plain.fechaInicio ?? null
+  };
+}
+
+// GET /eventos
 router.get('/', async (req, res) => {
   try {
-    const eventos = await Evento.findAll();
-    res.json(eventos);
+    const eventos = await Evento.findAll({
+      order: [['fechaInicio', 'ASC'], ['createdAt', 'DESC']]
+    });
+
+    res.json(eventos.map(mapEventoResponse));
   } catch (error) {
+    console.error('Error al obtener los eventos:', error);
     res.status(500).json({ error: 'Error al obtener los eventos' });
   }
 });
 
-// Crear un nuevo evento
+// POST /eventos
 router.post('/', async (req, res) => {
   try {
-    const { nombre, fecha, lugar, descripcion } = req.body;
+    const payload = mapEventoPayload(req.body);
+
+    if (!payload.titulo) {
+      return res.status(400).json({ error: 'El título es obligatorio' });
+    }
+
+    if (!payload.lugar) {
+      return res.status(400).json({ error: 'El lugar es obligatorio' });
+    }
 
     const nuevoEvento = await Evento.create({
-      nombre,
-      fecha,
-      lugar,
-      descripcion: descripcion ?? '',
+      titulo: payload.titulo,
+      descripcion: payload.descripcion,
+      fechaInicio: payload.fechaInicio,
+      fechaFin: payload.fechaFin,
+      lugar: payload.lugar,
       qrEventCode: uuidv4(),
-      estado: 'publicado',
-      tipo: 'TORNEO',
+      estado: 'publicado'
     });
 
-    res.status(201).json(nuevoEvento);
+    res.status(201).json(mapEventoResponse(nuevoEvento));
   } catch (error) {
-    console.error(error);
+    console.error('Error al crear el evento:', error);
     res.status(500).json({ error: 'Error al crear el evento' });
   }
 });
 
-// Obtener un evento por ID
+// GET /eventos/:id
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -66,33 +111,49 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Evento no encontrado' });
     }
 
-    res.json(evento);
+    res.json(mapEventoResponse(evento));
   } catch (error) {
+    console.error('Error al obtener el evento:', error);
     res.status(500).json({ error: 'Error al obtener el evento' });
   }
 });
 
-// Actualizar un evento
+// PUT /eventos/:id
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, fecha, lugar } = req.body;
     const evento = await Evento.findByPk(id);
 
     if (!evento) {
       return res.status(404).json({ error: 'Evento no encontrado' });
     }
 
-    evento.titulo = nombre;
-    evento.fechaInicio = fecha;
-    evento.lugar = lugar;
-    await evento.save();
+    const payload = mapEventoPayload(req.body);
 
-    res.json(evento);
+    if (!payload.titulo) {
+      return res.status(400).json({ error: 'El título es obligatorio' });
+    }
+
+    if (!payload.lugar) {
+      return res.status(400).json({ error: 'El lugar es obligatorio' });
+    }
+
+    await evento.update({
+      titulo: payload.titulo,
+      descripcion: payload.descripcion,
+      fechaInicio: payload.fechaInicio,
+      fechaFin: payload.fechaFin,
+      lugar: payload.lugar
+    });
+
+    res.json(mapEventoResponse(evento));
   } catch (error) {
+    console.error('Error al actualizar el evento:', error);
     res.status(500).json({ error: 'Error al actualizar el evento' });
   }
 });
+
+
 
 // Recibir los eventos de un usuario (patinador)
 router.get('/usuarios/:usuarioId/eventos', async (req, res) => {
@@ -119,62 +180,110 @@ router.get('/usuarios/:usuarioId/eventos', async (req, res) => {
 
 
 // POST /eventos/:eventoId/inscribir
+// Permite una o varias participaciones deportivas en el mismo evento.
+// Regla de duplicado: EventoId + UsuarioId + perfilDeportivoId.
 router.post('/:eventoId/inscribir', async (req, res) => {
   try {
     const { eventoId } = req.params;
-    const { usuarioId, perfilDeportivoId } = req.body;
+    const { usuarioId, perfilDeportivoId, perfilDeportivoIds } = req.body;
+
+    if (!usuarioId) {
+      return res.status(400).json({
+        error: 'Falta usuarioId'
+      });
+    }
+
+    const perfilesIds = Array.isArray(perfilDeportivoIds)
+      ? perfilDeportivoIds
+      : perfilDeportivoId
+        ? [perfilDeportivoId]
+        : [];
+
+    const perfilesIdsNormalizados = perfilesIds
+      .map(id => Number(id))
+      .filter(id => Number.isFinite(id) && id > 0);
+
+    if (!perfilesIdsNormalizados.length) {
+      return res.status(400).json({
+        error: 'Debe seleccionar al menos un perfil deportivo'
+      });
+    }
 
     const usuario = await Usuario.findByPk(usuarioId);
     const evento = await Evento.findByPk(eventoId);
 
     if (!usuario || !evento) {
-      return res.status(404).json({ error: 'Usuario o evento no encontrado' });
+      return res.status(404).json({
+        error: 'Usuario o evento no encontrado'
+      });
     }
 
-    if (!perfilDeportivoId) {
-      return res.status(400).json({ error: 'Debe seleccionar un perfil deportivo' });
-    }
+    const inscripcionesCreadas = [];
+    const inscripcionesExistentes = [];
 
-    const perfil = await sequelize.models.PerfilDeportivo.findByPk(perfilDeportivoId);
+    for (const perfilId of perfilesIdsNormalizados) {
+      const perfil = await sequelize.models.PerfilDeportivo.findByPk(perfilId);
 
-    if (!perfil) {
-      return res.status(404).json({ error: 'Perfil deportivo no encontrado' });
-    }
-
-    if (Number(perfil.usuarioId) !== Number(usuarioId)) {
-      return res.status(403).json({ error: 'El perfil deportivo no pertenece al usuario' });
-    }
-
-    const existeInscripcion = await UsuarioEventos.findOne({
-      where: {
-        EventoId: eventoId,
-        UsuarioId: usuarioId
+      if (!perfil) {
+        return res.status(404).json({
+          error: `Perfil deportivo no encontrado: ${perfilId}`
+        });
       }
-    });
 
-    if (existeInscripcion) {
-      return res.status(409).json({ error: 'El usuario ya está inscripto en este evento' });
+      if (Number(perfil.usuarioId) !== Number(usuarioId)) {
+        return res.status(403).json({
+          error: `El perfil deportivo ${perfilId} no pertenece al usuario`
+        });
+      }
+
+      if (perfil.activa === false || perfil.activa === 0) {
+        return res.status(400).json({
+          error: `El perfil deportivo ${perfilId} está inactivo`
+        });
+      }
+
+      const existeInscripcion = await UsuarioEventos.findOne({
+        where: {
+          EventoId: Number(eventoId),
+          UsuarioId: Number(usuarioId),
+          perfilDeportivoId: Number(perfilId)
+        }
+      });
+
+      if (existeInscripcion) {
+        inscripcionesExistentes.push(existeInscripcion);
+        continue;
+      }
+
+      const inscripcion = await UsuarioEventos.create({
+        EventoId: Number(eventoId),
+        UsuarioId: Number(usuarioId),
+        perfilDeportivoId: Number(perfilId),
+
+        disciplina: perfil.disciplina,
+        categoria: perfil.categoria,
+        division: perfil.divisional,
+        grupo: null,
+        rol: 'deportista'
+      });
+
+      inscripcionesCreadas.push(inscripcion);
     }
-
-    const inscripcion = await UsuarioEventos.create({
-      EventoId: eventoId,
-      UsuarioId: usuarioId,
-      perfilDeportivoId: perfil.id,
-      disciplina: perfil.disciplina,
-      categoria: perfil.categoria,
-      division: perfil.divisional,
-      grupo: null,
-      rol: 'deportista'
-    });
 
     return res.status(201).json({
-      mensaje: 'Inscripción exitosa',
-      inscripcion
+      mensaje: 'Inscripción procesada correctamente',
+      creadas: inscripcionesCreadas.length,
+      existentes: inscripcionesExistentes.length,
+      inscripcionesCreadas,
+      inscripcionesExistentes
     });
 
   } catch (error) {
     console.error('Error al inscribirse:', error);
-    return res.status(500).json({ error: 'Error al inscribirse al evento' });
+    return res.status(500).json({
+      error: 'Error al inscribirse al evento',
+      detail: error.message
+    });
   }
 });
 

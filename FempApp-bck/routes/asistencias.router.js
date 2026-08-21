@@ -50,7 +50,7 @@ router.get('/', verifyToken, requireRole('administrador', 'tecnico'), async (req
         },
         {
           model: Evento,
-          attributes: ['id', 'titulo', 'lugar', 'fechaInicio']
+          attributes: ['id', 'titulo', 'lugar', 'fechaInicio', 'fechaFin']
         }
       ],
       order: [['createdAt', 'DESC']]

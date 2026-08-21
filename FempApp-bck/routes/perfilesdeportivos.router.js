@@ -20,15 +20,16 @@ function buildPerfilInclude() {
 }
 
 async function validarClubYSede({ clubId, clubSedeId }) {
-    if (!clubId || !clubSedeId) {
+    if (!clubId) {
         return {
-            ok: false,
-            status: 400,
-            error: 'clubId y clubSedeId son obligatorios'
+            ok: true,
+            club: null,
+            sede: null
         };
     }
 
     const club = await Club.findByPk(clubId);
+
     if (!club || !club.activo) {
         return {
             ok: false,
@@ -37,7 +38,16 @@ async function validarClubYSede({ clubId, clubSedeId }) {
         };
     }
 
+    if (!clubSedeId) {
+        return {
+            ok: true,
+            club,
+            sede: null
+        };
+    }
+
     const sede = await ClubSede.findByPk(clubSedeId);
+
     if (!sede || !sede.activo) {
         return {
             ok: false,
