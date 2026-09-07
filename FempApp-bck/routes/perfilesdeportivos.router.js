@@ -100,6 +100,7 @@ router.post('/', async (req, res) => {
             divisional,
             categoria,
             temporada,
+            origenCategoria,
             clubId,
             clubSedeId,
             activa
@@ -129,13 +130,12 @@ router.post('/', async (req, res) => {
             divisional: divisional ?? null,
             categoria: categoria ?? null,
             temporada: temporada ?? null,
+            origenCategoria: origenCategoria ?? null,
 
-            // compatibilidad temporal
-            club: validacionClub.club.nombre,
+            club: validacionClub.club?.nombre || req.body.club || null,
 
-            // relación correcta
-            clubId,
-            clubSedeId,
+            clubId: clubId ?? null,
+            clubSedeId: clubSedeId ?? null,
 
             activa: typeof activa === 'boolean' ? activa : true
         });
@@ -157,6 +157,7 @@ router.put('/:id', async (req, res) => {
         const { id } = req.params;
         const {
             disciplina,
+            origenCategoria,
             licencia,
             modalidad,
             divisional,
@@ -186,18 +187,17 @@ router.put('/:id', async (req, res) => {
 
         await perfil.update({
             disciplina: disciplina ?? perfil.disciplina,
+            origenCategoria: origenCategoria ?? perfil.origenCategoria,
             licencia: licencia ?? perfil.licencia,
             modalidad: modalidad ?? perfil.modalidad,
             divisional: divisional ?? perfil.divisional,
             categoria: categoria ?? perfil.categoria,
             temporada: temporada ?? perfil.temporada,
 
-            // compatibilidad temporal
-            club: validacionClub.club.nombre,
+            club: validacionClub.club?.nombre || req.body.club || perfil.club || null,
 
-            // relación correcta
-            clubId: nextClubId,
-            clubSedeId: nextClubSedeId,
+            clubId: nextClubId ?? null,
+            clubSedeId: nextClubSedeId ?? null,
 
             activa: typeof activa === 'boolean' ? activa : perfil.activa
         });

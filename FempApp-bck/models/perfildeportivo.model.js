@@ -16,6 +16,11 @@ const PerfilDeportivo = sequelize.define('PerfilDeportivo', {
     allowNull: false
   },
 
+  origenCategoria: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  
   licencia: {
     type: DataTypes.STRING,
     allowNull: true
