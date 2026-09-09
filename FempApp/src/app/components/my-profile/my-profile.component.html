@@ -100,6 +100,17 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Origen de la categoría</mat-label>
+          <mat-select [(ngModel)]="nuevoPerfil.origenCategoria" name="origenCategoria" required>
+            <mat-option *ngFor="let origen of origenesCategoria" [value]="origen.valor"
+              [disabled]="!origen.habilitado">
+              {{ origen.etiqueta }}{{ origen.habilitado ? '' : ' (pendiente de catálogo)' }}
+            </mat-option>
+          </mat-select>
+          <mat-hint>Indica de dónde proviene la categoría; es independiente de la licencia.</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>Licencia</mat-label>
           <mat-select [(ngModel)]="nuevoPerfil.licencia" name="licencia">
             <mat-option value="Nacional Atleta">Nacional Atleta</mat-option>
@@ -146,13 +157,39 @@
           </mat-select>
         </mat-form-field>
 
+        <p *ngIf="cargandoClubes" role="status">Cargando clubes…</p>
+        <div *ngIf="errorClubes" role="alert">
+          <p>{{ errorClubes }}</p>
+          <button type="button" mat-button (click)="cargarClubes()" [disabled]="cargandoClubes">
+            Reintentar carga de clubes
+          </button>
+        </div>
+        <div *ngIf="!cargandoClubes && !errorClubes && clubes.length === 0" role="status">
+          <p>No hay clubes disponibles. Consultá a la Federación si falta el tuyo.</p>
+          <button type="button" mat-button (click)="cargarClubes()">Actualizar listado</button>
+        </div>
+
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Club</mat-label>
-          <input matInput [(ngModel)]="nuevoPerfil.club" name="club">
+          <mat-select [(ngModel)]="nuevoPerfil.clubId" name="clubId" required
+            (selectionChange)="onClubChange($event.value)"
+            [disabled]="cargandoClubes || !!errorClubes || clubes.length === 0 || guardandoPerfil">
+            <mat-option *ngFor="let club of clubes" [value]="club.id">{{ club.nombre }}</mat-option>
+          </mat-select>
         </mat-form-field>
 
-        <button mat-raised-button color="accent" (click)="crearPerfil()">
-          Guardar Perfil
+        <mat-form-field *ngIf="nuevoPerfil.clubId && sedesDisponibles.length > 0"
+          appearance="outline" class="full-width">
+          <mat-label>Sede / referente</mat-label>
+          <mat-select [(ngModel)]="nuevoPerfil.clubSedeId" name="clubSedeId" [disabled]="guardandoPerfil">
+            <mat-option [value]="null">Sin sede / referente</mat-option>
+            <mat-option *ngFor="let sede of sedesDisponibles" [value]="sede.id">{{ sede.nombre }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <button type="button" mat-raised-button color="accent" (click)="crearPerfil()"
+          [disabled]="guardandoPerfil || !clubYSedeValidos() || !nuevoPerfil.disciplina.trim() || !origenHabilitado(nuevoPerfil.origenCategoria)">
+          {{ guardandoPerfil ? 'Guardando…' : 'Guardar Perfil' }}
         </button>
       </div>
 
@@ -160,14 +197,44 @@
         <div class="perfiles-list">
           <div *ngFor="let perfil of perfilesDeportivos; trackBy: trackByPerfilId" class="perfil-item">
             <p><strong>Disciplina:</strong> {{ perfil.disciplina }}</p>
+            <p><strong>Origen de la categoría:</strong> {{ etiquetaOrigen(perfil.origenCategoria) }}</p>
             <p><strong>Licencia:</strong> {{ perfil.licencia }}</p>
             <p><strong>Modalidad:</strong> {{ perfil.modalidad }}</p>
             <p><strong>Divisional:</strong> {{ perfil.divisional }}</p>
             <p><strong>Categoría:</strong> {{ perfil.categoria }}</p>
             <p><strong>Temporada:</strong> {{ perfil.temporada }}</p>
-            <p><strong>Club:</strong> {{ perfil.club }}</p>
+            <p><strong>Club:</strong> {{ perfil.clubEntidad?.nombre || perfil.club || 'Sin informar' }}</p>
+            <p *ngIf="perfil.clubSede"><strong>Sede / referente:</strong> {{ perfil.clubSede.nombre }}</p>
 
-            <button type="button" mat-button color="warn" (click)="eliminarPerfil(perfil.id)">
+            <div *ngIf="perfilEditandoOrigenId === perfil.id">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Origen de la categoría</mat-label>
+                <mat-select [(ngModel)]="origenCategoriaEditado" [name]="'origen-' + perfil.id"
+                  [disabled]="guardandoOrigen" required>
+                  <mat-option *ngIf="origenCategoriaEditado && origenCategoriaEditado !== 'CAP' && origenCategoriaEditado !== 'PROMOS_FEMPA' && origenCategoriaEditado !== 'ESPECIAL_FEMPA'"
+                    [value]="origenCategoriaEditado" disabled>
+                    {{ origenCategoriaEditado }} (valor existente)
+                  </mat-option>
+                  <mat-option *ngFor="let origen of origenesCategoria" [value]="origen.valor"
+                    [disabled]="!origen.habilitado">
+                    {{ origen.etiqueta }}{{ origen.habilitado ? '' : ' (pendiente de catálogo)' }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+              <button type="button" mat-button color="primary" (click)="guardarOrigen(perfil)"
+                [disabled]="guardandoOrigen || !origenHabilitado(origenCategoriaEditado) || origenCategoriaEditado === perfil.origenCategoria">
+                {{ guardandoOrigen ? 'Guardando…' : 'Guardar origen' }}
+              </button>
+              <button type="button" mat-button (click)="cancelarEdicionOrigen()" [disabled]="guardandoOrigen">
+                Cancelar
+              </button>
+            </div>
+            <button *ngIf="perfilEditandoOrigenId !== perfil.id" type="button" mat-button
+              color="primary" (click)="editarOrigen(perfil)" [disabled]="guardandoOrigen">
+              Editar origen
+            </button>
+
+            <button type="button" mat-button color="warn" (click)="eliminarPerfil(perfil.id)" [disabled]="guardandoOrigen">
               Eliminar Perfil
             </button>
           </div>

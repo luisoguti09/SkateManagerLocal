@@ -251,28 +251,48 @@
   color: #fff;
 }
 
-::ng-deep .mat-mdc-form-field {
-  background: transparent;
+/* Ajustes limitados a Mi perfil: un único contorno, sin divisiones internas. */
+:host ::ng-deep .profile-page {
+  .mat-mdc-form-field {
+    background: transparent;
+    --mdc-outlined-text-field-input-text-color: #fff;
+    --mdc-outlined-text-field-label-text-color: #fff;
+    --mdc-outlined-text-field-focus-label-text-color: #fff;
+    --mdc-outlined-text-field-hover-label-text-color: #fff;
+    --mdc-outlined-text-field-outline-color: rgba(255, 255, 255, .55);
+    --mdc-outlined-text-field-hover-outline-color: #fff;
+    --mdc-outlined-text-field-focus-outline-color: #fff;
+    --mat-select-enabled-trigger-text-color: #fff;
+    --mat-select-enabled-arrow-color: rgba(255, 255, 255, .8);
+    --mat-select-focused-arrow-color: #fff;
+  }
+
+  .mdc-notched-outline__leading {
+    border-right: 0;
+  }
+
+  .mdc-notched-outline__notch {
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .mdc-notched-outline__trailing {
+    border-left: 0;
+  }
+
+  .mat-mdc-input-element,
+  .mat-mdc-select-value,
+  .mdc-floating-label {
+    color: #fff;
+  }
+
+  .mat-mdc-form-field-hint-wrapper {
+    color: rgba(255, 255, 255, .85);
+  }
 }
 
-::ng-deep .mat-mdc-input-element {
-  color: #0b1f44;
-}
-
-::ng-deep .mat-mdc-floating-label,
-::ng-deep .mat-mdc-form-field-label {
-  color: #44546a;
-  font-weight: 500;
-}
-
-::ng-deep .mdc-notched-outline__leading,
-::ng-deep .mdc-notched-outline__notch,
-::ng-deep .mdc-notched-outline__trailing {
-  border-color: rgba(11, 31, 68, .25);
-}
-
-::ng-deep .mat-mdc-form-field-subscript-wrapper {
-  color: #5b6b85;
+.perfil-form {
+  margin-top: 24px;
 }
 
 .form-grid {
@@ -284,13 +304,12 @@
 app-qr-credencial {
   display: block;
   margin-top: 12px;
-  border: 1px solid rgba(26, 115, 232, .18);
-  border-radius: 12px;
-  background: #fafcff;
-  padding: 12px;
+  /* La tarjeta del componente QR ya aporta su propio fondo y contorno. */
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .perfil-item {
   padding: 12px 0;
 }
-
