@@ -2,26 +2,14 @@ import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth.service';
 
-function destinoPorRol(rol: string | null, rolId: number | null): string {
-  const rolNormalizado = String(rol || '').trim().toLowerCase();
-
-  if (rolNormalizado === 'administrador' || rolId === 2) {
-    return '/dashboard-admin';
-  }
-
-  if (rolNormalizado === 'tecnico' || rolId === 3) {
-    return '/dashboard-tecnico';
-  }
-
-  if (rolNormalizado === 'deportista' || rolId === 1) {
-    return '/dashboard-deport';
-  }
-
-  if (rolNormalizado === 'tesoreria' || rolId === 4) {
-    return '/dashboard-tesoreria';
-  }
-
-  return '/login';
+function destinoPorRol(rol: string | undefined): string {
+  const destinos: Record<string, string> = {
+    administrador: '/dashboard-admin',
+    tecnico: '/dashboard-tecnico',
+    deportista: '/dashboard-deport',
+    tesoreria: '/dashboard-tesoreria'
+  };
+  return rol ? destinos[rol] ?? '/login' : '/login';
 }
 
 export const authGuard: CanActivateFn = (route, state) => {
@@ -44,7 +32,7 @@ export const authGuard: CanActivateFn = (route, state) => {
     return true;
   }
 
-  const rolUsuario = String(usuario.rol || '').trim().toLowerCase();
+  const rolUsuario = authService.getRolNombre() ?? '';
 
   const autorizado = rolesPermitidos
     .map(r => String(r).trim().toLowerCase())
@@ -61,6 +49,6 @@ export const authGuard: CanActivateFn = (route, state) => {
   });
 
   return router.createUrlTree([
-    destinoPorRol(usuario?.rol || null, usuario?.rolId || authService.getRolId())
+    destinoPorRol(authService.getRolNombre())
   ]);
 };

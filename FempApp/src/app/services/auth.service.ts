@@ -13,7 +13,8 @@ const ROLE_BY_ID: Record<number, RolNombre> = {
   1: 'deportista',
   2: 'administrador',
   3: 'tecnico',
-  4: 'tesoreria'
+  4: 'tecnico', // juez: compatibilidad vigente en el backend
+  5: 'tesoreria'
 };
 
 @Injectable({
@@ -156,23 +157,29 @@ export class AuthService {
   }
 
 
-  private getCurrentRole(): RolNombre | undefined {
+  getRolNombre(): RolNombre | undefined {
     const u = this.getUsuario();
     if (!u) return undefined;
-    // soporta 'rol' como string o 'rolId' numérico
-    return (u.rol as RolNombre) ?? (u.rolId != null ? ROLE_BY_ID[u.rolId] : undefined);
+    const nombre = String(u.rol ?? '').trim().toLowerCase();
+    const aliases: Record<string, RolNombre> = {
+      admin: 'administrador', administrador: 'administrador',
+      auditor: 'tecnico', tecnico: 'tecnico', juez: 'tecnico',
+      deportista: 'deportista', tesorero: 'tesoreria', tesoreria: 'tesoreria'
+    };
+    // Un nombre explícito prevalece sobre el ID; uno desconocido no otorga permisos.
+    return nombre ? aliases[nombre] : ROLE_BY_ID[Number(u.rolId)];
   }
 
   // ¿tiene exactamente este rol?
   hasRole(role: RolNombre | string): boolean {
-    const current = this.getCurrentRole();
+    const current = this.getRolNombre();
     if (!current) return false;
     return current.toLowerCase() === String(role).toLowerCase();
   }
 
   // ¿tiene cualquiera de estos roles?
   hasAnyRole(roles: (RolNombre | string)[]): boolean {
-    const current = this.getCurrentRole();
+    const current = this.getRolNombre();
     if (!current) return false;
     return roles.some(r => current.toLowerCase() === String(r).toLowerCase());
   }

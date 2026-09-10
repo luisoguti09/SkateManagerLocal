@@ -51,16 +51,6 @@ export class LoginComponent implements OnInit {
     console.log('Form creado');
   }
 
-  obtenerRolPorId(rolId: number | null): string {
-    const roles: Record<number, string> = {
-      1: 'deportista',
-      2: 'administrador',
-      3: 'tecnico',
-      4: 'tesoreria'
-    };
-
-    return rolId ? roles[Number(rolId)] || '' : '';
-  }
 
   login() {
     this.authService.login(
@@ -81,10 +71,7 @@ export class LoginComponent implements OnInit {
         console.log('[LOGIN] res.rolId crudo:', res?.rolId);
         console.log('[LOGIN] authService.getRolId():', this.authService.getRolId());
 
-        const rol = String(
-          usuario?.rol ||
-          this.obtenerRolPorId(res?.rolId || usuario?.rolId || this.authService.getRolId())
-        ).trim().toLowerCase();
+        const rol = this.authService.getRolNombre();
 
         switch (rol) {
           case 'administrador':
