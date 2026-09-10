@@ -95,7 +95,8 @@ export class AuthService {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.rolKey);
     localStorage.removeItem('user_rol_nombre');
-    this.loggedUser = null;
+    this.setLoggedUser(null);
+    localStorage.removeItem('usuarioId');
     this.router.navigate(['/login']);
   }
 
@@ -177,6 +178,4 @@ export class AuthService {
   }
 
 
-
 }
-

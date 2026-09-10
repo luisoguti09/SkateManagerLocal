@@ -12,18 +12,30 @@
       <mat-card-subtitle>Ahora corroboremos tu DNI</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
+      <div *ngIf="errorMsg" class="error-message" role="alert">{{ errorMsg }}</div>
+      <div *ngIf="successMsg" class="success-message" role="status">{{ successMsg }}</div>
+      <div *ngIf="errorRoles" class="error-message" role="alert">
+        {{ errorRoles }}
+        <button mat-button type="button" (click)="cargarRoles()" [disabled]="cargandoRoles">Reintentar roles</button>
+      </div>
+      <div *ngIf="errorClubes" class="error-message" role="alert">
+        {{ errorClubes }}
+        <button mat-button type="button" (click)="cargarClubes()" [disabled]="cargandoClubes">Reintentar clubes</button>
+      </div>
 
       <!-- Formulario de búsqueda de DNI -->
-      <form [formGroup]="form" class="reg-form">
+      <form [formGroup]="form" class="reg-form" (ngSubmit)="buscar()">
         <mat-form-field class="example-full-width" appearance="outline">
           <mat-label>DNI</mat-label>
-          <input type="text" matInput formControlName="dni" placeholder="Por favor ingresalo acá">
+          <input type="text" matInput formControlName="dni" placeholder="Por favor ingresalo acá" inputmode="numeric"
+            [readonly]="cargandoBuscar || cargando || !!successMsg">
         </mat-form-field>
       </form>
 
       <mat-card-actions>
         <section>
-          <button mat-raised-button (click)="buscar()" [disabled]="cargandoBuscar">
+          <button mat-raised-button type="button" (click)="buscar()"
+            [disabled]="cargandoBuscar || cargando || !!successMsg">
             <ng-container *ngIf="!cargandoBuscar; else buscandoTpl">Buscar</ng-container>
           </button>
 
@@ -35,16 +47,20 @@
 
       <app-registro-fast *ngIf="empadronada == 'EMPADRONADA'" [pers]="pers"></app-registro-fast>
 
-      <div *ngIf="empadronada == 'NO_EMPADRONADA'">
-        <!-- Formulario para cargar datos si no está empadronada -->
+      <div *ngIf="empadronada != ''">
+        <!-- Edad declarada: no se inventa a partir de la existencia en padrón. -->
         <form [formGroup]="form" class="reg-form">
           <mat-form-field class="example-full-width">
-            <mat-label for="nombre">Nombre y apellido</mat-label>
-            <input id="nombre" type="text" matInput formControlName="nombre" placeholder="Jorge Luis Rodriguez">
+            <mat-label>Nombre y apellido</mat-label>
+            <input id="nombre" type="text" matInput formControlName="nombre" placeholder="Jorge Luis Rodriguez"
+              [readonly]="cargando">
+            <mat-error *ngIf="form.get('nombre')?.invalid">Ingresá nombre y apellido.</mat-error>
           </mat-form-field>
           <mat-form-field class="example-full-width">
             <mat-label for="edad">Edad</mat-label>
-            <input id="edad" type="number" matInput formControlName="edad" placeholder="18">
+            <input id="edad" type="number" matInput formControlName="edad" placeholder="Tu edad actual" min="0" step="1"
+              [readonly]="cargando">
+            <mat-error *ngIf="form.get('edad')?.invalid">Ingresá una edad válida.</mat-error>
           </mat-form-field>
           <mat-form-field *ngIf="form.get('rolId')?.value === 1" appearance="outline">
             <mat-label>Categoría</mat-label>
@@ -76,25 +92,21 @@
           </mat-form-field>
 
           <mat-form-field class="example-full-width">
-            <mat-label for="password">Confirme su contraseña</mat-label>
+            <mat-label>Confirmá tu contraseña</mat-label>
             <input id="confirmPass" type="password" matInput formControlName="confirmPass"
               placeholder="Reingresa tu contraseña">
           </mat-form-field>
 
-          <mat-form-field class="example-full-width" *ngIf="empadronada == 'NO_EMPADRONADA'">
-            <mat-label for="dni">DNI</mat-label>
-            <input type="text" matInput formControlName="dni" placeholder="12345678">
-          </mat-form-field>
 
           <mat-form-field class="example-full-width club-field" appearance="outline">
             <mat-label>Club</mat-label>
 
             <input type="text" matInput placeholder="Buscá tu club" [formControl]="clubSearchControl"
-              [matAutocomplete]="autoClub">
+              [matAutocomplete]="autoClub" [readonly]="cargando || cargandoClubes || !!errorClubes">
 
             <mat-icon matSuffix>search</mat-icon>
 
-            <mat-autocomplete #autoClub="matAutocomplete" [displayWith]="displayClub"
+            <mat-autocomplete #autoClub="matAutocomplete" class="registro-club-panel" [displayWith]="displayClub"
               (optionSelected)="onClubSelected($event.option.value)">
               <mat-option *ngFor="let club of clubesFiltrados$ | async" [value]="club">
                 <div class="club-option">
@@ -113,23 +125,17 @@
 
           <mat-form-field appearance="fill">
             <mat-label>Rol</mat-label>
-            <mat-select formControlName="rolId" required>
+            <mat-select formControlName="rolId" panelClass="registro-role-panel" required>
               <mat-option *ngFor="let rol of roles" [value]="rol.id">
                 {{ rol.nombre }}
               </mat-option>
             </mat-select>
           </mat-form-field>
 
-          <div *ngIf="errorMsg" class="error-message">
-            {{ errorMsg }}
-          </div>
-
-          <div *ngIf="successMsg" class="success-message">
-            {{ successMsg }}
-          </div>
 
           <section>
-            <button mat-raised-button color="primary" type="submit" [disabled]="cargando">
+            <button mat-raised-button color="primary" type="submit"
+              [disabled]="cargando || cargandoBuscar || cargandoRoles || cargandoClubes || !!errorRoles || !!errorClubes || !!successMsg">
               <mat-progress-spinner *ngIf="cargando" mode="indeterminate" diameter="20"
                 color="accent"></mat-progress-spinner>
               <span *ngIf="!cargando">Registrar</span>
