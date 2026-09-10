@@ -267,17 +267,23 @@
     --mat-select-focused-arrow-color: #fff;
   }
 
-  .mdc-notched-outline__leading {
-    border-right: 0;
+  // Material recalcula border-width al enfocar y al pasar el mouse.
+  // Anulamos solo los laterales internos; conservamos el contorno y la etiqueta.
+  .mdc-text-field--outlined .mdc-notched-outline__leading {
+    border-inline-end-width: 0 !important;
+    border-inline-end-style: none !important;
   }
 
-  .mdc-notched-outline__notch {
-    border-left: 0;
-    border-right: 0;
+  .mdc-text-field--outlined .mdc-notched-outline__notch {
+    border-inline-start-width: 0 !important;
+    border-inline-end-width: 0 !important;
+    border-inline-start-style: none !important;
+    border-inline-end-style: none !important;
   }
 
-  .mdc-notched-outline__trailing {
-    border-left: 0;
+  .mdc-text-field--outlined .mdc-notched-outline__trailing {
+    border-inline-start-width: 0 !important;
+    border-inline-start-style: none !important;
   }
 
   .mat-mdc-input-element,
