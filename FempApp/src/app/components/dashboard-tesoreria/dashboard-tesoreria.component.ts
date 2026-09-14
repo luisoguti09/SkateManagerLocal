@@ -1,6 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { AuthService } from '../../services/auth.service';
 
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -22,6 +25,7 @@ import { EventosService } from '../../services/eventos.service';
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
@@ -36,8 +40,24 @@ import { EventosService } from '../../services/eventos.service';
   templateUrl: './dashboard-tesoreria.component.html',
   styleUrl: './dashboard-tesoreria.component.scss'
 })
-export class DashboardTesoreriaComponent implements OnInit {
+export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
   cargando = false;
+  pagosCargados = false;
+  errorPagos = '';
+  errorEventos = '';
+  errorClubes = '';
+  private solicitudPagos?: Subscription;
+  private solicitudClubes?: Subscription;
+  private solicitudEventos?: Subscription;
+
+  get datosDisponibles(): boolean {
+    return this.pagosCargados && !this.cargando && !this.errorPagos;
+  }
+
+  get clubSeleccionado(): string {
+    if (this.filtros.clubId === null && this.filtros.clubSedeId === null) return '';
+    return `${this.filtros.clubId ?? 'null'}|${this.filtros.clubSedeId ?? 'null'}`;
+  }
 
   eventos: any[] = [];
   clubes: any[] = [];
@@ -79,32 +99,54 @@ export class DashboardTesoreriaComponent implements OnInit {
     'estadoConciliacion'
   ];
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  @ViewChild(MatPaginator) set paginator(value: MatPaginator | undefined) {
+    this.dataSource.paginator = value ?? null;
+  }
+  @ViewChild(MatSort) set sort(value: MatSort | undefined) {
+    this.dataSource.sort = value ?? null;
+  }
 
   constructor(
     private pagosService: PagosService,
-    private eventosService: EventosService
+    private eventosService: EventosService,
+    public auth: AuthService
   ) { }
 
   ngOnInit(): void {
     this.cargarEventos();
+    this.cargarClubes();
     this.cargarPagos();
   }
 
+  ngOnDestroy(): void {
+    this.solicitudPagos?.unsubscribe();
+    this.solicitudClubes?.unsubscribe();
+    this.solicitudEventos?.unsubscribe();
+  }
+
+  logout(): void {
+    this.auth.logout();
+  }
+
   cargarEventos(): void {
-    this.eventosService.getEventos().subscribe({
+    this.solicitudEventos?.unsubscribe();
+    this.errorEventos = '';
+    this.solicitudEventos = this.eventosService.getEventos().subscribe({
       next: (eventos: any[]) => {
         this.eventos = eventos || [];
       },
       error: (error: any) => {
         console.error('Error cargando eventos:', error);
+        this.errorEventos = 'No se pudo cargar el listado de eventos.';
       }
     });
   }
 
   cargarPagos(): void {
+    this.solicitudPagos?.unsubscribe();
     this.cargando = true;
+    this.errorPagos = '';
+    this.pagosCargados = false;
 
     const filtrosLimpios = {
       eventoId: this.filtros.eventoId ?? null,
@@ -116,60 +158,46 @@ export class DashboardTesoreriaComponent implements OnInit {
       fechaHasta: this.filtros.fechaHasta || null
     };
 
-    this.pagosService.listarPagos(filtrosLimpios).subscribe({
+    this.solicitudPagos = this.pagosService.listarPagos(filtrosLimpios).subscribe({
       next: (pagos: any[]) => {
         this.pagos = pagos || [];
-        this.dataSource = new MatTableDataSource<any>(this.pagos);
-
-        setTimeout(() => {
-          this.dataSource.paginator = this.paginator;
-          this.dataSource.sort = this.sort;
-        });
+        this.dataSource.data = this.pagos;
+        this.dataSource.paginator?.firstPage();
 
         this.calcularResumenLocal();
-        this.cargarClubes();
-
+        this.pagosCargados = true;
         this.cargando = false;
       },
       error: (error: any) => {
         console.error('Error cargando pagos:', error);
+        this.pagos = [];
+        this.dataSource.data = [];
+        this.calcularResumenLocal();
+        this.errorPagos = 'No pudimos cargar los pagos. Los importes y el listado no están disponibles. Intentá nuevamente.';
         this.cargando = false;
-      }
-    });
-  }
-
-  cargarResumenEvento(): void {
-    if (!this.filtros.eventoId) {
-      this.calcularResumenLocal();
-      return;
-    }
-
-    this.pagosService.obtenerResumenEvento(this.filtros.eventoId).subscribe({
-      next: (resumen: any) => {
-        this.resumen = resumen;
-      },
-      error: (error: any) => {
-        console.error('Error cargando resumen de evento:', error);
       }
     });
   }
 
   cargarClubes(): void {
+    this.solicitudClubes?.unsubscribe();
+    this.errorClubes = '';
+    this.clubes = [];
     const eventoId = this.filtros.eventoId ?? null;
 
-    this.pagosService.obtenerClubesFiltro(eventoId).subscribe({
+    this.solicitudClubes = this.pagosService.obtenerClubesFiltro(eventoId).subscribe({
       next: (clubes: any[]) => {
         this.clubes = clubes || [];
       },
       error: (error: any) => {
         console.error('Error cargando clubes:', error);
+        this.errorClubes = 'No se pudo cargar el listado de clubes y sedes.';
       }
     });
   }
 
   aplicarFiltros(): void {
     this.cargarPagos();
-    this.cargarResumenEvento();
   }
 
   limpiarFiltros(): void {
@@ -183,6 +211,7 @@ export class DashboardTesoreriaComponent implements OnInit {
       fechaHasta: ''
     };
 
+    this.cargarClubes();
     this.cargarPagos();
   }
 
@@ -229,7 +258,7 @@ export class DashboardTesoreriaComponent implements OnInit {
 
       if (pago.estadoPago === 'approved' && pago.estadoConciliacion === 'ok') {
         acc.pagados += 1;
-      } else if (pago.estadoPago === 'pendiente') {
+      } else if (pago.estadoPago === 'pendiente' || pago.estadoPago === 'pending') {
         acc.pendientes += 1;
       } else {
         acc.observados += 1;
@@ -273,6 +302,7 @@ export class DashboardTesoreriaComponent implements OnInit {
   }
 
   exportarCsv(): void {
+    if (!this.datosDisponibles || !this.pagos.length) return;
     const headers = [
       'Fecha',
       'Evento',
