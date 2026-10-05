@@ -48,7 +48,7 @@ export class LoginComponent implements OnInit {
       email: new FormControl('', [Validators.required, Validators.email]),
       password: new FormControl('', [Validators.required])
     });
-    console.log('Form creado');
+
   }
 
 
@@ -65,11 +65,10 @@ export class LoginComponent implements OnInit {
 
         const usuario = res.usuario;
 
-        console.log('Usuario logueado:', usuario);
-        console.log('[LOGIN] usuario.rol crudo:', usuario?.rol);
-        console.log('[LOGIN] usuario.rolId crudo:', usuario?.rolId);
-        console.log('[LOGIN] res.rolId crudo:', res?.rolId);
-        console.log('[LOGIN] authService.getRolId():', this.authService.getRolId());
+
+
+
+
 
         const rol = this.authService.getRolNombre();
 
@@ -87,9 +86,9 @@ export class LoginComponent implements OnInit {
             break;
 
           case 'tesoreria':
-            console.log('[LOGIN] navegando a dashboard-tesoreria');
+
             this.router.navigate(['/dashboard-tesoreria']).then(ok => {
-              console.log('[LOGIN] navegación tesorería resultado:', ok);
+
             });
             break;
 

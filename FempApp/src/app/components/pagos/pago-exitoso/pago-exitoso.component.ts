@@ -1,56 +1,53 @@
-// pago-exitoso.component.ts (idéntico patrón para fallido/pendiente)
-import { Component, inject } from '@angular/core';
-import { ActivatedRoute, Params, Router } from '@angular/router';
-import { take } from 'rxjs/operators';
+import { Component, inject, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PagosService } from '../../../services/pagos.service';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
-
 @Component({
   selector: 'app-pago-exitoso',
-  standalone: true, 
+  standalone: true,
   imports: [CommonModule, MatButtonModule],
   templateUrl: './pago-exitoso.component.html',
-  styleUrls: ['./pago-exitoso.component.scss']
+  styleUrls: ['./pago-exitoso.component.scss'],
 })
-export class PagoExitosoComponent {
+export class PagoExitosoComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private pagos = inject(PagosService);
-
-  public status = '';
-  public paymentId = '';
-  public preferenceId = '';
-  public externalRef = '';
-  public validado = false;
-  public detalleValidacion: any;
-
+  paymentId = '';
+  cargando = false;
+  validado = false;
+  error = '';
+  estado = '';
   ngOnInit() {
-    this.route.queryParams.pipe(take(1)).subscribe((p: Params) => {
-      
-      // https://www.mercadopago.com.ar/developers/es/guides/online-payments/checkout-pro/integration/
-      this.status       = p['status'] || p['collection_status'] || '';
-      this.paymentId    = p['payment_id'] || p['collection_id'] || '';
-      this.preferenceId = p['preference_id'] || '';
-      this.externalRef  = p['external_reference'] || ''; 
-
-      console.log('status:', this.status);
-      console.log('payment_id:', this.paymentId);
-      console.log('preference_id:', this.preferenceId);
-
-      // validar del lado del server
-      if (this.paymentId) {
-        this.pagos.validarPago(this.paymentId).subscribe({
-          next: d => { this.validado = true; this.detalleValidacion = d; },
-          error: _ => { this.validado = false; }
-        });
-      }
-
-      // Redirigir suave al dashboard
-      setTimeout(() => this.router.navigate(['/dashboard-deport']), 4000);
+    this.paymentId =
+      this.route.snapshot.queryParamMap.get('payment_id') ||
+      this.route.snapshot.queryParamMap.get('collection_id') ||
+      '';
+    this.verificar();
+  }
+  verificar() {
+    if (!this.paymentId) {
+      this.error = 'Falta la referencia del pago. Consultá tu inscripción.';
+      return;
+    }
+    this.cargando = true;
+    this.error = '';
+    this.validado = false;
+    this.pagos.validarPago(this.paymentId).subscribe({
+      next: (d) => {
+        this.estado = d.status;
+        this.validado =
+          d.status === 'approved' && d.estadoConciliacion === 'ok';
+        this.cargando = false;
+      },
+      error: () => {
+        this.cargando = false;
+        this.error =
+          'No pudimos verificar el pago. Ingresá con tu cuenta y consultá tu inscripción o reintentá.';
+      },
     });
   }
-
   volver() {
     this.router.navigate(['/dashboard-deport']);
   }

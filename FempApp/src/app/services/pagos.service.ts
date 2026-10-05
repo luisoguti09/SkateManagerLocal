@@ -1,13 +1,21 @@
+import { AuthService } from './auth.service';
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class PagosService {
-
   private apiURL = environment.SERVER_API;
   private http = inject(HttpClient);
+  private auth = inject(AuthService);
+  private get options() {
+    return {
+      headers: new HttpHeaders({
+        Authorization: `Bearer ${this.auth.getToken() || ''}`,
+      }),
+    };
+  }
 
   crearPreferencia(body: {
     title: string;
@@ -17,13 +25,15 @@ export class PagosService {
   }): Observable<{ init_point: string; id: string }> {
     return this.http.post<{ init_point: string; id: string }>(
       `${this.apiURL}/pagos/crear-preferencia`,
-      body
+      body,
     );
   }
 
-
   validarPago(paymentId: string) {
-    return this.http.get<any>(`${this.apiURL}/pagos/confirmar?payment_id=${paymentId}`);
+    return this.http.get<any>(
+      `${this.apiURL}/pagos/confirmar?payment_id=${encodeURIComponent(paymentId)}`,
+      this.options,
+    );
   }
 
   listarPagos(filtros?: {
@@ -65,12 +75,16 @@ export class PagosService {
       params.fechaHasta = filtros.fechaHasta;
     }
 
-    return this.http.get<any[]>(`${this.apiURL}/pagos`, { params });
+    return this.http.get<any[]>(`${this.apiURL}/pagos`, {
+      ...this.options,
+      params,
+    });
   }
 
   obtenerResumenEvento(eventoId: number) {
     return this.http.get<any>(
-      `${this.apiURL}/pagos/resumen/evento/${eventoId}`
+      `${this.apiURL}/pagos/resumen/evento/${eventoId}`,
+      this.options,
     );
   }
 
@@ -81,10 +95,9 @@ export class PagosService {
       params.eventoId = eventoId;
     }
 
-    return this.http.get<any[]>(
-      `${this.apiURL}/pagos/filtros/clubes`,
-      { params }
-    );
+    return this.http.get<any[]>(`${this.apiURL}/pagos/filtros/clubes`, {
+      ...this.options,
+      params,
+    });
   }
-
 }

@@ -1,148 +1,88 @@
-const express = require('express');
-const router = express.Router();
-const db = require('../models');
-const { verifyToken, requireRole } = require('../middleware/auth.middleware');
-
-// GET /precios-participacion/evento/:eventoId
-router.get('/evento/:eventoId', verifyToken, requireRole('administrador', 'tesoreria'), async (req, res) => {
-  try {
-    const { eventoId } = req.params;
-
-    const precios = await db.PrecioParticipacionEvento.findAll({
-      where: { eventoId },
-      order: [['cantidadParticipaciones', 'ASC']]
-    });
-
-    return res.json(precios);
-  } catch (error) {
-    console.error('[PreciosParticipacion GET error]', error);
-    return res.status(500).json({
-      error: 'No se pudieron obtener los precios de participación',
-      detail: error.message
-    });
-  }
-});
-
-// POST /precios-participacion
-router.post('/', verifyToken, requireRole('administrador', 'tesoreria'), async (req, res) => {
-  try {
-    const {
-      eventoId,
-      cantidadParticipaciones,
-      monto,
-      activo = true
-    } = req.body;
-
-    if (!eventoId || !cantidadParticipaciones || !monto) {
-      return res.status(400).json({
-        error: 'Faltan datos obligatorios: eventoId, cantidadParticipaciones y monto'
+const router = require('express').Router();
+const { verifyToken } = require('../middleware/auth.middleware');
+const { wrap, sesion, roles, evento, R, db } = require('../services/circuito');
+router.use(verifyToken, sesion);
+router.get(
+  '/evento/:eventoId',
+  roles('administrador', 'tesoreria', 'deportista'),
+  wrap(async (req, res) => {
+    await evento(req.params.eventoId);
+    res.json(
+      await db.PrecioParticipacionEvento.findAll({
+        where: { eventoId: R.id(req.params.eventoId) },
+        order: [['cantidadParticipaciones', 'ASC']],
+      }),
+    );
+  }),
+);
+function validar(body) {
+  const n = R.id(body.cantidadParticipaciones);
+  if (n > 100) R.fail(400, 'Cantidad inválida.');
+  if (R.centavos(body.monto) <= 0)
+    R.fail(400, 'El arancel debe ser mayor a cero.');
+  if (body.activo !== undefined && typeof body.activo !== 'boolean')
+    R.fail(400, 'Estado inválido.');
+  return {
+    cantidadParticipaciones: n,
+    monto: body.monto,
+    activo: body.activo ?? true,
+  };
+}
+router.post(
+  '/',
+  roles('tesoreria'),
+  wrap(async (req, res) => {
+    const data = validar(req.body);
+    const precio = await db.sequelize.transaction(async (t) => {
+      const ev = await evento(req.body.eventoId, t);
+      const [p] = await db.PrecioParticipacionEvento.findOrCreate({
+        where: {
+          eventoId: ev.id,
+          cantidadParticipaciones: data.cantidadParticipaciones,
+        },
+        defaults: data,
+        transaction: t,
       });
-    }
-
-    const evento = await db.Evento.findByPk(eventoId);
-
-    if (!evento) {
-      return res.status(404).json({
-        error: 'Evento no encontrado'
-      });
-    }
-
-    const [precio, creado] = await db.PrecioParticipacionEvento.findOrCreate({
-      where: {
-        eventoId,
-        cantidadParticipaciones
-      },
-      defaults: {
-        monto,
-        activo
-      }
+      await p.update(data, { transaction: t });
+      return p;
     });
-
-    if (!creado) {
-      await precio.update({
-        monto,
-        activo
-      });
-    }
-
-    return res.status(creado ? 201 : 200).json({
-      mensaje: creado
-        ? 'Precio de participación creado correctamente'
-        : 'Precio de participación actualizado correctamente',
-      precio
+    res.json({ precio });
+  }),
+);
+router.patch(
+  '/:id',
+  roles('tesoreria'),
+  wrap(async (req, res) => {
+    const precio = await db.sequelize.transaction(async (t) => {
+      const p = await db.PrecioParticipacionEvento.findByPk(
+        R.id(req.params.id),
+        { transaction: t },
+      );
+      if (!p) R.fail(404, 'Arancel inexistente.');
+      await evento(p.eventoId, t);
+      const data = validar({ ...p.toJSON(), ...req.body });
+      if (data.cantidadParticipaciones !== p.cantidadParticipaciones)
+        R.fail(400, 'Creá otro arancel para una cantidad distinta.');
+      await p.update(data, { transaction: t });
+      return p;
     });
-  } catch (error) {
-    console.error('[PreciosParticipacion POST error]', error);
-    return res.status(500).json({
-      error: 'No se pudo guardar el precio de participación',
-      detail: error.message
+    res.json({ precio });
+  }),
+);
+router.delete(
+  '/:id',
+  roles('tesoreria'),
+  wrap(async (req, res) => {
+    await db.sequelize.transaction(async (t) => {
+      const p = await db.PrecioParticipacionEvento.findByPk(
+        R.id(req.params.id),
+        { transaction: t },
+      );
+      if (!p) R.fail(404, 'Arancel inexistente.');
+      await evento(p.eventoId, t);
+      await p.update({ activo: false }, { transaction: t });
     });
-  }
-});
-
-// PATCH /precios-participacion/:id
-router.patch('/:id', verifyToken, requireRole('administrador', 'tesoreria'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      cantidadParticipaciones,
-      monto,
-      activo
-    } = req.body;
-
-    const precio = await db.PrecioParticipacionEvento.findByPk(id);
-
-    if (!precio) {
-      return res.status(404).json({
-        error: 'Precio de participación no encontrado'
-      });
-    }
-
-    await precio.update({
-      ...(cantidadParticipaciones !== undefined && { cantidadParticipaciones }),
-      ...(monto !== undefined && { monto }),
-      ...(activo !== undefined && { activo })
-    });
-
-    return res.json({
-      mensaje: 'Precio de participación actualizado correctamente',
-      precio
-    });
-  } catch (error) {
-    console.error('[PreciosParticipacion PATCH error]', error);
-    return res.status(500).json({
-      error: 'No se pudo actualizar el precio de participación',
-      detail: error.message
-    });
-  }
-});
-
-// DELETE lógico /precios-participacion/:id
-router.delete('/:id', verifyToken, requireRole('administrador', 'tesoreria'), async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const precio = await db.PrecioParticipacionEvento.findByPk(id);
-
-    if (!precio) {
-      return res.status(404).json({
-        error: 'Precio de participación no encontrado'
-      });
-    }
-
-    await precio.update({ activo: false });
-
-    return res.json({
-      mensaje: 'Precio de participación desactivado correctamente',
-      precio
-    });
-  } catch (error) {
-    console.error('[PreciosParticipacion DELETE error]', error);
-    return res.status(500).json({
-      error: 'No se pudo desactivar el precio de participación',
-      detail: error.message
-    });
-  }
-});
-
+    res.json({ ok: true });
+  }),
+);
 module.exports = router;

@@ -18,7 +18,6 @@ import { EventsListComponent } from './admin/eventos/events-list/events-list.com
 import { EventQrComponent } from './admin/eventos/event-qr/event-qr.component';
 
 export const routes: Routes = [
-
   { path: 'login', component: LoginComponent }, // canActivate: [noAuthGuard] },
   { path: 'registro', component: RegistroComponent }, // canActivate: [noAuthGuard] },
   { path: 'registroFast', component: RegistroFastComponent }, // canActivate: [noAuthGuard] },
@@ -34,46 +33,50 @@ export const routes: Routes = [
     path: 'dashboard-deport',
     component: DashboardDeportComponent,
     children: [
-
       {
         path: 'mis-datos',
         loadComponent: () =>
-          import('./components/my-profile/my-profile.component')
-            .then(m => m.MyProfileComponent)
+          import('./components/my-profile/my-profile.component').then(
+            (m) => m.MyProfileComponent,
+          ),
       },
       {
         path: 'mis-eventos',
         loadComponent: () =>
-          import('./components/evento-detail/evento-detail.component')
-            .then(m => m.EventoDetailComponent),
-        data: { mode: 'inscriptos' }
-      }
-    ]
+          import('./components/evento-detail/evento-detail.component').then(
+            (m) => m.EventoDetailComponent,
+          ),
+        data: { mode: 'inscriptos' },
+      },
+    ],
   }, // canActivate: [authGuard] },
   {
     path: 'pago-exitoso',
     loadComponent: () =>
-      import('./components/pagos/pago-exitoso/pago-exitoso.component')
-        .then(m => m.PagoExitosoComponent),
+      import('./components/pagos/pago-exitoso/pago-exitoso.component').then(
+        (m) => m.PagoExitosoComponent,
+      ),
   },
   {
     path: 'pago-fallido',
     loadComponent: () =>
-      import('./components/pagos/pago-fallido/pago-fallido.component')
-        .then(m => m.PagoFallidoComponent),
+      import('./components/pagos/pago-fallido/pago-fallido.component').then(
+        (m) => m.PagoFallidoComponent,
+      ),
   },
   {
     path: 'pago-pendiente',
     loadComponent: () =>
-      import('./components/pagos/pago-pendiente/pago-pendiente.component')
-        .then(m => m.PagoPendienteComponent),
+      import('./components/pagos/pago-pendiente/pago-pendiente.component').then(
+        (m) => m.PagoPendienteComponent,
+      ),
   },
   { path: 'dashboard-admin', redirectTo: 'admin', pathMatch: 'full' }, // canActivate: [authGuard] },
   { path: 'dashboard-tecnico', component: DashboardTecnicoComponent }, // canActivate: [authGuard] },
   {
     path: 'dashboard-prof',
     redirectTo: 'dashboard-tecnico',
-    pathMatch: 'full'
+    pathMatch: 'full',
   }, // canActivate: [authGuard] },
   // Ruta por defecto redirige a login
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -83,73 +86,103 @@ export const routes: Routes = [
     path: 'perfil',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./components/my-profile/my-profile.component').then(c => c.MyProfileComponent),
+      import('./components/my-profile/my-profile.component').then(
+        (c) => c.MyProfileComponent,
+      ),
   },
   {
     path: 'admin',
     canActivate: [adminGuard],
     loadComponent: () =>
-      import('./admin/admin-shell/admin-shell.component').then(c => c.AdminShellComponent),
+      import('./admin/admin-shell/admin-shell.component').then(
+        (c) => c.AdminShellComponent,
+      ),
     children: [
       { path: '', redirectTo: 'usuarios/pendientes', pathMatch: 'full' },
       {
         path: 'usuarios/pendientes',
         loadComponent: () =>
-          import('./admin/users/pending-users/pending-users.component')
-            .then(c => c.PendingUsersComponent)
+          import('./admin/users/pending-users/pending-users.component').then(
+            (c) => c.PendingUsersComponent,
+          ),
       },
       {
         path: 'usuarios/todos',
         loadComponent: () =>
-          import('./admin/users/all-users/all-users.component')
-            .then(c => c.AllUsersComponent)
+          import('./admin/users/all-users/all-users.component').then(
+            (c) => c.AllUsersComponent,
+          ),
       },
       {
         path: 'qr',
         loadComponent: () =>
-          import('./admin/qr/qr-viewer/qr-viewer.component')
-            .then(c => c.QrViewerComponent)
+          import('./admin/qr/qr-viewer/qr-viewer.component').then(
+            (c) => c.QrViewerComponent,
+          ),
       },
-    ]
+    ],
   },
   {
-    path: 'asistencias', children: [
+    path: 'asistencias',
+    children: [
       {
         path: '',
         loadComponent: () =>
-          import('./components/asistencias-list/asistencias-list.component')
-            .then(m => m.AsistenciasListComponent)
+          import(
+            './components/asistencias-list/asistencias-list.component'
+          ).then((m) => m.AsistenciasListComponent),
       },
       {
         path: 'scanner',
         // canActivate: [authGuard],   deportista debe estar logueado
         loadComponent: () =>
-          import('./components/asistencias-scanner/asistencias-scanner.component')
-            .then(c => c.AsistenciasScannerComponent)
-      }
-    ]
+          import(
+            './components/asistencias-scanner/asistencias-scanner.component'
+          ).then((c) => c.AsistenciasScannerComponent),
+      },
+    ],
   },
 
   // ...otras
   {
     path: 'eventos/:id/qr',
     loadComponent: () =>
-      import('../app/pages/evento-qr-page/evento-qr-page.component')
-        .then(m => m.EventoQrPageComponent)
+      import('../app/pages/evento-qr-page/evento-qr-page.component').then(
+        (m) => m.EventoQrPageComponent,
+      ),
   },
-  { path: 'admin/eventos', component: EventsListComponent },
-  { path: 'admin/eventos/:id', component: EventEditorComponent },
+  {
+    path: 'admin/eventos',
+    component: EventsListComponent,
+    canActivate: [authGuard],
+    data: { roles: ['administrador'] },
+  },
+  {
+    path: 'admin/eventos/:id',
+    component: EventEditorComponent,
+    canActivate: [authGuard],
+    data: { roles: ['administrador'] },
+  },
   {
     path: 'dashboard-tesoreria',
     loadComponent: () =>
-      import('./components/dashboard-tesoreria/dashboard-tesoreria.component')
-        .then(m => m.DashboardTesoreriaComponent),
+      import(
+        './components/dashboard-tesoreria/dashboard-tesoreria.component'
+      ).then((m) => m.DashboardTesoreriaComponent),
     canActivate: [authGuard],
-    data: { roles: ['tesoreria', 'administrador'] }
+    data: { roles: ['tesoreria'] },
   },
 
+  {
+    path: 'tesoreria/aranceles',
+    loadComponent: () =>
+      import('./components/circuito-evento/circuito-evento.component').then(
+        (m) => m.CircuitoEventoComponent,
+      ),
+    canActivate: [authGuard],
+    data: { roles: ['tesoreria'] },
+  },
 
   // Ruta comodín para rutas inválidas
-  { path: '**', redirectTo: 'login' }
+  { path: '**', redirectTo: 'login' },
 ];
-

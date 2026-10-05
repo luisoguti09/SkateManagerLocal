@@ -1,12 +1,24 @@
+<a
+  routerLink="/tesoreria/aranceles"
+  style="display: block; padding: 16px; background: #fff; color: #0b5bd3"
+  >Aranceles y cargos confirmados</a
+>
 <section class="tesoreria-page" lang="es" translate="no">
   <nav class="topbar" aria-label="Navegación de Tesorería">
-    <span class="brand"><mat-icon aria-hidden="true">account_balance</mat-icon> FEMPA <span class="brand-section">/
-        Tesorería</span></span>
+    <span class="brand"
+      ><mat-icon aria-hidden="true">account_balance</mat-icon> FEMPA
+      <span class="brand-section">/ Tesorería</span></span
+    >
     <div class="nav-actions">
-      <a *ngIf="auth.hasRole('administrador')" mat-button routerLink="/admin"><mat-icon>admin_panel_settings</mat-icon>
-        Administración</a>
-      <a mat-button routerLink="/perfil"><mat-icon>account_circle</mat-icon> Mi perfil</a>
-      <button mat-button type="button" (click)="logout()"><mat-icon>logout</mat-icon> Salir</button>
+      <a *ngIf="auth.hasRole('administrador')" mat-button routerLink="/admin"
+        ><mat-icon>admin_panel_settings</mat-icon> Administración</a
+      >
+      <a mat-button routerLink="/perfil"
+        ><mat-icon>account_circle</mat-icon> Mi perfil</a
+      >
+      <button mat-button type="button" (click)="logout()">
+        <mat-icon>logout</mat-icon> Salir
+      </button>
     </div>
   </nav>
   <main class="page-content">
@@ -15,34 +27,67 @@
         <p class="eyebrow">Gestión de la federación</p>
         <h1>Tesorería</h1>
         <p class="subtitle">
-          Pagos e inscripciones, con la información que necesitás para cada evento.
+          Pagos e inscripciones, con la información que necesitás para cada
+          evento.
         </p>
       </div>
 
-      <button mat-raised-button class="export-button" type="button" [disabled]="!datosDisponibles || !pagos.length"
-        (click)="exportarCsv()">
+      <button
+        mat-raised-button
+        class="export-button"
+        type="button"
+        [disabled]="!puedeExportar"
+        title="Descarga todos los registros de los filtros aplicados, incluidas las otras páginas de la tabla"
+        (click)="exportarCsv()"
+      >
         <mat-icon>download</mat-icon>
-        Exportar CSV
+        Exportar resultados (CSV)
       </button>
     </header>
 
-    <p class="summary-caption">Resumen del listado filtrado · Los importes incluyen todos los estados seleccionados.</p>
-    <section class="summary-grid" aria-label="Resumen de pagos" [attr.aria-busy]="cargando">
+    <p class="summary-caption">
+      Resumen del listado filtrado · Los importes incluyen todos los estados
+      seleccionados.
+    </p>
+    <p class="summary-caption" *ngIf="datosDisponibles">
+      Filtros aplicados: {{ detalleFiltrosAplicados }}
+    </p>
+    <div
+      class="catalog-warning"
+      *ngIf="filtrosSinAplicar && !cargando"
+      role="status"
+    >
+      Cambiaste los filtros. Presioná Aplicar filtros para actualizar el listado
+      y habilitar la exportación.
+    </div>
+    <section
+      class="summary-grid"
+      aria-label="Resumen de pagos"
+      [attr.aria-busy]="cargando"
+    >
       <mat-card class="summary-card primary">
         <span>Importe total</span>
-        <strong>{{ datosDisponibles ? formatoMoneda(resumen.totalGeneral) : '—' }}</strong>
+        <strong>{{
+          datosDisponibles ? formatoMoneda(resumen.totalGeneral) : '—'
+        }}</strong>
         <small>Inscripción + gestión</small>
       </mat-card>
 
       <mat-card class="summary-card">
         <span>Inscripciones</span>
-        <strong>{{ datosDisponibles ? formatoMoneda(resumen.totalInscripcion) : '—' }}</strong>
+        <strong>{{
+          datosDisponibles ? formatoMoneda(resumen.totalInscripcion) : '—'
+        }}</strong>
         <small>Importe de inscripción</small>
       </mat-card>
 
       <mat-card class="summary-card">
         <span>Gestión Skate Manager</span>
-        <strong>{{ datosDisponibles ? formatoMoneda(resumen.totalComisionSkateManager) : '—' }}</strong>
+        <strong>{{
+          datosDisponibles
+            ? formatoMoneda(resumen.totalComisionSkateManager)
+            : '—'
+        }}</strong>
         <small>Comisiones</small>
       </mat-card>
 
@@ -69,42 +114,80 @@
       <div class="section-heading">
         <div>
           <h2>Filtrar pagos</h2>
-          <p>Buscá por evento, club, estado o período.</p>
-        </div><mat-icon aria-hidden="true">tune</mat-icon>
+          <p>
+            Buscá por evento, club, estado o período. Las fechas corresponden a
+            la creación de la solicitud, en horario de Argentina.
+          </p>
+        </div>
+        <mat-icon aria-hidden="true">tune</mat-icon>
       </div>
-      <div class="catalog-warning" *ngIf="errorEventos" role="alert">{{ errorEventos }} <button mat-button type="button"
-          (click)="cargarEventos()">Reintentar</button></div>
-      <div class="catalog-warning" *ngIf="errorClubes" role="alert">{{ errorClubes }} <button mat-button type="button"
-          (click)="cargarClubes()">Reintentar</button></div>
+      <div class="catalog-warning" *ngIf="errorEventos" role="alert">
+        {{ errorEventos }}
+        <button mat-button type="button" (click)="cargarEventos()">
+          Reintentar
+        </button>
+      </div>
+      <div class="catalog-warning" *ngIf="errorClubes" role="alert">
+        {{ errorClubes }}
+        <button mat-button type="button" (click)="cargarClubes()">
+          Reintentar
+        </button>
+      </div>
       <div class="filters-grid">
-        <mat-form-field appearance="outline" floatLabel="always" subscriptSizing="dynamic">
+        <mat-form-field
+          appearance="outline"
+          floatLabel="always"
+          subscriptSizing="dynamic"
+        >
           <mat-label>Evento</mat-label>
-          <mat-select panelClass="tesoreria-select-panel" [(ngModel)]="filtros.eventoId"
-            (selectionChange)="onEventoChange()">
+          <mat-select
+            panelClass="tesoreria-select-panel"
+            [(ngModel)]="filtros.eventoId"
+            (selectionChange)="onEventoChange()"
+          >
             <mat-option [value]="null">Todos</mat-option>
             <mat-option *ngFor="let evento of eventos" [value]="evento.id">
-              {{ evento.nombre || evento.titulo }}
+              {{ evento.nombre || evento.titulo || 'Evento #' + evento.id }}
             </mat-option>
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" floatLabel="always" subscriptSizing="dynamic">
+        <mat-form-field
+          appearance="outline"
+          floatLabel="always"
+          subscriptSizing="dynamic"
+        >
           <mat-label>Club / sede</mat-label>
-          <mat-select panelClass="tesoreria-select-panel" [value]="clubSeleccionado" [disabled]="!!errorClubes"
-            (selectionChange)="onClubChange($event.value)">
+          <mat-select
+            panelClass="tesoreria-select-panel"
+            [value]="clubSeleccionado"
+            [disabled]="!!errorClubes"
+            (selectionChange)="onClubChange($event.value)"
+          >
             <mat-option value="">Todos</mat-option>
-            <mat-option *ngFor="let item of clubes"
-              [value]="(item.clubId || 'null') + '|' + (item.clubSedeId || 'null')">
+            <mat-option
+              *ngFor="let item of clubes"
+              [value]="
+                (item.clubId || 'null') + '|' + (item.clubSedeId || 'null')
+              "
+            >
               {{ item.club || 'Sin club' }}
               <ng-container *ngIf="item.sede"> - {{ item.sede }}</ng-container>
             </mat-option>
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" floatLabel="always" subscriptSizing="dynamic">
+        <mat-form-field
+          appearance="outline"
+          floatLabel="always"
+          subscriptSizing="dynamic"
+        >
           <mat-label>Estado</mat-label>
-          <mat-select panelClass="tesoreria-select-panel" [(ngModel)]="filtros.estado"
-            (selectionChange)="aplicarFiltros()">
+          <mat-select
+            panelClass="tesoreria-select-panel"
+            [(ngModel)]="filtros.estado"
+            (selectionChange)="aplicarFiltros()"
+          >
             <mat-option value="">Todos</mat-option>
             <mat-option value="pagado">Pagado</mat-option>
             <mat-option value="pendiente">Pendiente</mat-option>
@@ -112,32 +195,54 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" floatLabel="always" subscriptSizing="dynamic">
+        <mat-form-field
+          appearance="outline"
+          floatLabel="always"
+          subscriptSizing="dynamic"
+        >
           <mat-label>Buscar</mat-label>
-          <input matInput [(ngModel)]="filtros.buscar" placeholder="Nombre, DNI o referencia de pago"
-            (keyup.enter)="aplicarFiltros()" />
+          <input
+            matInput
+            [(ngModel)]="filtros.buscar"
+            placeholder="Nombre, DNI o referencia de pago"
+            (keyup.enter)="aplicarFiltros()"
+          />
         </mat-form-field>
 
-        <mat-form-field appearance="outline" floatLabel="always" subscriptSizing="dynamic">
-          <mat-label>Desde</mat-label>
+        <mat-form-field
+          appearance="outline"
+          floatLabel="always"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Solicitud desde</mat-label>
           <input matInput type="date" [(ngModel)]="filtros.fechaDesde" />
         </mat-form-field>
 
-        <mat-form-field appearance="outline" floatLabel="always" subscriptSizing="dynamic">
-          <mat-label>Hasta</mat-label>
+        <mat-form-field
+          appearance="outline"
+          floatLabel="always"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Solicitud hasta</mat-label>
           <input matInput type="date" [(ngModel)]="filtros.fechaHasta" />
         </mat-form-field>
       </div>
 
+      <div class="catalog-warning" *ngIf="errorRangoFechas" role="alert">
+        {{ errorRangoFechas }}
+      </div>
       <div class="filters-actions">
-        <button mat-raised-button color="primary" (click)="aplicarFiltros()">
+        <button
+          mat-raised-button
+          color="primary"
+          [disabled]="!!errorRangoFechas"
+          (click)="aplicarFiltros()"
+        >
           <mat-icon>filter_alt</mat-icon>
           Aplicar filtros
         </button>
 
-        <button mat-button (click)="limpiarFiltros()">
-          Limpiar
-        </button>
+        <button mat-button (click)="limpiarFiltros()">Limpiar</button>
       </div>
     </mat-card>
 
@@ -145,15 +250,24 @@
       <div class="section-heading table-heading">
         <div>
           <h2>Detalle de pagos</h2>
-          <p *ngIf="datosDisponibles">{{ pagos.length }} registros encontrados</p>
-        </div><mat-icon aria-hidden="true">receipt_long</mat-icon>
+          <p *ngIf="datosDisponibles">
+            {{ pagos.length }} registros encontrados
+          </p>
+        </div>
+        <mat-icon aria-hidden="true">receipt_long</mat-icon>
       </div>
       <div *ngIf="errorPagos && !cargando" class="error-box" role="alert">
         <mat-icon aria-hidden="true">cloud_off</mat-icon>
         <h3>No se pudieron cargar los pagos</h3>
         <p>{{ errorPagos }}</p>
-        <button mat-raised-button color="primary" type="button" (click)="cargarPagos()"><mat-icon>refresh</mat-icon>
-          Reintentar</button>
+        <button
+          mat-raised-button
+          color="primary"
+          type="button"
+          (click)="cargarPagos()"
+        >
+          <mat-icon>refresh</mat-icon> Reintentar
+        </button>
       </div>
       <div class="loading-box" *ngIf="cargando" role="status">
         <mat-spinner diameter="42"></mat-spinner>
@@ -162,13 +276,19 @@
 
       <div class="table-results" *ngIf="datosDisponibles">
         <p class="scroll-hint">Deslizá la tabla para ver todas las columnas.</p>
-        <div class="table-wrapper" tabindex="0" role="region" aria-label="Listado de pagos, desplazamiento horizontal">
+        <div
+          class="table-wrapper"
+          tabindex="0"
+          role="region"
+          aria-label="Listado de pagos, desplazamiento horizontal"
+        >
           <table mat-table [dataSource]="dataSource" matSort>
-
             <ng-container matColumnDef="createdAt">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Fecha</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>
+                Fecha de solicitud
+              </th>
               <td mat-cell *matCellDef="let pago">
-                {{ pago.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                {{ pago.createdAt | date: 'dd/MM/yyyy HH:mm' : '-0300' }}
               </td>
             </ng-container>
 
@@ -180,7 +300,9 @@
             </ng-container>
 
             <ng-container matColumnDef="deportistaNombreSnapshot">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Deportista</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>
+                Deportista
+              </th>
               <td mat-cell *matCellDef="let pago">
                 {{ pago.deportistaNombreSnapshot || 'Sin nombre' }}
               </td>
@@ -196,8 +318,10 @@
             <ng-container matColumnDef="clubSnapshot">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Club</th>
               <td mat-cell *matCellDef="let pago">
-                {{ pago.clubSnapshot || '-' }}<small class="sede" *ngIf="pago.clubSedeSnapshot">{{ pago.clubSedeSnapshot
-                  }}</small>
+                {{ pago.clubSnapshot || '-'
+                }}<small class="sede" *ngIf="pago.clubSedeSnapshot">{{
+                  pago.clubSedeSnapshot
+                }}</small>
               </td>
             </ng-container>
 
@@ -232,27 +356,42 @@
             <ng-container matColumnDef="estadoPago">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Pago</th>
               <td mat-cell *matCellDef="let pago">
-                <span class="status" [class.ok]="pago.estadoPago === 'approved'"
-                  [class.pending]="pago.estadoPago === 'pendiente' || pago.estadoPago === 'pending'"
-                  [class.bad]="pago.estadoPago !== 'approved' && pago.estadoPago !== 'pendiente' && pago.estadoPago !== 'pending'">
+                <span
+                  class="status"
+                  [class.ok]="pago.estadoPago === 'approved'"
+                  [class.pending]="
+                    pago.estadoPago === 'pendiente' ||
+                    pago.estadoPago === 'pending'
+                  "
+                  [class.bad]="
+                    pago.estadoPago !== 'approved' &&
+                    pago.estadoPago !== 'pendiente' &&
+                    pago.estadoPago !== 'pending'
+                  "
+                >
                   {{ estadoPagoLabel(pago.estadoPago) }}
                 </span>
               </td>
             </ng-container>
 
             <ng-container matColumnDef="estadoConciliacion">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Conciliación</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>
+                Conciliación
+              </th>
               <td mat-cell *matCellDef="let pago">
-                <span class="status" [class.ok]="pago.estadoConciliacion === 'ok'"
+                <span
+                  class="status"
+                  [class.ok]="pago.estadoConciliacion === 'ok'"
                   [class.pending]="pago.estadoConciliacion === 'pendiente'"
-                  [class.bad]="pago.estadoConciliacion === 'requiere_revision'">
+                  [class.bad]="pago.estadoConciliacion === 'requiere_revision'"
+                >
                   {{ estadoConciliacionLabel(pago.estadoConciliacion) }}
                 </span>
               </td>
             </ng-container>
 
             <tr mat-header-row *matHeaderRowDef="columnas"></tr>
-            <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
+            <tr mat-row *matRowDef="let row; columns: columnas"></tr>
 
             <tr class="mat-row empty-row" *matNoDataRow>
               <td class="mat-cell" [attr.colspan]="columnas.length">
@@ -260,10 +399,13 @@
               </td>
             </tr>
           </table>
-
         </div>
-        <mat-paginator aria-label="Paginación del listado de pagos" [pageSize]="10"
-          [pageSizeOptions]="[10, 25, 50, 100]" showFirstLastButtons>
+        <mat-paginator
+          aria-label="Paginación del listado de pagos"
+          [pageSize]="10"
+          [pageSizeOptions]="[10, 25, 50, 100]"
+          showFirstLastButtons
+        >
         </mat-paginator>
       </div>
     </mat-card>

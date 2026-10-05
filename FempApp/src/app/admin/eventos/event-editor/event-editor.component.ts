@@ -1,193 +1,354 @@
-import { Component, OnInit, inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  inject,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
+import {
+  MatCalendar,
+  MatDatepickerModule,
+} from '@angular/material/datepicker';
+import {
+  MatNativeDateModule,
+  MAT_DATE_LOCALE, provideNativeDateAdapter } from '@angular/material/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatIconModule } from '@angular/material/icon';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatButtonModule } from '@angular/material/button';
-import { BackBarComponent } from '../../../shared/back-bar/back-bar.component';
-import { EventosService } from '../../../services/eventos.service';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { NuevoEventoDto, EditEventoDto } from '../../../interfaces/evento-dto';
-import { Evento } from '../../../interfaces/evento';
-import { MatCardModule } from '@angular/material/card';
-import { OsmPlacePickerComponent, PlaceOut } from '../../../shared/osm-place-picker/osm-place-picker/osm-place-picker.component';
 
+import { AuthService } from '../../../services/auth.service';
+import { environment } from '../../../../environments/environment';
+import { CircuitoEventoComponent } from '../../../components/circuito-evento/circuito-evento.component';
 
 @Component({
   selector: 'app-event-editor',
   standalone: true,
-  templateUrl: './event-editor.component.html',
-  styleUrls: ['./event-editor.component.scss'],
   imports: [
     CommonModule,
-    ReactiveFormsModule,
-    BackBarComponent,
-    MatFormFieldModule,
-    MatInputModule,
+    FormsModule,
+    RouterLink,
+    CircuitoEventoComponent,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatButtonModule,
-    MatIconModule,
-    MatCardModule,
-    OsmPlacePickerComponent
-
-  ]
+  ],
+  providers: [provideNativeDateAdapter(), 
+    { provide: MAT_DATE_LOCALE, useValue: 'es-AR' },
+  ],
+  templateUrl: './event-editor.component.html',
+  styleUrls: ['./event-editor.component.scss'],
 })
 export class EventEditorComponent implements OnInit {
-
-  private fb = inject(FormBuilder);
+  private http = inject(HttpClient);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private auth = inject(AuthService);
+  private api = environment.SERVER_API;
 
-  public eventServ = inject(EventosService);
-  public id?: number;
-  public loading = false;
-  public pngUrl?: string;
-  public eventoId: number | null = null;
+  @ViewChild('fechaDialog')
+  fechaDialog!: ElementRef<HTMLDialogElement>;
 
-  form = this.fb.group({
-    titulo: ['', Validators.required],
-    descripcion: [''],
-    fechaInicio: [null as Date | null],
-    fechaFin: [null as Date | null],
-    lugar: [''],
-    address: [''],
-    lat: [null as number | null],
-    lng: [null as number | null],
-    placeId: [null as string | null],
-    nivel: [''],
-    inscripcionRequierePago: [false],
-    precio: [null as number | null],
-    permiteEfectivo: [false],
-    certificadoAuto: [false],
-  });
+  @ViewChild(MatCalendar)
+  calendario!: MatCalendar<Date>;
+
+  id: number | null = null;
+  loading = false;
+  error = '';
+  confirmado = false;
+  revision = 0;
+  guardado = false;
+
+  campoFecha = '';
+  tituloFecha = '';
+  dia: Date | null = null;
+  hora = '09:00';
+  editandoHora = false;
+  horaElegida = '09';
+  minutoElegido = '00';
+  horas = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  minutos = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+  abrirHora() {
+    [this.horaElegida, this.minutoElegido] = this.hora.split(':');
+    this.editandoHora = true;
+  }
+  aceptarHora() {
+    this.hora = this.horaElegida + ':' + this.minutoElegido;
+    this.editandoHora = false;
+  }
+  fechaError = '';
+
+  form: any = {
+    titulo: '',
+    descripcion: '',
+    lugar: '',
+    fechaInicio: '',
+    fechaFin: '',
+    inscripcionRequierePago: null,
+    inscripcionDesde: '',
+    inscripcionHasta: '',
+    abmDesde: '',
+    abmHasta: '',
+    pagoDesde: '',
+    pagoHasta: '',
+  };
+
+  fechasEvento = [
+    { key: 'fechaInicio', label: 'Inicio del evento' },
+    { key: 'fechaFin', label: 'Fin del evento' },
+  ];
+
+  fechas = [
+    { key: 'inscripcionDesde', label: 'Apertura de inscripción' },
+    {
+      key: 'inscripcionHasta',
+      label: 'Cierre de inscripción',
+    },
+    { key: 'abmDesde', label: 'Apertura de ABM' },
+    { key: 'abmHasta', label: 'Cierre de ABM' },
+    { key: 'pagoDesde', label: 'Apertura de pago' },
+    { key: 'pagoHasta', label: 'Vencimiento del pago' },
+  ];
+
+  get options() {
+    return {
+      headers: new HttpHeaders({
+        Authorization: `Bearer ${this.auth.getToken() || ''}`,
+      }),
+    };
+  }
+
+  mostrarFecha(valor: string) {
+    if (!valor) return 'Seleccionar fecha y hora';
+
+    const [fecha, hora] = valor.split('T');
+
+    return fecha.split('-').reverse().join('/') + ' · ' + hora;
+  }
+
+  abrirFecha(key: string, label: string) {
+    this.editandoHora = false;
+    this.campoFecha = key;
+    this.tituloFecha = label;
+    this.fechaError = '';
+
+    const valor = this.form[key];
+
+    if (valor) {
+      const [fecha, hora] = valor.split('T');
+      const [y, m, d] = fecha.split('-').map(Number);
+
+      this.dia = new Date(y, m - 1, d);
+      this.hora = hora;
+    } else {
+      this.dia = null;
+      this.hora = '09:00';
+    }
+
+    this.calendario.activeDate = this.dia || new Date();
+    this.fechaDialog.nativeElement.showModal();
+  }
+
+  aceptarFecha() {
+    if (
+      !this.dia ||
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(this.hora)
+    ) {
+      this.fechaError = 'Seleccioná un día y una hora válida.';
+      return;
+    }
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+
+    this.form[this.campoFecha] =
+      `${this.dia.getFullYear()}-` +
+      `${pad(this.dia.getMonth() + 1)}-` +
+      `${pad(this.dia.getDate())}T${this.hora}`;
+
+    this.guardado = false;
+    this.fechaDialog.nativeElement.close();
+  }
+
+  validar(): string {
+    const f = this.form;
+
+    if (!f.titulo?.trim() || !f.lugar?.trim()) {
+      return 'Completá el título y el lugar del evento.';
+    }
+
+    if (
+      f.fechaInicio &&
+      f.fechaFin &&
+      f.fechaFin <= f.fechaInicio
+    ) {
+      return 'El fin del evento debe ser posterior al inicio.';
+    }
+
+    if (this.confirmado) return '';
+
+    if (typeof f.inscripcionRequierePago !== 'boolean') {
+      return 'Seleccioná si la inscripción es gratuita o con costo.';
+    }
+
+    if (
+      !f.inscripcionDesde ||
+      !f.inscripcionHasta || !f.abmDesde || !f.abmHasta
+    ) {
+      return 'Completá las fechas de inscripción y de cierre de ABM.';
+    }
+
+    if (f.inscripcionHasta <= f.inscripcionDesde) {
+      return 'El cierre de inscripción debe ser posterior a la apertura.';
+    }
+
+    if (f.abmDesde < f.inscripcionHasta) return 'La apertura de ABM debe ser igual o posterior al cierre de inscripción.';
+    if (f.abmHasta <= f.abmDesde) {
+      return 'El cierre de ABM debe ser posterior a su apertura.';
+    }
+
+    if (f.inscripcionRequierePago) {
+      if (!f.pagoDesde || !f.pagoHasta) {
+        return 'Completá la apertura y el vencimiento del pago.';
+      }
+
+      if (f.pagoDesde < f.abmHasta) {
+        return 'El pago puede abrirse a partir del cierre de ABM.';
+      }
+
+      if (f.pagoHasta <= f.pagoDesde) {
+        return 'El vencimiento del pago debe ser posterior a su apertura.';
+      }
+    }
+
+    return '';
+  }
+
+  local(v: any) {
+    if (!v) return '';
+
+    const d = new Date(v);
+
+    if (!Number.isFinite(+d)) return '';
+
+    return new Date(+d - 3 * 3600000)
+      .toISOString()
+      .slice(0, 16);
+  }
 
   async ngOnInit() {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
-    if (!Number.isNaN(id)) {
-      this.id = id;
+    const n = Number(this.route.snapshot.paramMap.get('id'));
 
-      const evento: Evento = await firstValueFrom(
-        this.eventServ.getEventoById(id)
-      );
+    if (n > 0) {
+      this.id = n;
+      this.loading = true;
 
-      this.form.patchValue({
-        titulo: evento.titulo ?? '',
-        descripcion: evento.descripcion ?? '',
-        fechaInicio: evento.fechaInicio ? new Date(evento.fechaInicio) : null,
-        fechaFin: evento.fechaFin ? new Date(evento.fechaFin) : null,
-        lugar: evento.lugar ?? '',
-        address: evento.address ?? '',
-        lat: evento.lat ?? null,
-        lng: evento.lng ?? null,
-        placeId: evento.placeId ?? null,
-        nivel: evento.nivel ?? '',
-        inscripcionRequierePago: !!evento.inscripcionRequierePago,
-        precio: evento.precio ?? null,
-        permiteEfectivo: !!evento.permiteEfectivo,
-        certificadoAuto: !!evento.certificadoAuto,
-      });
+      try {
+        const ev: any = await firstValueFrom(
+          this.http.get(
+            `${this.api}/eventos/${n}`,
+            this.options,
+          ),
+        );
 
+        this.confirmado = !!ev.inscripcionesConfirmadasAt;
+
+        this.form = {
+          ...this.form,
+          ...ev,
+          titulo: ev.titulo || ev.nombre,
+        };
+
+        for (const k of [
+          'fechaInicio',
+          'fechaFin',
+          ...this.fechas.map((f) => f.key),
+        ]) {
+          this.form[k] = this.local(ev[k]);
+        }
+      } catch (e: any) {
+        this.error =
+          e.error?.error || 'No se pudo cargar el evento.';
+      } finally {
+        this.loading = false;
+      }
     }
-    this.eventoId = Number(this.route.snapshot.paramMap.get('id')) || null;
   }
 
   async save() {
-    if (this.form.invalid) return;
+    if (this.loading) return;
+
+    this.guardado = false;
+    this.error = this.validar();
+
+    if (this.error) return;
+
     this.loading = true;
 
     try {
-      const f = this.form.getRawValue();
+      const body: any = {
+        titulo: this.form.titulo,
+        descripcion: this.form.descripcion,
+        lugar: this.form.lugar,
+        fechaInicio: this.form.fechaInicio
+          ? this.form.fechaInicio + ':00-03:00'
+          : null,
+        fechaFin: this.form.fechaFin
+          ? this.form.fechaFin + ':00-03:00'
+          : null,
+      };
 
-      if (this.id) {
-        // Editar
-        const f = this.form.getRawValue();
-        const titulo = f.titulo?.trim();
-        const dto: EditEventoDto = {
-          titulo: titulo ?? undefined,
-          descripcion: f.descripcion ?? undefined,
-          fechaInicio: f.fechaInicio ?? undefined,
-          fechaFin: f.fechaFin ?? undefined,
-          lugar: f.lugar ?? undefined,
-          address: f.address ?? undefined,
-          placeId: f.placeId ?? undefined,
-          lat: f.lat ?? undefined,
-          lng: f.lng ?? undefined,
-          nivel: f.nivel ?? undefined,
-          inscripcionRequierePago: f.inscripcionRequierePago ?? undefined,
-          precio: f.precio ?? undefined,
-          permiteEfectivo: f.permiteEfectivo ?? undefined,
-          certificadoAuto: f.certificadoAuto ?? undefined,
-          nombre: titulo ?? undefined,
-        };
+      if (!this.confirmado) {
+        body.inscripcionRequierePago =
+          this.form.inscripcionRequierePago;
 
-        await firstValueFrom(this.eventServ.updateEvento(this.id, dto));
-      } else {
-        // Crear
-        const f = this.form.getRawValue();
-        const titulo = (f.titulo?.trim() || 'Evento sin título');
-        const dto: NuevoEventoDto = {
-          titulo,
-          descripcion: f.descripcion ?? undefined,
-          fechaInicio: f.fechaInicio ?? null,
-          fechaFin: f.fechaFin ?? null,
-          lugar: f.lugar ?? undefined,
-          address: f.address ?? null,
-          placeId: f.placeId ?? null,
-          lat: f.lat ?? null,
-          lng: f.lng ?? null,
-          nivel: f.nivel ?? undefined,
-          inscripcionRequierePago: f.inscripcionRequierePago ?? undefined,
-          precio: f.precio ?? null,
-          permiteEfectivo: f.permiteEfectivo ?? undefined,
-          certificadoAuto: f.certificadoAuto ?? undefined,
-          nombre: titulo,
-          qrEventCode: ''
-        };
-
-        await firstValueFrom(this.eventServ.addEvento(dto));
+        for (const f of this.fechas) {
+          body[f.key] =
+            !this.form.inscripcionRequierePago &&
+              f.key.startsWith('pago')
+              ? null
+              : this.form[f.key]
+                ? this.form[f.key] + ':00-03:00'
+                : null;
+        }
       }
 
-      this.router.navigate(['/admin/eventos']);
+      if (this.id) {
+        await firstValueFrom(
+          this.http.put(
+            `${this.api}/eventos/${this.id}`,
+            body,
+            this.options,
+          ),
+        );
+
+        this.revision++;
+        this.guardado = true;
+      } else {
+        const ev: any = await firstValueFrom(
+          this.http.post(
+            `${this.api}/eventos`,
+            body,
+            this.options,
+          ),
+        );
+
+        await this.router.navigate([
+          '/admin/eventos',
+          ev.id,
+        ]);
+
+        this.id = ev.id;
+      }
+    } catch (e: any) {
+      this.error =
+        e.status >= 500
+          ? 'El servidor no pudo guardar el evento (error ' +
+          e.status +
+          '). Revisá la respuesta de la solicitud y la consola del backend.'
+          : e.error?.error ||
+          'No se pudo guardar el evento. Verificá la conexión e intentá nuevamente.';
     } finally {
       this.loading = false;
     }
   }
-
-  async verPng() {
-    const id = this.id;
-    if (!id) return;
-
-    const blob = await firstValueFrom(this.eventServ.getQrEventoPng(id));
-    if (this.pngUrl) URL.revokeObjectURL(this.pngUrl);
-    this.pngUrl = URL.createObjectURL(blob);
-  }
-
-  ngOnDestroy() {
-    if (this.pngUrl) URL.revokeObjectURL(this.pngUrl);
-  }
-
-  onPlace(e: { lat: number; lng: number; address: string; placeId?: string }) {
-    this.form.patchValue({
-      lat: e.lat,
-      lng: e.lng,
-      lugar: e.address,
-      placeId: e.placeId || ''
-    });
-  }
-
-  onPlaceChange(p: PlaceOut) {
-    this.form.patchValue({
-      lugar: p.address || '',
-      lat: p.lat,
-      lng: p.lng,
-      placeId: p.placeId ?? null
-    });
-  }
-
-
 }

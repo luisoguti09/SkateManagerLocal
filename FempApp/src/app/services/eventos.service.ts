@@ -21,9 +21,6 @@ export class EventosService {
   getEventosA(): Observable<Evento[]> {
     return this.http.get<Evento[]>(`${this.apiURL}/eventos`)
       .pipe(
-        tap(data => {
-          console.log('Datos recibidos:', data);
-        }),
         catchError(error => {
           console.error('Error al obtener eventos:', error);
           return of([]);
@@ -62,7 +59,7 @@ export class EventosService {
   getEventos(): Observable<Evento[]> {
     return this.http.get<Evento[]>(this.base).pipe(
       map(list => (list ?? []).map(this.mapEvento)),
-      tap(list => console.log('Eventos:', list)),
+
       catchError(err => { console.error('getEventos', err); return of([]); })
     );
   }

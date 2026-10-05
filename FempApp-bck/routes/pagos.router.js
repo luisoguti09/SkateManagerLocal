@@ -1,247 +1,160 @@
 const express = require('express');
 const router = express.Router();
 const mercadopago = require('mercadopago');
-const db = require('../models');
-const { Op } = require('sequelize');
-const { verifyToken, requireRole } = require('../middleware/auth.middleware');
-
-mercadopago.configure({
-  access_token: process.env.MP_ACCESS_TOKEN,
-});
-
-const FRONT_BASE =
+const { randomUUID } = require('crypto');
+const { verifyToken } = require('../middleware/auth.middleware');
+const {
+  wrap,
+  sesion,
+  roles,
+  evento,
+  datoCargo,
+  R,
+  db,
+  Op,
+} = require('../services/circuito');
+const { conciliar } = require('../services/pagos-conciliacion');
+mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
+const auth = [verifyToken, sesion];
+const tesoreria = [...auth, roles('tesoreria')];
+const FRONT_BASE = (
   process.env.FRONT_BASE_URL ||
   process.env.FRONT_BASE ||
-  'http://localhost:4200';
-
-const BACK_BASE =
+  'http://localhost:4200'
+).replace(/\/$/, '');
+const BACK_BASE = (
   process.env.BACK_BASE_URL ||
   process.env.BACK_BASE ||
-  'http://localhost:3000';
-
-const isHttpsFront = FRONT_BASE.toLowerCase().startsWith('https://');
-const isHttpsBack = BACK_BASE.toLowerCase().startsWith('https://');
-
-function calcularMontos(montoBase, porcentajeComision = 5) {
-  const base = Number(montoBase);
-  const porcentaje = Number(porcentajeComision);
-
-  if (!base || base <= 0) {
-    throw new Error('El monto base debe ser mayor a 0');
-  }
-
-  const montoComision = Number((base * (porcentaje / 100)).toFixed(2));
-  const montoTotal = Number((base + montoComision).toFixed(2));
-
-  return {
-    montoBase: base,
-    porcentajeComision: porcentaje,
-    montoComision,
-    montoTotal,
-  };
-}
-
-function crearExternalReference({ eventoId, usuarioId, perfilDeportivoIds }) {
-  const perfiles = perfilDeportivoIds.join('-');
-  const timestamp = Date.now();
-
-  return `evento_${eventoId}_usuario_${usuarioId}_perfiles_${perfiles}_${timestamp}`;
-}
-
-function normalizarDocumento(value = '') {
-  return String(value)
-    .replace(/\D/g, '')
-    .trim();
-}
-
-function queryNumber(value) {
+  'http://localhost:3000'
+).replace(/\/$/, '');
+function mpConfigurado() {
   if (
-    value === undefined ||
-    value === null ||
-    value === '' ||
-    value === 'undefined' ||
-    value === 'null'
-  ) {
-    return null;
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
+    !process.env.MP_ACCESS_TOKEN ||
+    !process.env.MP_COLLECTOR_ID ||
+    !process.env.MP_WEBHOOK_SECRET
+  )
+    R.fail(503, 'La integración de pagos todavía no está configurada.');
 }
-
-function queryText(value) {
-  if (
-    value === undefined ||
-    value === null ||
-    value === '' ||
-    value === 'undefined' ||
-    value === 'null'
-  ) {
-    return null;
-  }
-
-  return String(value).trim();
-}
-
-async function obtenerSnapshotsPago({ usuario, evento }) {
-  const dniNormalizado = normalizarDocumento(usuario.dni);
-
-  let padron = null;
-
-  if (db.Padron && dniNormalizado) {
-    padron = await db.Padron.findOne({
-      where: {
-        documentoNormalizado: dniNormalizado,
-        temporada: '2026',
-        activo: true
-      }
-    });
-
-    if (!padron) {
-      padron = await db.Padron.findOne({
-        where: {
-          documentoN: usuario.dni
-        }
-      });
+function datosCheckout(pago) {
+  let raw = pago.rawPreference;
+  if (typeof raw === 'string') {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      raw = null;
     }
   }
-
-  let club = null;
-  let sede = null;
-
-  if (padron?.clubId && db.Club) {
-    club = await db.Club.findByPk(padron.clubId);
-  }
-
-  if (padron?.clubSedeId && db.ClubSede) {
-    sede = await db.ClubSede.findByPk(padron.clubSedeId);
-  }
-
-  return {
-    deportistaNombreSnapshot: usuario.nombre || padron?.apellidoYNombre || null,
-    deportistaDniSnapshot: usuario.dni || padron?.documentoN || null,
-    eventoNombreSnapshot: evento.nombre || null,
-
-    clubId: padron?.clubId || null,
-    clubSedeId: padron?.clubSedeId || null,
-
-    clubSnapshot: club?.nombre || padron?.club || padron?.clubOriginal || usuario.club || null,
-    clubSedeSnapshot: sede?.nombre || null
-  };
-}
-
-router.post('/crear-preferencia', async (req, res) => {
-  try {
-    const {
-      title = 'Inscripción',
-      quantity = 1,
-      usuarioId,
-      eventoId,
-      perfilDeportivoIds = [],
-    } = req.body;
-
-    if (!process.env.MP_ACCESS_TOKEN) {
-      return res.status(500).json({
-        error: 'Falta configurar MP_ACCESS_TOKEN',
-      });
-    }
-
-    if (!usuarioId || !eventoId) {
-      return res.status(400).json({
-        error: 'Faltan datos obligatorios: usuarioId y eventoId',
-      });
-    }
-
-    if (!Array.isArray(perfilDeportivoIds) || perfilDeportivoIds.length === 0) {
-      return res.status(400).json({
-        error: 'Debe seleccionar al menos un perfil deportivo para la inscripción',
-      });
-    }
-
-
-    const cantidadParticipaciones = perfilDeportivoIds.length;
-
-    const evento = await db.Evento.findByPk(eventoId);
-
-    if (!evento) {
-      return res.status(404).json({
-        error: 'Evento no encontrado',
-      });
-    }
-
-    const usuario = await db.Usuario.findByPk(usuarioId);
-
-    if (!usuario) {
-      return res.status(404).json({
-        error: 'Usuario no encontrado',
-      });
-    }
-
-    const precioParticipacion = await db.PrecioParticipacionEvento.findOne({
-      where: {
-        eventoId,
-        cantidadParticipaciones,
-        activo: true,
-      },
-    });
-
-    if (!precioParticipacion) {
-      return res.status(400).json({
-        error: `No hay precio configurado para ${cantidadParticipaciones} participación/es en este evento`,
-      });
-    }
-
-    const porcentajeComision = 5;
-
-    const montos = calcularMontos(
-      precioParticipacion.monto,
-      porcentajeComision
+  if (!raw?.init_point || !pago.preferenceId)
+    R.fail(
+      409,
+      'Hay una solicitud en proceso o pendiente de revisión. No se creará otro cobro.',
     );
-
-    const externalReference = crearExternalReference({
-      eventoId,
-      usuarioId,
-      perfilDeportivoIds,
+  return {
+    id: pago.preferenceId,
+    init_point: raw.init_point,
+    sandbox_init_point: raw.sandbox_init_point,
+    pagoId: pago.id,
+    montoBase: pago.montoBase,
+    montoComision: pago.montoComision,
+    montoTotal: pago.montoTotal,
+  };
+}
+router.post(
+  '/crear-preferencia',
+  ...auth,
+  roles('deportista'),
+  wrap(async (req, res) => {
+    mpConfigurado();
+    const eventoId = R.id(req.body.eventoId),
+      usuarioId = req.auth.id;
+    if (req.body.usuarioId != null && Number(req.body.usuarioId) !== usuarioId)
+      R.fail(403, 'Solo podés pagar tu inscripción.');
+    if (req.body.quantity != null && req.body.quantity !== 1)
+      R.fail(400, 'El pago comprende una inscripción completa.');
+    const prepared = await db.sequelize.transaction(async (t) => {
+      const ev = await evento(eventoId, t);
+      if (R.etapa(ev) !== 'pago')
+        R.fail(409, 'El pago no está habilitado para este evento.');
+      const cargo = await db.CargoInscripcion.findOne({
+        where: { eventoId, usuarioId },
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      });
+      if (!cargo) R.fail(409, 'Tu inscripción no tiene un cargo confirmado.');
+      if (['pagado', 'sin_cargo', 'requiere_revision'].includes(cargo.estado))
+        R.fail(
+          409,
+          'La inscripción ya está pagada, es gratuita o requiere revisión de Tesorería.',
+        );
+      if (
+        req.body.perfilDeportivoIds &&
+        JSON.stringify(R.ids(req.body.perfilDeportivoIds)) !==
+          JSON.stringify(cargo.perfilDeportivoIds)
+      )
+        R.fail(409, 'El pago debe incluir todos los perfiles confirmados.');
+      const existente = await db.Pago.findOne({
+        where: { cargoId: cargo.id },
+        transaction: t,
+      });
+      if (existente) return { nuevo: false, pago: existente };
+      const snapshots = cargo.participacionesSnapshot;
+      const clubs = [...new Set(snapshots.map((x) => x.club).filter(Boolean))];
+      const clubIds = [...new Set(snapshots.map((x) => x.clubId))];
+      const sedes = [...new Set(snapshots.map((x) => x.sede).filter(Boolean))];
+      const sedeIds = [...new Set(snapshots.map((x) => x.clubSedeId))];
+      const pago = await db.Pago.create(
+        {
+          cargoId: cargo.id,
+          usuarioId,
+          eventoId,
+          perfilDeportivoIds: cargo.perfilDeportivoIds,
+          cantidadParticipaciones: cargo.perfilDeportivoIds.length,
+          externalReference: `cargo_${cargo.id}_${randomUUID()}`,
+          preferenceId: '',
+          montoBase: cargo.montoBase,
+          montoComision: cargo.montoComision,
+          montoTotal: cargo.montoTotal,
+          porcentajeComision: 0,
+          tipoComision: 'fija_por_evento',
+          estadoPago: 'creando',
+          estadoConciliacion: 'pendiente',
+          deportistaNombreSnapshot: snapshots[0]?.nombre,
+          deportistaDniSnapshot: snapshots[0]?.dni,
+          eventoNombreSnapshot:
+            snapshots[0]?.eventoNombre || ev.titulo || ev.nombre,
+          clubId: clubIds.length === 1 ? clubIds[0] : null,
+          clubSedeId: sedeIds.length === 1 ? sedeIds[0] : null,
+          clubSnapshot: clubs.join(' / ') || null,
+          clubSedeSnapshot: sedes.join(' / ') || null,
+        },
+        { transaction: t },
+      );
+      return { nuevo: true, pago, ev };
     });
-
-    const snapshotsPago = await obtenerSnapshotsPago({
-      usuario,
-      evento
-    });
-
+    if (!prepared.nuevo) return res.json(datosCheckout(prepared.pago));
+    const { pago, ev } = prepared;
     const pref = {
       items: [
         {
-          title,
-          quantity: Number(quantity),
-          unit_price: montos.montoTotal,
+          title: `Inscripción ${ev.titulo || ev.nombre}`,
+          quantity: 1,
+          unit_price: Number(pago.montoTotal),
           currency_id: 'ARS',
-          description: `Inscripción: $${montos.montoBase} + gestión Skate Manager: $${montos.montoComision}`,
+          description: `Inscripción: $${pago.montoBase} + gestión Skate Manager: $${pago.montoComision}`,
         },
       ],
-
-      external_reference: externalReference,
-
+      external_reference: pago.externalReference,
       metadata: {
+        cargo_id: pago.cargoId,
         usuario_id: usuarioId,
         evento_id: eventoId,
-        perfil_deportivo_ids: perfilDeportivoIds,
-        cantidad_participaciones: cantidadParticipaciones,
-        monto_base: montos.montoBase,
-        porcentaje_comision: montos.porcentajeComision,
-        monto_comision: montos.montoComision,
-        monto_total: montos.montoTotal,
-
-        deportista_nombre: snapshotsPago.deportistaNombreSnapshot,
-        deportista_dni: snapshotsPago.deportistaDniSnapshot,
-        evento_nombre: snapshotsPago.eventoNombreSnapshot,
-        club_id: snapshotsPago.clubId,
-        club_sede_id: snapshotsPago.clubSedeId,
-        club: snapshotsPago.clubSnapshot,
-        club_sede: snapshotsPago.clubSedeSnapshot,
+        perfil_deportivo_ids: pago.perfilDeportivoIds,
+        tipo_comision: 'fija_por_evento',
       },
-
-      ...(isHttpsFront && {
+      expires: true,
+      expiration_date_from: new Date().toISOString(),
+      expiration_date_to: new Date(ev.pagoHasta).toISOString(),
+      ...(FRONT_BASE.startsWith('https://') && {
         back_urls: {
           success: `${FRONT_BASE}/pago-exitoso`,
           failure: `${FRONT_BASE}/pago-fallido`,
@@ -249,330 +162,240 @@ router.post('/crear-preferencia', async (req, res) => {
         },
         auto_return: 'approved',
       }),
-
-      ...(isHttpsBack && {
+      ...(BACK_BASE.startsWith('https://') && {
         notification_url: `${BACK_BASE}/pagos/webhook`,
       }),
-
       statement_descriptor: 'SKATE MANAGER',
     };
-
-    const mpRes = await mercadopago.preferences.create(pref);
-
-    let pagoCreado = null;
-
-    if (db.Pago) {
-      pagoCreado = await db.Pago.create({
-        usuarioId,
-        eventoId,
-        perfilDeportivoId: null,
-
-        cantidadParticipaciones,
-        perfilDeportivoIds,
-
-        externalReference,
-        preferenceId: mpRes.body.id,
-
-        montoBase: montos.montoBase,
-        porcentajeComision: montos.porcentajeComision,
-        montoComision: montos.montoComision,
-        montoTotal: montos.montoTotal,
-
-        estadoPago: 'pendiente',
-        estadoConciliacion: 'pendiente',
-
-        deportistaNombreSnapshot: snapshotsPago.deportistaNombreSnapshot,
-        deportistaDniSnapshot: snapshotsPago.deportistaDniSnapshot,
-        eventoNombreSnapshot: snapshotsPago.eventoNombreSnapshot,
-        clubId: snapshotsPago.clubId,
-        clubSedeId: snapshotsPago.clubSedeId,
-        clubSnapshot: snapshotsPago.clubSnapshot,
-        clubSedeSnapshot: snapshotsPago.clubSedeSnapshot,
-
-        rawPreference: mpRes.body,
-      });
-    }
-
-    return res.json({
-      id: mpRes.body.id,
-      init_point: mpRes.body.init_point,
-      sandbox_init_point: mpRes.body.sandbox_init_point,
-
-      pagoId: pagoCreado?.id || null,
-      external_reference: externalReference,
-
-      usuarioId,
-      eventoId,
-      perfilDeportivoIds,
-      cantidadParticipaciones,
-
-      montoBase: montos.montoBase,
-      porcentajeComision: montos.porcentajeComision,
-      montoComision: montos.montoComision,
-      montoTotal: montos.montoTotal,
-
-      snapshots: snapshotsPago,
-    });
-  } catch (e) {
-    console.error('[MP crear-preferencia error]', e?.response?.body || e);
-
-    const detail =
-      e?.response?.body?.message ||
-      e?.message ||
-      'unknown';
-
-    return res.status(500).json({
-      error: 'No se pudo crear la preferencia de pago',
-      detail,
-    });
-  }
-});
-
-router.get('/confirmar', async (req, res) => {
-  try {
-    const paymentId = req.query.payment_id;
-
-    if (!paymentId) {
-      return res.status(400).json({
-        error: 'Falta payment_id',
-      });
-    }
-
-    const mpRes = await mercadopago.payment.get(paymentId);
-    const payment = mpRes.body;
-
-    const estadoConciliacion =
-      payment.status === 'approved' ? 'ok' : 'requiere_revision';
-
-    let pago = null;
-
-    if (db.Pago && payment.external_reference) {
-      pago = await db.Pago.findOne({
-        where: {
-          externalReference: payment.external_reference,
-        },
-      });
-
-      if (pago) {
-        await pago.update({
-          paymentId: String(payment.id),
-          estadoPago: payment.status,
-          estadoConciliacion,
-          payerEmail: payment.payer?.email || null,
-          paymentMethodId: payment.payment_method_id || null,
-          paymentTypeId: payment.payment_type_id || null,
-          fechaAprobacion: payment.date_approved || null,
-          rawPayment: payment,
-        });
-      }
-    }
-
-    return res.json({
-      id: payment.id,
-      status: payment.status,
-      status_detail: payment.status_detail,
-      external_reference: payment.external_reference,
-      transaction_amount: payment.transaction_amount,
-      currency_id: payment.currency_id,
-      date_created: payment.date_created,
-      date_approved: payment.date_approved,
-      payment_method_id: payment.payment_method_id,
-      payment_type_id: payment.payment_type_id,
-      estadoConciliacion,
-      pagoActualizado: !!pago,
-      payer: {
-        email: payment.payer?.email,
-      },
-      metadata: payment.metadata,
-    });
-  } catch (e) {
-    console.error('[MP confirmar error]', e?.response?.body || e);
-
-    const detail =
-      e?.response?.body?.message ||
-      e?.message ||
-      'unknown';
-
-    return res.status(500).json({
-      error: 'No se pudo confirmar el pago',
-      detail,
-    });
-  }
-});
-
-router.post('/webhook', async (req, res) => {
-  try {
-    console.log('[MP webhook recibido]', {
-      query: req.query,
-      body: req.body,
-    });
-
-    const topic =
-      req.query.type ||
-      req.query.topic ||
-      req.body?.type;
-
-    const paymentId =
-      req.query['data.id'] ||
-      req.query.id ||
-      req.body?.data?.id;
-
-    if (topic === 'payment' && paymentId) {
-      const mpRes = await mercadopago.payment.get(paymentId);
-      const payment = mpRes.body;
-
-      const estadoConciliacion =
-        payment.status === 'approved' ? 'ok' : 'requiere_revision';
-
-      if (db.Pago && payment.external_reference) {
-        const pago = await db.Pago.findOne({
-          where: {
-            externalReference: payment.external_reference,
-          },
-        });
-
-        if (pago) {
-          await pago.update({
-            paymentId: String(payment.id),
-            estadoPago: payment.status,
-            estadoConciliacion,
-            payerEmail: payment.payer?.email || null,
-            paymentMethodId: payment.payment_method_id || null,
-            paymentTypeId: payment.payment_type_id || null,
-            fechaAprobacion: payment.date_approved || null,
-            rawPayment: payment,
-          });
-        }
-      }
-
-      console.log('[MP payment desde webhook]', {
-        id: payment.id,
-        status: payment.status,
-        external_reference: payment.external_reference,
-        amount: payment.transaction_amount,
-        metadata: payment.metadata,
-      });
-    }
-
-    return res.sendStatus(200);
-  } catch (e) {
-    console.error('[MP webhook error]', e?.response?.body || e);
-    return res.sendStatus(200);
-  }
-});
-
-router.get('/',
-  verifyToken,
-  requireRole('administrador', 'tesoreria'),
-  async (req, res) => {
     try {
-      const {
-        eventoId,
-        clubId,
-        clubSedeId,
-        estado,
-        buscar,
-        fechaDesde,
-        fechaHasta
-      } = req.query;
+      const mp = await mercadopago.preferences.create(pref);
+      await pago.update({
+        preferenceId: mp.body.id,
+        rawPreference: mp.body,
+        estadoPago: 'pendiente',
+      });
+      res.json(datosCheckout(pago));
+    } catch (error) {
+      await pago.update({
+        estadoPago: 'error_creacion',
+        estadoConciliacion: 'requiere_revision',
+      });
+      R.fail(
+        502,
+        'No pudimos confirmar la creación del checkout. Tesorería debe revisar la operación antes de reintentar.',
+      );
+    }
+  }),
+);
+router.get(
+  '/confirmar',
+  ...auth,
+  roles('deportista', 'tesoreria'),
+  wrap(async (req, res) => {
+    mpConfigurado();
+    const paymentId = R.id(req.query.payment_id);
+    const payment = (await mercadopago.payment.get(paymentId)).body;
+    const local = await db.Pago.findOne({
+      where: { externalReference: String(payment.external_reference || '') },
+    });
+    if (
+      !local ||
+      (req.auth.rol !== 'tesoreria' && Number(local.usuarioId) !== req.auth.id)
+    )
+      R.fail(404, 'Pago no encontrado.');
+    const pago = await conciliar(payment);
+    res.json({
+      id: payment.id,
+      status: pago.estadoPago,
+      estadoConciliacion: pago.estadoConciliacion,
+      transaction_amount: pago.montoTotal,
+      currency_id: 'ARS',
+      pagoActualizado: true,
+    });
+  }),
+);
+router.post(
+  '/webhook',
+  wrap(async (req, res) => {
+    mpConfigurado();
+    if (!R.firmaValida(req.query, req.headers, process.env.MP_WEBHOOK_SECRET))
+      R.fail(401, 'Firma inválida.');
+    if ((req.query.type || req.body?.type) !== 'payment')
+      return res.sendStatus(200);
+    const paymentId = R.id(req.query['data.id']);
+    const payment = (await mercadopago.payment.get(paymentId)).body;
+    await conciliar(payment);
+    res.sendStatus(200);
+  }),
+);
+router.get(
+  '/cargos',
+  ...tesoreria,
+  wrap(async (req, res) => {
+    const where = {};
+    if (req.query.eventoId) where.eventoId = R.id(req.query.eventoId);
+    const cargos = await db.CargoInscripcion.findAll({
+      where,
+      order: [['id', 'DESC']],
+    });
+    const result = [];
+    for (const c of cargos) result.push(datoCargo(c, await evento(c.eventoId)));
+    res.json(result);
+  }),
+);
+function queryNumber(value) {
+  return value == null ||
+    value === '' ||
+    value === 'null' ||
+    value === 'undefined'
+    ? null
+    : R.id(value);
+}
+function queryText(value) {
+  return value == null ||
+    value === '' ||
+    value === 'null' ||
+    value === 'undefined'
+    ? null
+    : String(value).trim();
+}
+const inicioDiaArgentina = R.inicioDiaArgentina;
 
-      const where = {};
+router.get('/', ...tesoreria, async (req, res) => {
+  try {
+    const {
+      eventoId,
+      clubId,
+      clubSedeId,
+      estado,
+      buscar,
+      fechaDesde,
+      fechaHasta,
+    } = req.query;
 
-      const eventoIdNumber = queryNumber(eventoId);
-      const clubIdNumber = queryNumber(clubId);
-      const clubSedeIdNumber = queryNumber(clubSedeId);
+    const where = {};
 
-      if (eventoIdNumber !== null) {
-        where.eventoId = eventoIdNumber;
+    const eventoIdNumber = queryNumber(eventoId);
+    const clubIdNumber = queryNumber(clubId);
+    const clubSedeIdNumber = queryNumber(clubSedeId);
+
+    if (eventoIdNumber !== null) {
+      where.eventoId = eventoIdNumber;
+    }
+
+    if (clubIdNumber !== null) {
+      where.clubId = clubIdNumber;
+    }
+
+    if (clubSedeIdNumber !== null) {
+      where.clubSedeId = clubSedeIdNumber;
+    }
+
+    const estadoText = queryText(estado);
+    const buscarText = queryText(buscar);
+    const fechaDesdeText = queryText(fechaDesde);
+    const fechaHastaText = queryText(fechaHasta);
+
+    const desde = fechaDesdeText ? inicioDiaArgentina(fechaDesdeText) : null;
+    const hasta = fechaHastaText ? inicioDiaArgentina(fechaHastaText) : null;
+    if ((fechaDesdeText && !desde) || (fechaHastaText && !hasta)) {
+      return res
+        .status(400)
+        .json({
+          error: 'Las fechas deben ser validas y tener formato AAAA-MM-DD.',
+        });
+    }
+    if (desde && hasta && desde > hasta) {
+      return res
+        .status(400)
+        .json({ error: 'La fecha Desde no puede ser posterior a Hasta.' });
+    }
+
+    const condiciones = [];
+
+    if (estadoText) {
+      if (estadoText === 'pagado') {
+        where.estadoPago = 'approved';
+        where.estadoConciliacion = 'ok';
       }
 
-      if (clubIdNumber !== null) {
-        where.clubId = clubIdNumber;
+      if (estadoText === 'pendiente') {
+        where.estadoPago = { [Op.in]: ['pendiente', 'pending', 'creando'] };
       }
 
-      if (clubSedeIdNumber !== null) {
-        where.clubSedeId = clubSedeIdNumber;
-      }
-
-      const estadoText = queryText(estado);
-      const buscarText = queryText(buscar);
-      const fechaDesdeText = queryText(fechaDesde);
-      const fechaHastaText = queryText(fechaHasta);
-
-      if (estadoText) {
-        if (estadoText === 'pagado') {
-          where.estadoPago = 'approved';
-          where.estadoConciliacion = 'ok';
-        }
-
-        if (estadoText === 'pendiente') {
-          where.estadoPago = 'pendiente';
-        }
-
-        if (estadoText === 'observado') {
-          where[Op.or] = [
+      if (estadoText === 'observado') {
+        condiciones.push({
+          [Op.or]: [
             { estadoConciliacion: 'requiere_revision' },
             {
               estadoPago: {
-                [Op.in]: ['rejected', 'cancelled', 'refunded', 'charged_back']
-              }
-            }
-          ];
-        }
+                [Op.in]: ['rejected', 'cancelled', 'refunded', 'charged_back'],
+              },
+            },
+          ],
+        });
       }
+    }
 
-      if (buscarText) {
-        where[Op.or] = [
+    if (buscarText) {
+      condiciones.push({
+        [Op.or]: [
           { deportistaNombreSnapshot: { [Op.like]: `%${buscarText}%` } },
           { deportistaDniSnapshot: { [Op.like]: `%${buscarText}%` } },
           { externalReference: { [Op.like]: `%${buscarText}%` } },
           { preferenceId: { [Op.like]: `%${buscarText}%` } },
-          { paymentId: { [Op.like]: `%${buscarText}%` } }
-        ];
-      }
-
-      if (fechaDesdeText || fechaHastaText) {
-        where.createdAt = {};
-
-        if (fechaDesdeText) {
-          where.createdAt[Op.gte] = new Date(fechaDesdeText);
-        }
-
-        if (fechaHastaText) {
-          where.createdAt[Op.lte] = new Date(fechaHastaText);
-        }
-      }
-
-      const pagos = await db.Pago.findAll({
-        where,
-        order: [['createdAt', 'DESC']]
-      });
-
-      return res.json(pagos);
-    } catch (error) {
-      console.error('[GET /pagos error]', error);
-
-      return res.status(500).json({
-        error: 'No se pudieron obtener los pagos',
-        detail: error.message
+          { paymentId: { [Op.like]: `%${buscarText}%` } },
+        ],
       });
     }
-  });
 
-router.get('/resumen/evento/:eventoId',
-  verifyToken,
-  requireRole('administrador', 'tesoreria'),
-  async (req, res) => {
-    try {
-      const { eventoId } = req.params;
+    if (condiciones.length) where[Op.and] = condiciones;
 
-      const pagos = await db.Pago.findAll({
-        where: {
-          eventoId: Number(eventoId)
-        }
+    if (fechaDesdeText || fechaHastaText) {
+      where.createdAt = {};
+
+      if (desde) {
+        where.createdAt[Op.gte] = desde;
+      }
+
+      if (hasta) {
+        where.createdAt[Op.lt] = new Date(
+          hasta.getTime() + 24 * 60 * 60 * 1000,
+        );
+      }
+    }
+
+    const pagos = await db.Pago.findAll({
+      where,
+      order: [['createdAt', 'DESC']],
+    });
+
+    return res.json(pagos);
+  } catch (error) {
+    console.error('[GET /pagos error]', error);
+
+    return res
+      .status(error.status || 500)
+      .json({
+        error: error.status
+          ? error.message
+          : 'No se pudieron obtener los pagos',
       });
+  }
+});
 
-      const resumen = pagos.reduce((acc, pago) => {
+router.get('/resumen/evento/:eventoId', ...tesoreria, async (req, res) => {
+  try {
+    const { eventoId } = req.params;
+
+    const pagos = await db.Pago.findAll({
+      where: {
+        eventoId: Number(eventoId),
+      },
+    });
+
+    const resumen = pagos.reduce(
+      (acc, pago) => {
         const montoBase = Number(pago.montoBase || 0);
         const montoComision = Number(pago.montoComision || 0);
         const montoTotal = Number(pago.montoTotal || 0);
@@ -582,16 +405,22 @@ router.get('/resumen/evento/:eventoId',
         acc.totalComisionSkateManager += montoComision;
         acc.totalGeneral += montoTotal;
 
-        if (pago.estadoPago === 'approved' && pago.estadoConciliacion === 'ok') {
+        if (
+          pago.estadoPago === 'approved' &&
+          pago.estadoConciliacion === 'ok'
+        ) {
           acc.pagados += 1;
-        } else if (pago.estadoPago === 'pendiente') {
+        } else if (
+          ['pendiente', 'pending', 'creando'].includes(pago.estadoPago)
+        ) {
           acc.pendientes += 1;
         } else {
           acc.observados += 1;
         }
 
         return acc;
-      }, {
+      },
+      {
         eventoId: Number(eventoId),
         totalPagos: 0,
         pagados: 0,
@@ -599,28 +428,29 @@ router.get('/resumen/evento/:eventoId',
         observados: 0,
         totalInscripcion: 0,
         totalComisionSkateManager: 0,
-        totalGeneral: 0
-      });
+        totalGeneral: 0,
+      },
+    );
 
-      return res.json(resumen);
-    } catch (error) {
-      console.error('[GET /pagos/resumen/evento/:eventoId error]', error);
+    return res.json(resumen);
+  } catch (error) {
+    console.error('[GET /pagos/resumen/evento/:eventoId error]', error);
 
-      return res.status(500).json({
-        error: 'No se pudo obtener el resumen del evento',
-        detail: error.message
-      });
-    }
-  });
+    return res.status(500).json({
+      error: 'No se pudo obtener el resumen del evento',
+      detail: error.message,
+    });
+  }
+});
 
-router.get('/filtros/clubes', verifyToken, requireRole('administrador', 'tesoreria'), async (req, res) => {
+router.get('/filtros/clubes', ...tesoreria, async (req, res) => {
   try {
     const { eventoId } = req.query;
 
     const where = {
       clubId: {
-        [Op.ne]: null
-      }
+        [Op.ne]: null,
+      },
     };
 
     const eventoIdNumber = queryNumber(eventoId);
@@ -630,17 +460,12 @@ router.get('/filtros/clubes', verifyToken, requireRole('administrador', 'tesorer
     }
 
     const pagos = await db.Pago.findAll({
-      attributes: [
-        'clubId',
-        'clubSnapshot',
-        'clubSedeId',
-        'clubSedeSnapshot'
-      ],
+      attributes: ['clubId', 'clubSnapshot', 'clubSedeId', 'clubSedeSnapshot'],
       where,
       order: [
         ['clubSnapshot', 'ASC'],
-        ['clubSedeSnapshot', 'ASC']
-      ]
+        ['clubSedeSnapshot', 'ASC'],
+      ],
     });
 
     const mapa = new Map();
@@ -653,7 +478,7 @@ router.get('/filtros/clubes', verifyToken, requireRole('administrador', 'tesorer
           clubId: pago.clubId,
           club: pago.clubSnapshot,
           clubSedeId: pago.clubSedeId,
-          sede: pago.clubSedeSnapshot
+          sede: pago.clubSedeSnapshot,
         });
       }
     }
@@ -664,7 +489,7 @@ router.get('/filtros/clubes', verifyToken, requireRole('administrador', 'tesorer
 
     return res.status(500).json({
       error: 'No se pudieron obtener los clubes para filtros',
-      detail: error.message
+      detail: error.message,
     });
   }
 });

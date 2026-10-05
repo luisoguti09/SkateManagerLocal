@@ -1,72 +1,92 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const Evento = sequelize.define('Evento', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
+const Evento = sequelize.define(
+  'Evento',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
 
-  titulo: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
+    nombre: { type: DataTypes.STRING, allowNull: false },
+    inscripcionRequierePago: { type: DataTypes.BOOLEAN, allowNull: true },
+    inscripcionDesde: { type: DataTypes.DATE, allowNull: true },
+    inscripcionHasta: { type: DataTypes.DATE, allowNull: true },
+    abmDesde: { type: DataTypes.DATE, allowNull: true },
+    abmHasta: { type: DataTypes.DATE, allowNull: true },
+    pagoDesde: { type: DataTypes.DATE, allowNull: true },
+    pagoHasta: { type: DataTypes.DATE, allowNull: true },
+    inscripcionesConfirmadasAt: { type: DataTypes.DATE, allowNull: true },
 
-  descripcion: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+    titulo: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
 
-  fechaInicio: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
+    descripcion: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 
-  fechaFin: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
+    fechaInicio: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
 
-  lugar: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
+    fechaFin: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
 
-  qrEventCode: {
-    type: DataTypes.STRING(100),
-    allowNull: true
-  },
+    lugar: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
 
-  lat: {
-    type: DataTypes.DECIMAL(10, 7),
-    allowNull: true
-  },
+    qrEventCode: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
 
-  lng: {
-    type: DataTypes.DECIMAL(10, 7),
-    allowNull: true
-  },
+    lat: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+    },
 
-  requireGeo: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
-  },
+    lng: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+    },
 
-  checkinRadius: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
+    requireGeo: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
 
-  estado: {
-    type: DataTypes.ENUM('borrador', 'publicado', 'inscripcion', 'en_curso', 'finalizado'),
-    allowNull: false,
-    defaultValue: 'publicado'
-  }
-}, {
-  tableName: 'Eventos',
-  timestamps: true
-});
+    checkinRadius: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+
+    estado: {
+      type: DataTypes.ENUM(
+        'borrador',
+        'publicado',
+        'inscripcion',
+        'en_curso',
+        'finalizado',
+      ),
+      allowNull: false,
+      defaultValue: 'publicado',
+    },
+  },
+  {
+    tableName: 'Eventos',
+    timestamps: true,
+  },
+);
 
 Evento.associate = (models) => {
   Evento.belongsToMany(models.Usuario, { through: 'UsuarioEventos' });

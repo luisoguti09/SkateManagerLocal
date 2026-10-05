@@ -18,7 +18,6 @@ export const authGuard: CanActivateFn = (route, state) => {
 
   const usuario = authService.getUsuario();
 
-  console.log('[authGuard] usuario recuperado:', usuario);
 
   if (!authService.isLoggedIn() || !usuario) {
     return router.createUrlTree(['/login']);

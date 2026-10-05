@@ -1,56 +1,180 @@
-<app-back-bar [title]="id ? 'Editar evento' : 'Nuevo evento'"></app-back-bar>
+<section class="event-card">
+  <header class="event-header">
+    <a routerLink="/admin/eventos">← Volver a eventos</a>
 
-<mat-card class="card">
-  <form [formGroup]="form" (ngSubmit)="save()" class="grid">
+    <p class="eyebrow">ADMINISTRACIÓN · EVENTOS</p>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Título</mat-label>
-      <input matInput formControlName="titulo" required>
-    </mat-form-field>
+    <h1>{{ id ? 'Editar evento' : 'Nuevo evento' }}</h1>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Descripción</mat-label>
-      <textarea matInput rows="3" formControlName="descripcion"></textarea>
-    </mat-form-field>
+    <p>
+      Organizá los datos del encuentro y las etapas de inscripción.
+    </p>
+  </header>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Fecha de inicio</mat-label>
-      <input matInput [matDatepicker]="dp1" formControlName="fechaInicio">
-      <mat-datepicker-toggle matSuffix [for]="dp1"></mat-datepicker-toggle>
-      <mat-datepicker #dp1></mat-datepicker>
-    </mat-form-field>
+  <form #editor="ngForm" (ngSubmit)="save()" novalidate>
+    <fieldset [disabled]="loading" class="form-section">
+      <legend>01 <span>Datos del evento</span></legend>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Fecha de fin (opcional)</mat-label>
-      <input matInput [matDatepicker]="dp2" formControlName="fechaFin">
-      <mat-datepicker-toggle matSuffix [for]="dp2"></mat-datepicker-toggle>
-      <mat-datepicker #dp2></mat-datepicker>
-    </mat-form-field>
+      <div class="fields">
+        <label class="wide">
+          Título *
+          <input name="titulo" [(ngModel)]="form.titulo" maxlength="50" required placeholder="Nombre del evento" />
+        </label>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Dirección / Lugar</mat-label>
-      <input matInput formControlName="lugar" placeholder="Ej: Polideportivo X, Mendoza" />
-    </mat-form-field>
+        <label class="wide">
+          Descripción
+          <textarea name="descripcion" [(ngModel)]="form.descripcion" maxlength="255" rows="3"
+            placeholder="Información para quienes participan"></textarea>
+        </label>
 
-    <!--<app-osm-place-picker [center]="{ lat: form.value.lat ?? -34.6037, lng: form.value.lng ?? -58.3816 }"
-      (placeChange)="onPlaceChange($event)">
-    </app-osm-place-picker>-->
+        <label class="wide">
+          Lugar *
+          <input name="lugar" [(ngModel)]="form.lugar" required placeholder="Club o sede del encuentro" />
+        </label>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Precio (opcional)</mat-label>
-      <input matInput type="number" step="0.01" formControlName="precio">
-    </mat-form-field>
+        <div class="date-field" *ngFor="let f of fechasEvento">
+          <span [id]="f.key + '-label'">
+            {{ f.label }}
+          </span>
 
-    <div class="footer">
-      <button mat-stroked-button color="primary" type="button" routerLink="/admin/eventos">Cancelar</button>
-      <button mat-flat-button color="primary" type="submit">Guardar</button>
+          <button type="button" class="date-button" [attr.aria-labelledby]="
+              f.key + '-label ' + f.key + '-value'
+            " (click)="abrirFecha(f.key, f.label)">
+            <span [id]="f.key + '-value'">
+              {{ mostrarFecha(form[f.key]) }}
+            </span>
+
+            <span aria-hidden="true">▦</span>
+          </button>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section" [disabled]="loading || confirmado">
+      <legend>02 <span>Inscripción y calendario</span></legend>
+
+      <label>
+        Tipo de inscripción *
+        <select name="costo" [(ngModel)]="form.inscripcionRequierePago" required>
+          <option [ngValue]="null">Seleccionar</option>
+          <option [ngValue]="true">Con costo</option>
+          <option [ngValue]="false">Gratuita</option>
+        </select>
+      </label>
+
+      <p class="hint">
+        Los aranceles los define Tesorería.
+        Los eventos gratuitos no tienen comisión.
+      </p>
+
+      <div class="calendar-note">
+        Todas las horas corresponden a Argentina (UTC−03).
+        Entre el cierre de inscripción y la apertura de ABM se prepara y comparte el cuadernillo. Durante ese intervalo no se admiten cambios.
+      </div>
+
+      <div class="fields">
+        <ng-container *ngFor="let f of fechas">
+          <div class="date-field" *ngIf="
+              form.inscripcionRequierePago ||
+              !f.key.startsWith('pago')
+            ">
+            <span [id]="f.key + '-label'">
+              {{ f.label }} *
+            </span>
+
+            <button type="button" class="date-button" [attr.aria-labelledby]="
+                f.key + '-label ' + f.key + '-value'
+              " (click)="abrirFecha(f.key, f.label)">
+              <span [id]="f.key + '-value'">
+                {{ mostrarFecha(form[f.key]) }}
+              </span>
+
+              <span aria-hidden="true">▦</span>
+            </button>
+          </div>
+        </ng-container>
+      </div>
+
+      <p class="hint" *ngIf="form.inscripcionRequierePago">
+        El pago se habilita después de ABM, con la nómina
+        confirmada y desde la fecha de apertura del pago.
+      </p>
+    </fieldset>
+
+    <p *ngIf="confirmado" class="calendar-note">
+      Nómina confirmada: el calendario y la condición de costo
+      están cerrados.
+    </p>
+
+    <div class="save-area">
+      <p *ngIf="error" class="error" role="alert">
+        {{ error }}
+      </p>
+
+      <p *ngIf="guardado" class="success" role="status">
+        Cambios guardados.
+      </p>
+
+      <div class="actions">
+        <a routerLink="/admin/eventos">Volver a eventos</a>
+
+        <button class="primary" type="submit" [disabled]="loading">
+          {{ loading ? 'Procesando…' : 'Guardar evento' }}
+        </button>
+      </div>
     </div>
   </form>
 
-  <ng-container *ngIf="eventoId as id">
-    <a mat-stroked-button [href]="eventServ.csvUrl(id, ['apellido','nombre','dni','genero','edad','division','grupo'])"
-      target="_blank" rel="noopener">
-      <mat-icon>download</mat-icon> Exportar CSV
-    </a>
-  </ng-container>
-</mat-card>
+  <app-circuito-evento *ngIf="id && !loading" [eventoId]="id"></app-circuito-evento>
+</section>
+
+<dialog #fechaDialog class="date-dialog" aria-labelledby="dialog-title">
+  <div class="dialog-header">
+    <div>
+      <p class="eyebrow">FECHA Y HORA</p>
+      <h2 id="dialog-title">{{ tituloFecha }}</h2>
+    </div>
+
+    <button type="button" class="close" aria-label="Cerrar sin aplicar" (click)="fechaDialog.close()">
+      ×
+    </button>
+  </div>
+
+  <mat-calendar [selected]="dia" [startAt]="dia" (selectedChange)="dia = $event"></mat-calendar>
+
+  <div class="time-label">
+    <span id="hora-label">Hora de Argentina</span>
+    <button type="button" class="date-button" aria-labelledby="hora-label hora-valor"
+      (click)="abrirHora()" [attr.aria-expanded]="editandoHora">
+      <span id="hora-valor">{{ hora }}</span><span>Cambiar</span>
+    </button>
+  </div>
+  <div *ngIf="editandoHora" class="hour-panel">
+    <div class="fields">
+      <label>Hora<select [(ngModel)]="horaElegida">
+        <option *ngFor="let h of horas" [value]="h">{{ h }}</option>
+      </select></label>
+      <label>Minutos<select [(ngModel)]="minutoElegido">
+        <option *ngFor="let m of minutos" [value]="m">{{ m }}</option>
+      </select></label>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="secondary" (click)="editandoHora = false">Cancelar hora</button>
+      <button type="button" class="primary" (click)="aceptarHora()">Aceptar hora</button>
+    </div>
+  </div>
+
+  <p *ngIf="fechaError" class="error" role="alert">
+    {{ fechaError }}
+  </p>
+
+  <div class="dialog-actions">
+    <button type="button" class="secondary" (click)="fechaDialog.close()">
+      Cancelar
+    </button>
+
+    <button type="button" class="primary" [disabled]="editandoHora" (click)="aceptarFecha()">
+      Aceptar
+    </button>
+  </div>
+</dialog>

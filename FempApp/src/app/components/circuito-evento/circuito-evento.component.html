@@ -1,0 +1,204 @@
+<section class="circuito">
+  <ng-container *ngIf="rol === 'tesoreria'"
+    ><a routerLink="/dashboard-tesoreria">Volver a pagos</a>
+    <h2>Aranceles e inscripciones confirmadas</h2>
+    <label
+      >Evento
+      <select
+        [(ngModel)]="eventoId"
+        (ngModelChange)="cargar()"
+        [disabled]="ocupado"
+      >
+        <option [ngValue]="null">Seleccionar</option>
+        <option *ngFor="let ev of eventos" [ngValue]="ev.id">
+          {{ ev.titulo || ev.nombre || 'Evento #' + ev.id }}
+        </option>
+      </select></label
+    ></ng-container
+  >
+  <p *ngIf="ocupado" role="status">Cargando…</p>
+  <p *ngIf="error" role="alert" class="error">
+    {{ error }}
+    <button (click)="cargar()" [disabled]="ocupado">Reintentar consulta</button>
+  </p>
+  <p *ngIf="mensaje" role="status">{{ mensaje }}</p>
+  <ng-container *ngIf="eventoId"
+    ><h3>Aranceles vigentes</h3>
+    <p *ngIf="rol === 'administrador'">
+      Valores definidos por Tesorería. Solo consulta.
+    </p>
+    <ul>
+      <li *ngFor="let p of precios">
+        {{ p.cantidadParticipaciones }} participación/es: $ {{ p.monto }} ·
+        {{ p.activo ? 'Vigente' : 'Inactivo' }}
+        <button
+          *ngIf="rol === 'tesoreria' && p.activo"
+          (click)="desactivar(p)"
+          [disabled]="ocupado"
+        >
+          Desactivar
+        </button>
+      </li>
+    </ul>
+    <p *ngIf="!ocupado && !precios.length">Sin aranceles configurados.</p>
+    <form *ngIf="rol === 'tesoreria'" (ngSubmit)="guardarPrecio()">
+      <label
+        >Participaciones
+        <input
+          name="cantidad"
+          type="number"
+          min="1"
+          max="100"
+          step="1"
+          [(ngModel)]="cantidad"
+          required /></label
+      ><label
+        >Arancel de inscripción
+        <input
+          name="monto"
+          type="number"
+          min="0.01"
+          step="0.01"
+          [(ngModel)]="monto"
+          required /></label
+      ><button [disabled]="ocupado || !monto">Guardar arancel</button>
+      <p>
+        Gestión Skate Manager: $2.000 por deportista y evento con costo,
+        independientemente de las modalidades. Los cargos confirmados conservan
+        su valor.
+      </p>
+    </form></ng-container
+  >
+  <ng-container *ngIf="data"
+    ><h3>{{ etiquetas[data.etapa] }}</h3>
+    <p>
+      {{
+        data.evento.inscripcionRequierePago === null
+          ? 'Costo pendiente de configurar'
+          : data.evento.inscripcionRequierePago
+            ? 'Evento con costo'
+            : 'Evento gratuito, sin comisión'
+      }}
+    </p>
+    <p>
+      Inscripción:
+      {{ data.evento.inscripcionDesde | date: 'dd/MM/yyyy HH:mm' : '-0300' }} a
+      {{
+        data.evento.inscripcionHasta | date: 'dd/MM/yyyy HH:mm' : '-0300'
+      }}.<br />ABM desde {{ data.evento.abmDesde | date: 'dd/MM/yyyy HH:mm' : '-0300' }} hasta
+      {{ data.evento.abmHasta | date: 'dd/MM/yyyy HH:mm' : '-0300' }}.
+    </p>
+    <p *ngIf="data.evento.inscripcionRequierePago">
+      Pago: {{ data.evento.pagoDesde | date: 'dd/MM/yyyy HH:mm' : '-0300' }} a
+      {{ data.evento.pagoHasta | date: 'dd/MM/yyyy HH:mm' : '-0300' }}. Horarios
+      de Argentina.
+    </p>
+    <ng-container *ngIf="rol === 'administrador'"
+      ><button (click)="exportarCuadernillo()" [disabled]="ocupado">
+        Exportar cuadernillo
+        {{
+          data.evento.inscripcionesConfirmadasAt ? 'final' : 'provisorio'
+        }}
+        (CSV)</button
+      ><button
+        (click)="confirmar()"
+        [disabled]="ocupado || data.etapa !== 'por_confirmar'"
+      >
+        Confirmar nómina definitiva
+      </button></ng-container
+    >
+    <ng-container *ngIf="rol === 'deportista'"
+      ><h3>Mis participaciones</h3>
+      <p>
+        Seleccioná todos los perfiles con los que vas a participar. Las bajas y
+        modificaciones se realizan durante ABM.
+      </p>
+      <label *ngFor="let p of data.perfiles" class="perfil"
+        ><input
+          type="checkbox"
+          [checked]="seleccion.includes(p.id)"
+          [disabled]="ocupado || !editable"
+          (change)="toggle(p.id, $any($event.target).checked)"
+        />{{ p.disciplina }} · {{ p.modalidad }} · {{ p.categoria }} ·
+        {{ p.divisional }}</label
+      >
+      <p *ngIf="!data.perfiles.length">
+        Cargá tus perfiles deportivos desde Mi perfil.
+      </p>
+      <button (click)="guardar()" [disabled]="ocupado || !editable">
+        Guardar inscripción / ABM
+      </button>
+      <div *ngIf="data.cargo as c">
+        <h3>Mi inscripción confirmada</h3>
+        <p>
+          Inscripción: $ {{ c.montoBase }} · Gestión: $ {{ c.montoComision }} ·
+          Total: $ {{ c.montoTotal }}
+        </p>
+        <p>Estado: {{ c.estado }} {{ c.vencido ? '· Plazo vencido' : '' }}</p>
+        <button
+          (click)="pagar()"
+          [disabled]="
+            ocupado ||
+            data.etapa !== 'pago' ||
+            !['adeudado', 'pendiente'].includes(c.estado)
+          "
+        >
+          Pagar inscripción
+        </button>
+      </div></ng-container
+    ></ng-container
+  >
+  <ng-container *ngIf="rol === 'tesoreria' && eventoId"
+    ><h3>Cargos confirmados</h3>
+    <p>
+      Incluye inscripciones cuyo checkout todavía no se abrió. El mes
+      corresponde a la confirmación, en horario argentino.
+    </p>
+    <label>Mes <input type="month" [(ngModel)]="filtroMes" /></label
+    ><label
+      >Club <input [(ngModel)]="filtroClub" placeholder="Buscar club" /></label
+    ><label
+      >Estado
+      <select [(ngModel)]="filtroEstado">
+        <option value="">Todos</option>
+        <option value="adeudado">Adeudado</option>
+        <option value="pendiente">Pendiente de acreditación</option>
+        <option value="pagado">Pagado</option>
+        <option value="sin_cargo">Sin cargo</option>
+        <option value="requiere_revision">Requiere revisión</option>
+      </select></label
+    ><button
+      (click)="exportarCargos()"
+      [disabled]="ocupado || !!error || !cargosFiltrados.length"
+    >
+      Exportar cargos filtrados (CSV)
+    </button>
+    <div class="tabla">
+      <table>
+        <thead>
+          <tr>
+            <th>Deportista</th>
+            <th>Participaciones</th>
+            <th>Base</th>
+            <th>Gestión</th>
+            <th>Total</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of cargosFiltrados">
+            <td>{{ c.deportista }}</td>
+            <td>{{ c.perfilDeportivoIds.length }}</td>
+            <td>{{ c.montoBase }}</td>
+            <td>{{ c.montoComision }}</td>
+            <td>{{ c.montoTotal }}</td>
+            <td>{{ c.estado }}{{ c.vencido ? ' · Vencido' : '' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p *ngIf="!ocupado && !cargosFiltrados.length">
+      No hay cargos confirmados para estos filtros.
+    </p></ng-container
+  >
+</section>

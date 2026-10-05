@@ -43,7 +43,7 @@ export class EventsListComponent implements OnInit {
   }
 
   verQr(id: number) {
-    console.log('Abriendo QR de evento', id);
+
     if (!id) { return; }
     this.router.navigate(['/eventos', id, 'qr']);
   }
@@ -78,8 +78,7 @@ export class EventsListComponent implements OnInit {
         };
       });
 
-      console.log('[EVENTS LIST NUEVA VERSION] normalizados:', normalizados);
-      console.log('Eventos normalizados:', normalizados);
+
       this.data = normalizados;
     });
   }

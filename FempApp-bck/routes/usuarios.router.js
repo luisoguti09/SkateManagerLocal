@@ -15,7 +15,6 @@ const fs = require('fs');
 const db = require('../models');
 const { Op } = require('sequelize');
 
-
 function normalizarDni(value) {
   return String(value || '').replace(/\D/g, '');
 }
@@ -36,17 +35,19 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     cb(null, `patinador_${req.params.dni}${ext}`);
-  }
+  },
 });
 
-router.get('/admin/usuarios',
+router.get(
+  '/admin/usuarios',
   verifyToken,
   requireRole('administrador'),
   async (req, res) => {
     try {
       const { estado, rol, q } = req.query;
 
-      const rawAttrs = (Usuario.getAttributes?.() ?? Usuario.rawAttributes) || {};
+      const rawAttrs =
+        (Usuario.getAttributes?.() ?? Usuario.rawAttributes) || {};
       const has = (k) => !!rawAttrs[k];
 
       const where = {};
@@ -78,15 +79,25 @@ router.get('/admin/usuarios',
 
       const attributes = [];
 
-      ['id', 'dni', 'nombre', 'apellido', 'email', 'rol', 'rolId', 'aprobado', 'estado', 'createdAt']
-        .forEach(attr => {
-          if (has(attr)) attributes.push(attr);
-        });
+      [
+        'id',
+        'dni',
+        'nombre',
+        'apellido',
+        'email',
+        'rol',
+        'rolId',
+        'aprobado',
+        'estado',
+        'createdAt',
+      ].forEach((attr) => {
+        if (has(attr)) attributes.push(attr);
+      });
 
       const usuarios = await Usuario.findAll({
         where,
         order: [['createdAt', 'DESC']],
-        attributes
+        attributes,
       });
 
       res.json(usuarios);
@@ -94,12 +105,12 @@ router.get('/admin/usuarios',
       console.error('GET /usuarios/admin/usuarios error', e);
       res.status(500).json({ error: 'Error al listar usuarios' });
     }
-  }
+  },
 );
 
-
 // GET /usuarios?aprobado=true|false
-router.get('/',
+router.get(
+  '/',
   verifyToken,
   requireRole('administrador', 'tecnico'),
   async (req, res) => {
@@ -107,7 +118,8 @@ router.get('/',
       const { aprobado } = req.query;
 
       // Detecta atributos reales del modelo
-      const rawAttrs = (Usuario.getAttributes?.() ?? Usuario.rawAttributes) || {};
+      const rawAttrs =
+        (Usuario.getAttributes?.() ?? Usuario.rawAttributes) || {};
       const has = (k) => !!rawAttrs[k];
 
       const where = {};
@@ -141,23 +153,55 @@ router.get('/',
       else if (has('displayName')) order.push(['displayName', 'ASC']);
       else if (has('email')) order.push(['email', 'ASC']);
 
-      const usuarios = await Usuario.findAll({ where, attributes: attrs, order });
+      const usuarios = await Usuario.findAll({
+        where,
+        attributes: attrs,
+        order,
+      });
       res.json(usuarios);
     } catch (e) {
       console.error('GET /usuarios error', e);
       res.status(500).json({ error: 'Error al listar usuarios' });
     }
-  }
+  },
 );
 
-router.put('/:dni/perfil', async (req, res) => {
+router.put('/:dni/perfil', verifyToken, async (req, res) => {
   const { dni } = req.params;
-  const datos = req.body;
+  const permitidos = [
+    'nombre',
+    'edad',
+    'club',
+    'categoria',
+    'nivel',
+    'domicilio',
+    'telefono',
+    'fechaNacimiento',
+    'instagram',
+    'facebook',
+    'tiktok',
+  ];
+  if (req.body.dni != null && String(req.body.dni) !== String(dni))
+    return res
+      .status(400)
+      .json({ error: 'El DNI no se modifica desde el perfil.' });
+  if (Object.keys(req.body).some((k) => k !== 'dni' && !permitidos.includes(k)))
+    return res
+      .status(400)
+      .json({
+        error: 'El perfil contiene campos no editables por este endpoint.',
+      });
+  const datos = Object.fromEntries(
+    permitidos.filter((k) => k in req.body).map((k) => [k, req.body[k]]),
+  );
 
   try {
     const usuario = await Usuario.findOne({ where: { dni } });
-    if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (!usuario)
+      return res.status(404).json({ error: 'Usuario no encontrado' });
 
+    if (Number(usuario.id) !== Number(req.auth.id))
+      return res.status(403).json({ error: 'Solo podés editar tu perfil.' });
     await usuario.update(datos);
     res.status(200).json({ message: 'Datos actualizados correctamente' });
   } catch (error) {
@@ -167,33 +211,39 @@ router.put('/:dni/perfil', async (req, res) => {
 });
 
 // === SUBIR foto de perfil ===
-router.post('/:dni/fotoPerfil', upload.single('fotoPerfil'), async (req, res) => {
-  try {
-    const { dni } = req.params;
-    const usuario = await Usuario.findOne({ where: { dni } });
-    if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+router.post(
+  '/:dni/fotoPerfil',
+  upload.single('fotoPerfil'),
+  async (req, res) => {
+    try {
+      const { dni } = req.params;
+      const usuario = await Usuario.findOne({ where: { dni } });
+      if (!usuario)
+        return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    // ✅ Guarda la ruta relativa en la BD
-    usuario.fotoPerfil = `uploads/usuarios/${req.file.filename}`;
-    await usuario.save();
+      // ✅ Guarda la ruta relativa en la BD
+      usuario.fotoPerfil = `uploads/usuarios/${req.file.filename}`;
+      await usuario.save();
 
-    // ✅ Devuelve la URL completa para el frontend
-    res.status(200).json({
-      message: 'Foto de perfil actualizada',
-      url: `${req.protocol}://${req.get('host')}/uploads/usuarios/${req.file.filename}`
-    });
-  } catch (error) {
-    console.error('Error al subir foto de perfil:', error);
-    res.status(500).json({ error: 'Error al subir foto de perfil' });
-  }
-});
+      // ✅ Devuelve la URL completa para el frontend
+      res.status(200).json({
+        message: 'Foto de perfil actualizada',
+        url: `${req.protocol}://${req.get('host')}/uploads/usuarios/${req.file.filename}`,
+      });
+    } catch (error) {
+      console.error('Error al subir foto de perfil:', error);
+      res.status(500).json({ error: 'Error al subir foto de perfil' });
+    }
+  },
+);
 
 // === ELIMINAR foto de perfil ===
 router.delete('/:dni/fotoPerfil', async (req, res) => {
   try {
     const { dni } = req.params;
     const usuario = await Usuario.findOne({ where: { dni } });
-    if (!usuario || !usuario.fotoPerfil) return res.status(404).json({ error: 'Foto no encontrada' });
+    if (!usuario || !usuario.fotoPerfil)
+      return res.status(404).json({ error: 'Foto no encontrada' });
 
     // Borra archivo físico
     const filePath = path.join(__dirname, '..', usuario.fotoPerfil);
@@ -211,7 +261,6 @@ router.delete('/:dni/fotoPerfil', async (req, res) => {
 
 // Obteniene un usuario por DNI (retorna null si no existe)
 
-
 router.get('/dni/:dni', async (req, res) => {
   try {
     const dniLimpio = normalizarDni(req.params.dni);
@@ -219,11 +268,8 @@ router.get('/dni/:dni', async (req, res) => {
 
     const usuario = await Usuario.findOne({
       where: {
-        [Op.or]: [
-          { dni: dniLimpio },
-          { dni: dniConPuntos }
-        ]
-      }
+        [Op.or]: [{ dni: dniLimpio }, { dni: dniConPuntos }],
+      },
     });
 
     return res.json(usuario || null);
@@ -239,10 +285,15 @@ router.get('/:dni/eventos', async (req, res) => {
   try {
     const usuario = await db.Usuario.findOne({
       where: { dni },
-      include: [{
-        model: db.Evento,
-        through: { attributes: [] }
-      }]
+      include: [
+        {
+          model: db.Evento,
+          through: {
+            attributes: [],
+            where: { estadoInscripcion: { [db.Sequelize.Op.ne]: 'baja' } },
+          },
+        },
+      ],
     });
 
     if (!usuario) {
@@ -256,9 +307,11 @@ router.get('/:dni/eventos', async (req, res) => {
   }
 });
 
-
-router.post('/:id/qr', verifyToken,
-  requireRole('administrador', 'tecnico', 'deportista'), async (req, res) => {
+router.post(
+  '/:id/qr',
+  verifyToken,
+  requireRole('administrador', 'tecnico', 'deportista'),
+  async (req, res) => {
     const { id } = req.params;
     if (+id !== req.user.id && req.user.rol !== 'administrador')
       return res.status(403).json({ error: 'No autorizado' });
@@ -268,104 +321,133 @@ router.post('/:id/qr', verifyToken,
     u.qrJti = uuidv4();
     await u.save();
 
-    const token = jwt.sign({ sub: u.id, jti: u.qrJti, typ: 'qr' },
-      process.env.QR_SECRET, { algorithm: 'HS256' });
+    const token = jwt.sign(
+      { sub: u.id, jti: u.qrJti, typ: 'qr' },
+      process.env.QR_SECRET,
+      { algorithm: 'HS256' },
+    );
     res.json({ token });
-  });
+  },
+);
 
-router.get('/:id/qr.png', verifyToken,
-  requireRole('administrador', 'tecnico', 'deportista'), async (req, res) => {
+router.get(
+  '/:id/qr.png',
+  verifyToken,
+  requireRole('administrador', 'tecnico', 'deportista'),
+  async (req, res) => {
     const { id } = req.params;
     const transparent = req.query.transparent === '1';
     if (+id !== req.user.id && req.user.rol !== 'administrador')
       return res.status(403).json({ error: 'No autorizado' });
 
     const u = await Usuario.findByPk(id);
-    if (!u || !u.qrJti) return res.status(404).json({ error: 'Sin credencial' });
-    const token = jwt.sign({ sub: u.id, jti: u.qrJti, typ: 'qr' },
-      process.env.QR_SECRET, { algorithm: 'HS256' });
+    if (!u || !u.qrJti)
+      return res.status(404).json({ error: 'Sin credencial' });
+    const token = jwt.sign(
+      { sub: u.id, jti: u.qrJti, typ: 'qr' },
+      process.env.QR_SECRET,
+      { algorithm: 'HS256' },
+    );
 
     res.set('Content-Type', 'image/png');
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set(
+      'Cache-Control',
+      'no-store, no-cache, must-revalidate, proxy-revalidate',
+    );
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
     const opts = {
-      width: 512, margin: 1,
-      ...(transparent ? { color: { dark: '#000000', light: '#0000' } } : {})
+      width: 512,
+      margin: 1,
+      ...(transparent ? { color: { dark: '#000000', light: '#0000' } } : {}),
     };
     QRCode.toFileStream(res, token, opts);
-  });
+  },
+);
 
 router.post('/:id/solicitar-rol', verifyToken, async (req, res) => {
-  const { id } = req.params; const { rol } = req.body; // 'tecnico'|'deportista'
-  if (+id !== req.user.id) return res.status(403).json({ error: 'No autorizado' });
+  const { id } = req.params;
+  const { rol } = req.body; // 'tecnico'|'deportista'
+  if (+id !== req.user.id)
+    return res.status(403).json({ error: 'No autorizado' });
   const u = await Usuario.findByPk(id);
-  u.rolSolicitado = rol; await u.save();
+  u.rolSolicitado = rol;
+  await u.save();
   res.json({ ok: true });
 });
 
 // === Aprobar usuario por ID ===
 
-router.patch('/:id/aprobar', verifyToken, requireRole('administrador'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { aprobar, rol } = req.body;
+router.patch(
+  '/:id/aprobar',
+  verifyToken,
+  requireRole('administrador'),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { aprobar, rol } = req.body;
 
-    const usuario = await Usuario.findByPk(id);
+      const usuario = await Usuario.findByPk(id);
 
-    if (!usuario) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
+      if (!usuario) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
 
-    if (Number(usuario.id) === Number(req.user.id) && aprobar === false) {
-      return res.status(400).json({
-        error: 'No podés bloquear tu propio usuario administrador'
+      if (Number(usuario.id) === Number(req.user.id) && aprobar === false) {
+        return res.status(400).json({
+          error: 'No podés bloquear tu propio usuario administrador',
+        });
+      }
+
+      if (aprobar) {
+        usuario.estado = 'aprobado';
+        usuario.aprobado = true;
+
+        if (rol) {
+          const rolNormalizado =
+            ROL_CANON[String(rol).trim().toLowerCase()] || rol;
+
+          if (
+            !['administrador', 'tecnico', 'deportista', 'tesoreria'].includes(
+              rolNormalizado,
+            )
+          ) {
+            return res.status(400).json({
+              error: 'Rol no válido para aprobación',
+              detalle: rol,
+            });
+          }
+
+          usuario.rol = rolNormalizado;
+        }
+      } else {
+        usuario.estado = 'bloqueado';
+        usuario.aprobado = false;
+      }
+
+      await usuario.save();
+
+      return res.status(200).json({
+        ok: true,
+        usuario: {
+          id: usuario.id,
+          dni: usuario.dni,
+          nombre: usuario.nombre,
+          email: usuario.email,
+          rol: usuario.rol,
+          rolId: usuario.rolId,
+          estado: usuario.estado,
+          aprobado: usuario.aprobado,
+        },
+      });
+    } catch (error) {
+      console.error('PATCH /usuarios/:id/aprobar error', error);
+      return res.status(500).json({
+        error: 'Error al actualizar aprobación del usuario',
       });
     }
-
-    if (aprobar) {
-      usuario.estado = 'aprobado';
-      usuario.aprobado = true;
-
-      if (rol) {
-        const rolNormalizado = ROL_CANON[String(rol).trim().toLowerCase()] || rol;
-
-        if (!['administrador', 'tecnico', 'deportista', 'tesoreria'].includes(rolNormalizado)) {
-          return res.status(400).json({
-            error: 'Rol no válido para aprobación',
-            detalle: rol
-          });
-        }
-
-        usuario.rol = rolNormalizado;
-      }
-    } else {
-      usuario.estado = 'bloqueado';
-      usuario.aprobado = false;
-    }
-
-    await usuario.save();
-
-    return res.status(200).json({
-      ok: true,
-      usuario: {
-        id: usuario.id,
-        dni: usuario.dni,
-        nombre: usuario.nombre,
-        email: usuario.email,
-        rol: usuario.rol,
-        rolId: usuario.rolId,
-        estado: usuario.estado,
-        aprobado: usuario.aprobado
-      }
-    });
-  } catch (error) {
-    console.error('PATCH /usuarios/:id/aprobar error', error);
-    return res.status(500).json({
-      error: 'Error al actualizar aprobación del usuario'
-    });
-  }
-});
+  },
+);
 
 // GET /eventos/:id/qr.png  => PNG del QR del evento (único)
 router.get('/:eventId/qr.png', authOptional, async (req, res) => {
@@ -373,7 +455,10 @@ router.get('/:eventId/qr.png', authOptional, async (req, res) => {
   const ev = await Evento.findByPk(id);
   if (!ev) return res.status(404).send('Evento no encontrado');
 
-  if (!ev.qrEventCode) { ev.qrEventCode = uuidv4(); await ev.save(); }
+  if (!ev.qrEventCode) {
+    ev.qrEventCode = uuidv4();
+    await ev.save();
+  }
 
   const payload = `FEMPAPP://checkin?e=${id}&t=${ev.qrEventCode}`;
   const png = await QRCode.toBuffer(payload, { width: 256 });
@@ -402,12 +487,18 @@ router.post('/:eventId/checkin', authOptional, async (req, res) => {
   }
 
   // validar inscripción (UsuarioEventos)
-  const ue = await UsuarioEventos.findOne({ where: { EventoId: id, UsuarioId: userId } });
+  const ue = await UsuarioEventos.findOne({
+    where: { EventoId: id, UsuarioId: userId },
+  });
   if (!ue) return res.status(400).json({ error: 'No inscripto' });
 
   try {
     // registrar asistencia (índice único evita duplicados)
-    await Asistencia.create({ eventoId: id, usuarioId: userId, checkedAt: new Date() });
+    await Asistencia.create({
+      eventoId: id,
+      usuarioId: userId,
+      checkedAt: new Date(),
+    });
     return res.json({ created: true });
   } catch (err) {
     // ER_DUP_ENTRY = ya estaba
@@ -416,4 +507,3 @@ router.post('/:eventId/checkin', authOptional, async (req, res) => {
 });
 
 module.exports = router;
-

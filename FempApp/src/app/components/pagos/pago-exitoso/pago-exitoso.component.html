@@ -1,14 +1,11 @@
-
 <div class="wrap">
-  <h2>¡Pago recibido! ✅</h2>
-  <p><strong>Estado:</strong> {{ status }}</p>
-  <p><strong>Payment ID:</strong> {{ paymentId }}</p>
-  <p><strong>Preference ID:</strong> {{ preferenceId }}</p>
-
-  <div *ngIf="validado">
-    <h4>Validación del servidor</h4>
-    <pre>{{ detalleValidacion | json }}</pre>
-  </div>
-
-  <button mat-stroked-button (click)="volver()">Volver</button>
+  <h2>{{ validado ? 'Pago acreditado' : 'Verificación del pago' }}</h2>
+  <p *ngIf="cargando" role="status">Consultando el estado del pago…</p>
+  <p *ngIf="error" role="alert">{{ error }}</p>
+  <p *ngIf="!cargando && !error && !validado">
+    El pago todavía no figura conciliado. Estado informado: {{ estado }}.
+  </p>
+  <button mat-stroked-button (click)="verificar()" [disabled]="cargando">
+    Actualizar estado</button
+  ><button mat-stroked-button (click)="volver()">Volver a mis eventos</button>
 </div>

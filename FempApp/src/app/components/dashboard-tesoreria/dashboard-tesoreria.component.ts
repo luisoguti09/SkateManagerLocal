@@ -19,6 +19,16 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { PagosService } from '../../services/pagos.service';
 import { EventosService } from '../../services/eventos.service';
 
+interface FiltrosTesoreria {
+  eventoId: number | null;
+  clubId: number | null;
+  clubSedeId: number | null;
+  estado: '' | 'pagado' | 'pendiente' | 'observado';
+  buscar: string;
+  fechaDesde: string;
+  fechaHasta: string;
+}
+
 @Component({
   selector: 'app-dashboard-tesoreria',
   standalone: true,
@@ -35,10 +45,10 @@ import { EventosService } from '../../services/eventos.service';
     MatButtonModule,
     MatCardModule,
     MatIconModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
   ],
   templateUrl: './dashboard-tesoreria.component.html',
-  styleUrl: './dashboard-tesoreria.component.scss'
+  styleUrl: './dashboard-tesoreria.component.scss',
 })
 export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
   cargando = false;
@@ -49,13 +59,84 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
   private solicitudPagos?: Subscription;
   private solicitudClubes?: Subscription;
   private solicitudEventos?: Subscription;
+  private filtrosAplicados: FiltrosTesoreria | null = null;
+
+  private normalizarFiltros(filtros: FiltrosTesoreria): FiltrosTesoreria {
+    return {
+      eventoId: filtros.eventoId ?? null,
+      clubId: filtros.clubId ?? null,
+      clubSedeId: filtros.clubSedeId ?? null,
+      estado: filtros.estado || '',
+      buscar: filtros.buscar.trim(),
+      fechaDesde: filtros.fechaDesde || '',
+      fechaHasta: filtros.fechaHasta || '',
+    };
+  }
+
+  get filtrosSinAplicar(): boolean {
+    return (
+      this.filtrosAplicados !== null &&
+      JSON.stringify(this.normalizarFiltros(this.filtros)) !==
+        JSON.stringify(this.filtrosAplicados)
+    );
+  }
+
+  get errorRangoFechas(): string {
+    return this.filtros.fechaDesde &&
+      this.filtros.fechaHasta &&
+      this.filtros.fechaDesde > this.filtros.fechaHasta
+      ? 'La fecha Desde no puede ser posterior a Hasta.'
+      : '';
+  }
+
+  get puedeExportar(): boolean {
+    return (
+      this.datosDisponibles &&
+      this.pagos.length > 0 &&
+      !this.filtrosSinAplicar &&
+      !this.errorRangoFechas
+    );
+  }
+
+  get detalleFiltrosAplicados(): string {
+    const f = this.filtrosAplicados;
+    if (!f) return '';
+    const partes: string[] = [];
+    if (f.eventoId !== null) {
+      const evento = this.eventos.find((e) => e.id === f.eventoId);
+      partes.push(evento?.nombre || evento?.titulo || `Evento #${f.eventoId}`);
+    }
+    if (f.clubId !== null) {
+      const club = this.clubes.find(
+        (c) => c.clubId === f.clubId && c.clubSedeId === f.clubSedeId,
+      );
+      partes.push(club?.club || `Club #${f.clubId}`);
+      if (f.clubSedeId !== null)
+        partes.push(club?.sede || `Sede #${f.clubSedeId}`);
+    }
+    if (f.estado)
+      partes.push(
+        { pagado: 'Pagados', pendiente: 'Pendientes', observado: 'Observados' }[
+          f.estado
+        ],
+      );
+    if (f.fechaDesde)
+      partes.push(`Desde ${f.fechaDesde.split('-').reverse().join('/')}`);
+    if (f.fechaHasta)
+      partes.push(`Hasta ${f.fechaHasta.split('-').reverse().join('/')}`);
+    if (f.buscar) partes.push(`Búsqueda: ${f.buscar}`);
+    return partes.length
+      ? partes.join(' · ')
+      : 'Todos los registros, sin filtros';
+  }
 
   get datosDisponibles(): boolean {
     return this.pagosCargados && !this.cargando && !this.errorPagos;
   }
 
   get clubSeleccionado(): string {
-    if (this.filtros.clubId === null && this.filtros.clubSedeId === null) return '';
+    if (this.filtros.clubId === null && this.filtros.clubSedeId === null)
+      return '';
     return `${this.filtros.clubId ?? 'null'}|${this.filtros.clubSedeId ?? 'null'}`;
   }
 
@@ -72,17 +153,17 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
     observados: 0,
     totalInscripcion: 0,
     totalComisionSkateManager: 0,
-    totalGeneral: 0
+    totalGeneral: 0,
   };
 
-  filtros = {
+  filtros: FiltrosTesoreria = {
     eventoId: null as number | null,
     clubId: null as number | null,
     clubSedeId: null as number | null,
     estado: '' as '' | 'pagado' | 'pendiente' | 'observado',
     buscar: '',
     fechaDesde: '',
-    fechaHasta: ''
+    fechaHasta: '',
   };
 
   columnas: string[] = [
@@ -96,7 +177,7 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
     'montoComision',
     'montoTotal',
     'estadoPago',
-    'estadoConciliacion'
+    'estadoConciliacion',
   ];
 
   @ViewChild(MatPaginator) set paginator(value: MatPaginator | undefined) {
@@ -109,8 +190,8 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
   constructor(
     private pagosService: PagosService,
     private eventosService: EventosService,
-    public auth: AuthService
-  ) { }
+    public auth: AuthService,
+  ) {}
 
   ngOnInit(): void {
     this.cargarEventos();
@@ -138,45 +219,49 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error cargando eventos:', error);
         this.errorEventos = 'No se pudo cargar el listado de eventos.';
-      }
+      },
     });
   }
 
   cargarPagos(): void {
     this.solicitudPagos?.unsubscribe();
+    if (this.errorRangoFechas) {
+      this.cargando = false;
+      return;
+    }
     this.cargando = true;
     this.errorPagos = '';
     this.pagosCargados = false;
 
-    const filtrosLimpios = {
-      eventoId: this.filtros.eventoId ?? null,
-      clubId: this.filtros.clubId ?? null,
-      clubSedeId: this.filtros.clubSedeId ?? null,
-      estado: this.filtros.estado || null,
-      buscar: this.filtros.buscar || null,
-      fechaDesde: this.filtros.fechaDesde || null,
-      fechaHasta: this.filtros.fechaHasta || null
-    };
+    const filtrosLimpios = this.normalizarFiltros(this.filtros);
 
-    this.solicitudPagos = this.pagosService.listarPagos(filtrosLimpios).subscribe({
-      next: (pagos: any[]) => {
-        this.pagos = pagos || [];
-        this.dataSource.data = this.pagos;
-        this.dataSource.paginator?.firstPage();
+    this.solicitudPagos = this.pagosService
+      .listarPagos(filtrosLimpios)
+      .subscribe({
+        next: (pagos: any[]) => {
+          this.pagos = pagos || [];
+          this.dataSource.data = this.pagos;
+          this.dataSource.paginator?.firstPage();
 
-        this.calcularResumenLocal();
-        this.pagosCargados = true;
-        this.cargando = false;
-      },
-      error: (error: any) => {
-        console.error('Error cargando pagos:', error);
-        this.pagos = [];
-        this.dataSource.data = [];
-        this.calcularResumenLocal();
-        this.errorPagos = 'No pudimos cargar los pagos. Los importes y el listado no están disponibles. Intentá nuevamente.';
-        this.cargando = false;
-      }
-    });
+          this.calcularResumenLocal();
+          this.filtrosAplicados = { ...filtrosLimpios };
+          this.pagosCargados = true;
+          this.cargando = false;
+        },
+        error: (error: any) => {
+          console.error('Error cargando pagos:', error);
+          this.pagos = [];
+          this.dataSource.data = [];
+          this.calcularResumenLocal();
+          this.errorPagos =
+            'No pudimos cargar los pagos. Los importes y el listado no están disponibles. Intentá nuevamente.';
+          if (error?.status === 400) {
+            this.errorPagos =
+              'Revisá los filtros y las fechas ingresadas antes de volver a intentar.';
+          }
+          this.cargando = false;
+        },
+      });
   }
 
   cargarClubes(): void {
@@ -185,15 +270,17 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
     this.clubes = [];
     const eventoId = this.filtros.eventoId ?? null;
 
-    this.solicitudClubes = this.pagosService.obtenerClubesFiltro(eventoId).subscribe({
-      next: (clubes: any[]) => {
-        this.clubes = clubes || [];
-      },
-      error: (error: any) => {
-        console.error('Error cargando clubes:', error);
-        this.errorClubes = 'No se pudo cargar el listado de clubes y sedes.';
-      }
-    });
+    this.solicitudClubes = this.pagosService
+      .obtenerClubesFiltro(eventoId)
+      .subscribe({
+        next: (clubes: any[]) => {
+          this.clubes = clubes || [];
+        },
+        error: (error: any) => {
+          console.error('Error cargando clubes:', error);
+          this.errorClubes = 'No se pudo cargar el listado de clubes y sedes.';
+        },
+      });
   }
 
   aplicarFiltros(): void {
@@ -208,7 +295,7 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
       estado: '',
       buscar: '',
       fechaDesde: '',
-      fechaHasta: ''
+      fechaHasta: '',
     };
 
     this.cargarClubes();
@@ -246,7 +333,7 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
       observados: 0,
       totalInscripcion: 0,
       totalComisionSkateManager: 0,
-      totalGeneral: 0
+      totalGeneral: 0,
     };
 
     this.resumen = this.pagos.reduce((acc, pago) => {
@@ -258,7 +345,10 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
 
       if (pago.estadoPago === 'approved' && pago.estadoConciliacion === 'ok') {
         acc.pagados += 1;
-      } else if (pago.estadoPago === 'pendiente' || pago.estadoPago === 'pending') {
+      } else if (
+        pago.estadoPago === 'pendiente' ||
+        pago.estadoPago === 'pending'
+      ) {
         acc.pendientes += 1;
       } else {
         acc.observados += 1;
@@ -273,7 +363,7 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
 
     return numero.toLocaleString('es-AR', {
       style: 'currency',
-      currency: 'ARS'
+      currency: 'ARS',
     });
   }
 
@@ -285,7 +375,7 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
       rejected: 'Rechazado',
       cancelled: 'Cancelado',
       refunded: 'Devuelto',
-      charged_back: 'Contracargo'
+      charged_back: 'Contracargo',
     };
 
     return mapa[estado] || estado || 'Sin estado';
@@ -295,16 +385,16 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
     const mapa: Record<string, string> = {
       ok: 'Conciliado',
       pendiente: 'Pendiente',
-      requiere_revision: 'Requiere revisión'
+      requiere_revision: 'Requiere revisión',
     };
 
     return mapa[estado] || estado || 'Sin estado';
   }
 
   exportarCsv(): void {
-    if (!this.datosDisponibles || !this.pagos.length) return;
+    if (!this.puedeExportar) return;
     const headers = [
-      'Fecha',
+      'Fecha de solicitud (Argentina UTC-03:00)',
       'Evento',
       'Deportista',
       'DNI',
@@ -318,39 +408,76 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
       'Conciliacion',
       'Payment ID',
       'Preference ID',
-      'External Reference'
+      'External Reference',
     ];
 
     const rows = this.pagos.map((pago) => [
-      pago.createdAt || '',
+      this.fechaSolicitudCsv(pago.createdAt),
       pago.eventoNombreSnapshot || '',
       pago.deportistaNombreSnapshot || '',
       pago.deportistaDniSnapshot || '',
       pago.clubSnapshot || '',
       pago.clubSedeSnapshot || '',
-      pago.cantidadParticipaciones || '',
-      pago.montoBase || '',
-      pago.montoComision || '',
-      pago.montoTotal || '',
+      pago.cantidadParticipaciones ?? '',
+      pago.montoBase ?? '',
+      pago.montoComision ?? '',
+      pago.montoTotal ?? '',
       pago.estadoPago || '',
       pago.estadoConciliacion || '',
       pago.paymentId || '',
       pago.preferenceId || '',
-      pago.externalReference || ''
+      pago.externalReference || '',
     ]);
 
     const csv = [headers, ...rows]
-      .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
+      .map((row) => row.map((value) => this.celdaCsv(value)).join(','))
+      .join('\r\n');
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
 
     const link = document.createElement('a');
     link.href = url;
-    link.download = `pagos_tesoreria_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = this.nombreArchivoCsv();
     link.click();
 
     window.URL.revokeObjectURL(url);
+  }
+
+  private fechaSolicitudCsv(value: string | null | undefined): string {
+    if (!value) return '';
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return '';
+    return new Date(date.getTime() - 3 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 19)
+      .replace('T', ' ');
+  }
+
+  private celdaCsv(value: unknown): string {
+    let text = String(value ?? '');
+    // Mantener texto como texto al abrirlo en una planilla.
+    if (typeof value !== 'number' && /^[\s]*[=+\-@]/.test(text))
+      text = `'${text}`;
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+
+  private nombreArchivoCsv(): string {
+    const f = this.filtrosAplicados;
+    const partes = ['pagos_tesoreria'];
+    if (f?.eventoId !== null && f?.eventoId !== undefined)
+      partes.push(`evento-${f.eventoId}`);
+    if (f?.clubId !== null && f?.clubId !== undefined)
+      partes.push(`club-${f.clubId}`);
+    if (f?.clubSedeId !== null && f?.clubSedeId !== undefined)
+      partes.push(`sede-${f.clubSedeId}`);
+    if (f?.estado) partes.push(f.estado);
+    if (f?.fechaDesde) partes.push(`desde-${f.fechaDesde}`);
+    if (f?.fechaHasta) partes.push(`hasta-${f.fechaHasta}`);
+    if (f?.buscar) partes.push('busqueda');
+    partes.push(
+      `exportado-${this.fechaSolicitudCsv(new Date().toISOString()).slice(0, 10)}`,
+    );
+    return `${partes.join('_')}.csv`;
   }
 }

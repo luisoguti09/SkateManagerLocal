@@ -1,156 +1,166 @@
-
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const Pago = sequelize.define('Pago', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
+const Pago = sequelize.define(
+  'Pago',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
 
-  usuarioId: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
+    cargoId: { type: DataTypes.INTEGER, allowNull: true, unique: true },
+    tipoComision: {
+      type: DataTypes.STRING(30),
+      allowNull: false,
+      defaultValue: 'porcentaje_historico',
+    },
 
-  eventoId: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
+    usuarioId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
 
-  perfilDeportivoId: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
+    eventoId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
 
-  externalReference: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
-  },
+    perfilDeportivoId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
 
-  preferenceId: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
+    externalReference: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
 
-  paymentId: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+    preferenceId: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
 
-  montoBase: {
-    type: DataTypes.DECIMAL(12, 2),
-    allowNull: false
-  },
+    paymentId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 
-  porcentajeComision: {
-    type: DataTypes.DECIMAL(5, 2),
-    allowNull: false,
-    defaultValue: 5
-  },
+    montoBase: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: false,
+    },
 
-  montoComision: {
-    type: DataTypes.DECIMAL(12, 2),
-    allowNull: false
-  },
+    porcentajeComision: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: false,
+      defaultValue: 5,
+    },
 
-  montoTotal: {
-    type: DataTypes.DECIMAL(12, 2),
-    allowNull: false
-  },
+    montoComision: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: false,
+    },
 
-  estadoPago: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: 'pendiente'
-  },
+    montoTotal: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: false,
+    },
 
-  cantidadParticipaciones: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 1
-  },
+    estadoPago: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'pendiente',
+    },
 
-  perfilDeportivoIds: {
-    type: DataTypes.JSON,
-    allowNull: true
-  },
+    cantidadParticipaciones: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+    },
 
-  estadoConciliacion: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: 'pendiente'
-  },
+    perfilDeportivoIds: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
 
-  payerEmail: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+    estadoConciliacion: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'pendiente',
+    },
 
-  paymentMethodId: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+    payerEmail: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 
-  paymentTypeId: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+    paymentMethodId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 
-  fechaAprobacion: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
+    paymentTypeId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 
-  rawPreference: {
-    type: DataTypes.JSON,
-    allowNull: true
-  },
+    fechaAprobacion: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
 
-  deportistaNombreSnapshot: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+    rawPreference: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
 
-  deportistaDniSnapshot: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+    deportistaNombreSnapshot: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 
-  eventoNombreSnapshot: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+    deportistaDniSnapshot: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 
-  clubId: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
+    eventoNombreSnapshot: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 
-  clubSedeId: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
+    clubId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
 
-  clubSnapshot: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+    clubSedeId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
 
-  clubSedeSnapshot: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+    clubSnapshot: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 
-  rawPayment: {
-    type: DataTypes.JSON,
-    allowNull: true
-  }
-}, {
-  tableName: 'pagos',
-  timestamps: true
-});
+    clubSedeSnapshot: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    rawPayment: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+  },
+  {
+    tableName: 'pagos',
+    timestamps: true,
+  },
+);
 
 module.exports = Pago;
