@@ -7,19 +7,21 @@
     </button>
   </div>
 
-  <table mat-table [dataSource]="data" class="mat-elevation-z1">
 
-    <section class="evento-resumen" *ngIf="seleccionado as evento" aria-label="Detalle del evento">
-      <div class="resumen-cabecera">
-        <h2>{{ evento.nombre || evento.titulo || 'Sin nombre' }}</h2>
 
-        <button type="button" class="cerrar-resumen" (click)="seleccionado = null">
-          Cerrar detalle
-        </button>
-      </div>
+  <section class="evento-resumen" *ngIf="seleccionado as evento" aria-label="Detalle del evento">
+    <div class="resumen-cabecera">
+      <h2>{{ evento.nombre || evento.titulo || 'Sin nombre' }}</h2>
 
-      <app-circuito-evento [eventoId]="evento.id"></app-circuito-evento>
-    </section>
+      <button type="button" class="cerrar-resumen" (click)="seleccionado = null">
+        Cerrar detalle
+      </button>
+    </div>
+
+    <app-circuito-evento [eventoId]="evento.id"></app-circuito-evento>
+  </section>
+
+  <table mat-table [dataSource]="data" class="mat-elevation-z8">
 
     <ng-container matColumnDef="nombre">
       <th mat-header-cell *matHeaderCellDef>Nombre</th>

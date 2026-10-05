@@ -333,11 +333,6 @@ export class EventEditorComponent implements OnInit {
           ),
         );
 
-        await this.router.navigate([
-          '/admin/eventos',
-          ev.id,
-        ]);
-
         this.id = ev.id;
         await this.router.navigate(['/admin/eventos']);
       }
