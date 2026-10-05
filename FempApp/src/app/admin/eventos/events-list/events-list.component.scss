@@ -13,3 +13,58 @@
 table {
     width: 100%;
 }
+
+.evento-resumen {
+    margin-bottom: 20px;
+    padding: 20px;
+    background: linear-gradient(145deg, #143783, #0b1d50);
+    color: #fff;
+    border: 1px solid #5478b7;
+    border-radius: 16px;
+}
+
+.resumen-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.resumen-cabecera h2 {
+    margin: 0;
+    color: #fff;
+    overflow-wrap: anywhere;
+}
+
+.cerrar-resumen {
+    background: #102855;
+    color: #fff;
+    border: 1px solid #8ca9dc;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.nombre-evento {
+    background: transparent;
+    border: 0;
+    color: #174582;
+    font: inherit;
+    text-align: left;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 8px 0;
+}
+
+:host ::ng-deep .evento-resumen app-circuito-evento .circuito {
+    background: #102855;
+    color: #fff;
+    border-color: #6482b5;
+}
+
+:host ::ng-deep .evento-resumen app-circuito-evento .circuito h2,
+:host ::ng-deep .evento-resumen app-circuito-evento .circuito h3 {
+    color: #edf4ff !important;
+}
+

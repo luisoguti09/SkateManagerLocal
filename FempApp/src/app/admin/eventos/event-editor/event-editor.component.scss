@@ -311,25 +311,107 @@ mat-calendar {
     gap: 12px;
   }
 }
+
 /* Colores FEMPA: actualización octubre */
-:host { color: #fff; }
-.event-card { background: linear-gradient(155deg, #1745b7, #0b286e 65%, #081b4e); border-color: #3b66b8; }
-.event-header { background: linear-gradient(120deg, #075bd9, #14318d); border-color: #496fc2; }
-a, .eyebrow, .event-header > p:last-child, .hint { color: #d6e7ff; }
-h1, legend, legend span, h2, label, .date-field { color: #fff; }
-.form-section { border-color: #45629b; }
-input, textarea, select, .date-button { background: #102855; color: #fff; border-color: #6482b5; color-scheme: dark; }
-input::placeholder, textarea::placeholder { color: #c3d4ed; }
-.date-button:hover { background: #1b3e79; border-color: #a1c9ff; }
-.calendar-note { background: #112f66; color: #e2edff; border-left-color: #76b7ff; }
-.primary { background: #0866e8; color: #fff; border: 1px solid #7ab5ff; }
-.primary:hover { background: #0756c3; }
-.secondary, .close { background: #233f72; color: #fff; }
-.date-dialog { background: #102855; color: #fff; border-color: #7190c1; }
-.date-dialog::backdrop { background: #03102bc4; }
-.hour-panel { padding: 16px 0; border-bottom: 1px solid #6482b5; }
-.hour-panel .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.hour-panel .dialog-actions { flex-wrap: wrap; }
+:host {
+  color: #fff;
+}
+
+.event-card {
+  background: linear-gradient(155deg, #1745b7, #0b286e 65%, #081b4e);
+  border-color: #3b66b8;
+}
+
+.event-header {
+  background: linear-gradient(120deg, #075bd9, #14318d);
+  border-color: #496fc2;
+}
+
+a,
+.eyebrow,
+.event-header>p:last-child,
+.hint {
+  color: #d6e7ff;
+}
+
+h1,
+legend,
+legend span,
+h2,
+label,
+.date-field {
+  color: #fff;
+}
+
+.form-section {
+  border-color: #45629b;
+}
+
+input,
+textarea,
+select,
+.date-button {
+  background: #102855;
+  color: #fff;
+  border-color: #6482b5;
+  color-scheme: dark;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #c3d4ed;
+}
+
+.date-button:hover {
+  background: #1b3e79;
+  border-color: #a1c9ff;
+}
+
+.calendar-note {
+  background: #112f66;
+  color: #e2edff;
+  border-left-color: #76b7ff;
+}
+
+.primary {
+  background: #0866e8;
+  color: #fff;
+  border: 1px solid #7ab5ff;
+}
+
+.primary:hover {
+  background: #0756c3;
+}
+
+.secondary,
+.close {
+  background: #233f72;
+  color: #fff;
+}
+
+.date-dialog {
+  background: #102855;
+  color: #fff;
+  border-color: #7190c1;
+}
+
+.date-dialog::backdrop {
+  background: #03102bc4;
+}
+
+.hour-panel {
+  padding: 16px 0;
+  border-bottom: 1px solid #6482b5;
+}
+
+.hour-panel .fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hour-panel .dialog-actions {
+  flex-wrap: wrap;
+}
+
 .date-dialog mat-calendar {
   --mat-datepicker-calendar-container-background-color: #102855;
   --mat-datepicker-calendar-container-text-color: #fff;
@@ -348,7 +430,19 @@ input::placeholder, textarea::placeholder { color: #c3d4ed; }
   --mat-datepicker-calendar-header-divider-color: #6482b5;
 }
 
-:host ::ng-deep app-circuito-evento .circuito { background: #102855; color: #fff; border-color: #6482b5; }
+:host ::ng-deep app-circuito-evento .circuito {
+  background: #102855;
+  color: #fff;
+  border-color: #6482b5;
+}
+
 :host ::ng-deep app-circuito-evento .circuito h2,
 :host ::ng-deep app-circuito-evento .circuito h3,
-:host ::ng-deep app-circuito-evento .circuito a { color: #d6e7ff; }
+:host ::ng-deep app-circuito-evento .circuito a {
+  color: #d6e7ff;
+}
+
+:host ::ng-deep app-circuito-evento .circuito h2,
+:host ::ng-deep app-circuito-evento .circuito h3 {
+  color: #edf4ff !important;
+}

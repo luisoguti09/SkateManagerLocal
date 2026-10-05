@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { BackBarComponent } from '../../../shared/back-bar/back-bar.component';
 import { EventosService } from '../../../services/eventos.service';
 import { Evento } from '../../../interfaces/evento';
+import { CircuitoEventoComponent } from '../../../components/circuito-evento/circuito-evento.component';
 
 @Component({
   selector: 'app-events-list',
@@ -18,7 +19,8 @@ import { Evento } from '../../../interfaces/evento';
     BackBarComponent,
     MatTableModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    CircuitoEventoComponent
   ]
 })
 export class EventsListComponent implements OnInit {
@@ -27,6 +29,7 @@ export class EventsListComponent implements OnInit {
   private router = inject(Router);
 
   public data: Evento[] = [];
+  public seleccionado: Evento | null = null;
   public displayed = ['nombre', 'fecha', 'precio', 'acciones'];
 
   ngOnInit(): void {

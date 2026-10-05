@@ -11,7 +11,8 @@ import {
 } from '@angular/material/datepicker';
 import {
   MatNativeDateModule,
-  MAT_DATE_LOCALE, provideNativeDateAdapter } from '@angular/material/core';
+  MAT_DATE_LOCALE, provideNativeDateAdapter
+} from '@angular/material/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -33,8 +34,8 @@ import { CircuitoEventoComponent } from '../../../components/circuito-evento/cir
     MatDatepickerModule,
     MatNativeDateModule,
   ],
-  providers: [provideNativeDateAdapter(), 
-    { provide: MAT_DATE_LOCALE, useValue: 'es-AR' },
+  providers: [provideNativeDateAdapter(),
+  { provide: MAT_DATE_LOCALE, useValue: 'es-AR' },
   ],
   templateUrl: './event-editor.component.html',
   styleUrls: ['./event-editor.component.scss'],
@@ -52,23 +53,23 @@ export class EventEditorComponent implements OnInit {
   @ViewChild(MatCalendar)
   calendario!: MatCalendar<Date>;
 
-  id: number | null = null;
-  loading = false;
-  error = '';
-  confirmado = false;
-  revision = 0;
-  guardado = false;
+  public id: number | null = null;
+  public loading = false;
+  public error = '';
+  public confirmado = false;
+  public revision = 0;
+  public guardado = false;
 
-  campoFecha = '';
-  tituloFecha = '';
-  dia: Date | null = null;
-  hora = '09:00';
-  editandoHora = false;
-  horaElegida = '09';
-  minutoElegido = '00';
-  horas = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
-  minutos = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
-  abrirHora() {
+  public campoFecha = '';
+  public tituloFecha = '';
+  public dia: Date | null = null;
+  public hora = '09:00';
+  public editandoHora = false;
+  public horaElegida = '09';
+  public minutoElegido = '00';
+  public horas = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  public minutos = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+  public abrirHora() {
     [this.horaElegida, this.minutoElegido] = this.hora.split(':');
     this.editandoHora = true;
   }
@@ -76,7 +77,7 @@ export class EventEditorComponent implements OnInit {
     this.hora = this.horaElegida + ':' + this.minutoElegido;
     this.editandoHora = false;
   }
-  fechaError = '';
+  public fechaError = '';
 
   form: any = {
     titulo: '',
@@ -338,6 +339,7 @@ export class EventEditorComponent implements OnInit {
         ]);
 
         this.id = ev.id;
+        await this.router.navigate(['/admin/eventos']);
       }
     } catch (e: any) {
       this.error =
