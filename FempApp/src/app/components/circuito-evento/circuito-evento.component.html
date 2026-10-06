@@ -22,11 +22,8 @@
     <button (click)="cargar()" [disabled]="ocupado">Reintentar consulta</button>
   </p>
   <p *ngIf="mensaje" role="status">{{ mensaje }}</p>
-  <ng-container *ngIf="eventoId"
+  <ng-container *ngIf="eventoId && rol !== 'administrador'"
     ><h3>Aranceles vigentes</h3>
-    <p *ngIf="rol === 'administrador'">
-      Valores definidos por Tesorería. Solo consulta.
-    </p>
     <ul>
       <li *ngFor="let p of precios">
         {{ p.cantidadParticipaciones }} participación/es: $ {{ p.monto }} ·

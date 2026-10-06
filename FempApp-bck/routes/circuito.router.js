@@ -249,4 +249,37 @@ router.get(
     res.type('text/csv').attachment(csv.name).send(csv.content);
   }),
 );
+// Datos de la constancia: inscripción propia y pago conciliado; no exige asistencia.
+router.get('/:id/certificado-datos', ...auth, roles('deportista'), wrap(async (req, res) => {
+  const ev = await evento(req.params.id);
+  const inscripciones = await db.UsuarioEventos.findAll({
+    where: { EventoId: ev.id, UsuarioId: req.auth.id },
+  });
+  const vigentes = inscripciones.filter(i => i.estadoInscripcion !== 'baja');
+  if (!vigentes.length) R.fail(403, 'Debés estar inscripto en este evento.');
+  if (ev.inscripcionRequierePago == null)
+    R.fail(409, 'Administración debe revisar la condición de inscripción de este evento.');
+  const cargo = await db.CargoInscripcion.findOne({
+    where: { eventoId: ev.id, usuarioId: req.auth.id },
+  });
+  if (ev.inscripcionRequierePago && cargo?.estado !== 'pagado')
+    R.fail(403, 'El certificado estará disponible cuando el pago esté aprobado y conciliado.');
+  const u = await db.Usuario.findByPk(req.auth.id);
+  const clubes = [];
+  const snapshots = cargo?.participacionesSnapshot || [];
+  for (const i of vigentes) {
+    const snapshot = snapshots.find(p => Number(p.perfilDeportivoId) === Number(i.perfilDeportivoId));
+    if (snapshot?.club) { clubes.push(snapshot.club); continue; }
+    const perfil = i.perfilDeportivoId ? await db.PerfilDeportivo.findByPk(i.perfilDeportivoId) : null;
+    const club = perfil?.clubId ? await db.Club.findByPk(perfil.clubId) : null;
+    clubes.push(club?.nombre || perfil?.club || u.club || '');
+  }
+  res.json({
+    usuario: { nombre: u.nombre, dni: u.dni, club: [...new Set(clubes.filter(Boolean))].join(' / '), categoria: '' },
+    evento: { titulo: ev.titulo || ev.nombre, fechaInicio: ev.fechaInicio || ev.fecha,
+      fechaFin: ev.fechaFin, lugar: ev.lugar },
+    emitidoAt: new Date().toISOString(),
+  });
+}));
+
 module.exports = router;

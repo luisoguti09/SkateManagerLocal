@@ -2,197 +2,100 @@ import { Injectable } from '@angular/core';
 import jsPDF from 'jspdf';
 import { CertUsuario, CertEvento } from '../interfaces/certificados';
 
-
-
 @Injectable({ providedIn: 'root' })
 export class CertificadoService {
+  private dia(valor: string | Date | null | undefined): string {
+    if (!valor) throw new Error('El evento no tiene fecha. Solicitá a administración que la complete.');
+    let fecha: Date;
+    if (valor instanceof Date) {
+      fecha = valor;
+    } else {
+      const texto = valor.trim();
+      const partes = /^(\d{4})-(\d{2})-(\d{2})(?:$|[T ])/.exec(texto);
+      if (!partes) throw new Error('La fecha del evento no es válida. Solicitá su corrección.');
+      const [, y, m, d] = partes;
+      const control = new Date(`${y}-${m}-${d}T12:00:00Z`);
+      if (!Number.isFinite(+control) || control.toISOString().slice(0, 10) !== `${y}-${m}-${d}`) {
+        throw new Error('La fecha del evento no es válida. Solicitá su corrección.');
+      }
+      const iso = texto.replace(' ', 'T');
+      fecha = new Date(iso.length === 10 ? `${iso}T12:00:00-03:00`
+        : /(?:Z|[+-]\d{2}:?\d{2})$/i.test(iso) ? iso : `${iso}-03:00`);
+    }
+    if (!Number.isFinite(+fecha)) throw new Error('La fecha del evento no es válida. Solicitá su corrección.');
+    const partes = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(fecha);
+    const valorParte = (tipo: string) => partes.find(p => p.type === tipo)!.value;
+    return `${valorParte('year')}-${valorParte('month')}-${valorParte('day')}`;
+  }
 
-  async generar(usuario: CertUsuario, evento: CertEvento, opts?: { filename?: string }) {
+  private periodo(evento: CertEvento): string {
+    const inicio = this.dia(evento.fechaInicio);
+    const fin = evento.fechaFin ? this.dia(evento.fechaFin) : inicio;
+    if (fin < inicio) throw new Error('El fin del evento es anterior al inicio. Solicitá su corrección.');
+    const formato = (dia: string) => new Date(`${dia}T12:00:00-03:00`).toLocaleDateString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires', day: 'numeric', month: 'long', year: 'numeric'
+    });
+    return inicio === fin ? `el ${formato(inicio)}` : `del ${formato(inicio)} al ${formato(fin)}`;
+  }
+
+  async generar(usuario: CertUsuario, evento: CertEvento, opts?: { filename?: string; emitidoAt?: string }) {
+    const periodo = this.periodo(evento);
+    const limpiar = (v: unknown) => String(v ?? '').replace(/\s+/g, ' ').trim();
+    for (const [nombre, valor] of Object.entries({ nombre: usuario.nombre, DNI: usuario.dni, club: usuario.club, evento: evento.titulo, lugar: evento.lugar })) {
+      if (!limpiar(valor)) throw new Error(`Falta completar ${nombre} para generar el certificado.`);
+    }
+    const emision = this.dia(opts?.emitidoAt || new Date());
+    const fechaEmision = new Date(`${emision}T12:00:00-03:00`).toLocaleDateString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires', day: 'numeric', month: 'long', year: 'numeric'
+    });
+    const plantilla = await this.cargarPlantilla();
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-    const W = doc.internal.pageSize.getWidth();
-    const H = doc.internal.pageSize.getHeight();
-
-    await this.tryAddImage(doc, 'assets/certificate/template.jpeg', 0, 0, W, H);
-
-    // Título
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(24);
-    doc.text('CERTIFICADO DE ASISTENCIA', W / 2, 120, { align: 'center' });
-
-    // Datos
-    const nombreTxt = usuario.nombre || '........................';
-    const dniTxt = usuario.dni || '........................';
-    const clubTxt = usuario.club || '........................';
-    const disciplinaTxt = usuario.disciplina || 'Patinaje Artístico';
-    const categoriaTxt = usuario.categoria || usuario.divisional || '........................';
-    const licenciaTxt = usuario.licencia || '........................';
-
-    const eventoNombre = evento.titulo || '........................';
-    const eventoLugar = evento.lugar || '........................';
-    const fechaTxt = evento.fechaInicio
-      ? new Date(evento.fechaInicio).toLocaleDateString('es-AR')
-      : new Date().toLocaleDateString('es-AR');
-
-    // Cuerpo
+    const ancho = doc.internal.pageSize.getWidth();
+    doc.addImage(plantilla, 'JPEG', 0, 0, ancho, doc.internal.pageSize.getHeight());
+    const x = 58, anchoTexto = ancho - x * 2;
+    doc.setTextColor('#111111');
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
-
-    const x = 120;
-    let y = 170;
-    const lh = 24;
-
-    doc.text('Por la presente, la FEDERACIÓN MENDOCINA DE PATÍN certifica que', x, y);
-    y += lh;
-
+    doc.text(`Mendoza, ${fechaEmision}`, ancho - x, 119, { align: 'right' });
     doc.setFont('helvetica', 'bold');
-    doc.text(nombreTxt, x + 25, y);
-    doc.line(x + 25, y + 3, W - 140, y + 3);
-    y += lh;
-
+    doc.text('Ref.: JUSTIFICACIÓN – LEY 20.596', ancho - x, 151, { align: 'right' });
+    const parrafos = [
+      `Por medio de la presente se certifica que el/la deportista ${limpiar(usuario.nombre)}, DNI N.º ${limpiar(usuario.dni)}, perteneciente al club ${limpiar(usuario.club)}, participará del Evento Torneo ${limpiar(evento.titulo)}, a realizarse ${periodo}, en ${limpiar(evento.lugar)}, en carácter de atleta.`,
+      'Se extiende la presente nota para ser presentada ante las autoridades que correspondan, a fin de solicitar la justificación y el no cómputo de inasistencias conforme a lo establecido en la Ley del Deporte N.º 20.596, en virtud de encontrarse afectada a la actividad deportiva mencionada.',
+      'Sin otro particular, y sirviendo la presente de formal constancia, saludo a Uds. con atenta consideración.'
+    ];
     doc.setFont('helvetica', 'normal');
-    doc.text(`DNI Nº ${dniTxt}, es deportista federado/a a esta Federación`, x, y);
-    y += lh;
-
-    doc.text(`por el club ${clubTxt}`, x, y);
-    y += lh;
-
-    doc.text(`en la disciplina ${disciplinaTxt}, categoría ${categoriaTxt}`, x, y);
-    y += lh;
-
-    doc.text(`contando con licencia ${licenciaTxt} durante el corriente año.`, x, y);
-    y += lh + 8;
-
-    doc.text('Se extiende el presente certificado a pedido del interesado,', x, y);
-    y += lh;
-
-    doc.text('para ser presentado ante las autoridades y/o instituciones que así lo requieran.', x, y);
-    y += lh + 12;
-
-    const eventoTxt =
-      `Esta deportista asistió al evento "${eventoNombre}", realizado en ${eventoLugar} el día ${fechaTxt}.`;
-
-    const eventoLines = doc.splitTextToSize(eventoTxt, W - 240);
-    doc.text(eventoLines, x, y);
-
-    // NO agregamos firma por código porque el template ya trae la firma institucional abajo.
-
-    doc.save(opts?.filename ?? `cert_${usuario.dni}.pdf`);
-  }
-
-  private async tryAddImage(
-    doc: jsPDF,
-    src: string,
-    x: number,
-    y: number,
-    w: number,
-    h: number
-  ): Promise<void> {
-    try {
-      await new Promise<void>((resolve, reject) => {
-        const img = new Image();
-
-        img.onload = () => {
-          doc.addImage(img, 'PNG', x, y, w, h);
-          resolve();
-        };
-
-        img.onerror = reject;
-        img.src = src;
+    let tam = 11;
+    const preparar = () => { doc.setFontSize(tam); return parrafos.map(p => doc.splitTextToSize(p, anchoTexto) as string[]); };
+    let bloques = preparar();
+    const altura = () => bloques.reduce((s, l) => s + l.length * tam * 1.45 + 16, 0);
+    while (altura() > 250 && tam > 10) { tam -= 0.25; bloques = preparar(); }
+    if (altura() > 250) throw new Error('Los datos son demasiado extensos para la plantilla. Solicitá su revisión.');
+    let y = 185;
+    for (const lineas of bloques) {
+      lineas.forEach((linea, i) => {
+        const palabras = linea.split(' ');
+        if (i === lineas.length - 1 || palabras.length < 2) doc.text(linea, x, y);
+        else {
+          const espacio = (anchoTexto - palabras.reduce((s, p) => s + doc.getTextWidth(p), 0)) / (palabras.length - 1);
+          let cursor = x;
+          for (const palabra of palabras) { doc.text(palabra, cursor, y); cursor += doc.getTextWidth(palabra) + espacio; }
+        }
+        y += tam * 1.45;
       });
-    } catch {
-      // Si no carga la imagen, no rompe el PDF
+      y += 16;
     }
+    doc.save(opts?.filename ?? `cert_${limpiar(usuario.dni)}.pdf`);
   }
 
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*import { Injectable } from '@angular/core';
-import jsPDF from 'jspdf';
-
-type CertUsuario = {
-  nombre: string; dni: string;
-  club?: string; categoria?: string;
-};
-
-type CertEvento = {
-  titulo: string;
-  fechaInicio?: string | Date | null;
-  lugar?: string | null;
-  nivel?: string | null;
-};
-
-@Injectable({ providedIn: 'root' })
-export class CertificadoService {
-
-  async generar(usuario: CertUsuario, evento: CertEvento, opts?: { filename?: string }) {
-    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-    const W = doc.internal.pageSize.getWidth();
-    const H = doc.internal.pageSize.getHeight();
-
-    // 1) Fondo (si existe)
-    await this.tryAddImage(doc, 'assets/certificate/template.jpeg', 0, 0, W, H);
-
-    // 2) Logo (por si la plantilla no lo incluye)
-    await this.tryAddImage(doc, 'assets/certificate/MARCA FEMPA 1.png', 40, 40, 110, 110);
-
-    // 3) Título
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(24);
-    doc.text('CERTIFICADO DE ASISTENCIA', W / 2, 120, { align: 'center' });
-
-    // 4) Cuerpo
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(12);
-
-    const fechaTxt = evento.fechaInicio
-  ? new Date(evento.fechaInicio).toLocaleDateString()
-  : new Date().toLocaleDateString();
-
-    const lineas = [
-      `La Federación Mendocina de Patín certifica que ${usuario.nombre} (DNI ${usuario.dni})`,
-      `asistió al evento "${evento.titulo}" realizado en ${evento.lugar ?? '-'} el día ${fechaTxt}.`,
-      usuario.club ? `Club: ${usuario.club}` : '',
-      usuario.categoria ? `Categoría: ${usuario.categoria}` : '',
-      evento.nivel ? `Nivel: ${evento.nivel}` : '',
-    ].filter(Boolean) as string[];
-
-    let y = 200;
-    lineas.forEach(l => { doc.text(l, 60, y); y += 20; });
-
-    // 5) Firma
-    await this.tryAddImage(doc, 'assets/certificate/FIRMA LUIS GUTIERREZ.png', W - 260, H - 170, 200, 80);
-    doc.text('__________________________', W - 240, H - 80);
-    doc.text('Autoridad FEMPA', W - 205, H - 62);
-
-    doc.save(opts?.filename ?? `cert_${usuario.dni}.pdf`);
-  }
-
-  * Intenta dibujar una imagen; si no existe, no rompe 
-  private async tryAddImage(doc: jsPDF, src: string, x: number, y: number, w: number, h: number) {
-    try {
-      await new Promise<void>((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => { doc.addImage(img, 'PNG', x, y, w, h); resolve(); };
-        img.onerror = reject;
-        img.src = src;
-      });
-    } catch { /* no-op si no existe  }
+  private cargarPlantilla(): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const imagen = new Image();
+      imagen.onload = () => resolve(imagen);
+      imagen.onerror = () => reject(new Error('No se pudo cargar la plantilla del certificado. Intentá nuevamente.'));
+      imagen.src = 'assets/certificate/template.jpeg';
+    });
   }
 }
-*/

@@ -1,3 +1,4 @@
+import { EventosAgrupadosComponent } from '../../shared/eventos-agrupados/eventos-agrupados.component';
 import { CircuitoEventoComponent } from '../circuito-evento/circuito-evento.component';
 import { Component, inject, OnInit } from '@angular/core';
 import { Evento, EventoLite } from '../../interfaces/evento';
@@ -35,7 +36,7 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DialogsComponent } from '../dialogs/dialogs.component';
 import { PagosService } from '../../services/pagos.service';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { CertEvento, CertUsuario } from '../../interfaces/certificados';
 import { PerfilDeportivo } from '../../interfaces/perfil-deportivo.interface';
 import { PerfilesDeportivosService } from '../../services/perfiles-deportivos.service';
@@ -46,6 +47,7 @@ import { PerfilesDeportivosService } from '../../services/perfiles-deportivos.se
   standalone: true,
   imports: [
     CommonModule,
+    EventosAgrupadosComponent,
     CircuitoEventoComponent,
     MatFormFieldModule,
     MatTableModule,
@@ -252,53 +254,25 @@ export class EventoDetailComponent implements OnInit {
     });
   }
 
-  descargarCertificado(e: Evento) {
-    const u = this.auth.getUsuario();
-    if (!u) {
-      return;
-    }
+  errorCertificado = '';
+  generandoCertificado = false;
 
-    this.certServ.generar(
-      { nombre: u.nombre, dni: u.dni, club: u.club, categoria: u.categoria },
-      {
-        titulo: e.titulo,
-        fechaInicio: this.evento.fechaInicio ?? new Date(),
-        lugar: e.lugar,
-        nivel: e.nivel,
-      },
-      { filename: `cert_${u.dni}.pdf` },
-    );
+  async descargarCertificado(e: Evento): Promise<void> {
+    if (this.generandoCertificado) return;
+    this.generandoCertificado = true;
+    this.errorCertificado = '';
+    try {
+      const datos = await firstValueFrom(this.eventServ.datosCertificado(e.id));
+      await this.certServ.generar(datos.usuario, datos.evento, {
+        filename: `cert_${datos.usuario.dni}_${e.id}.pdf`, emitidoAt: datos.emitidoAt,
+      });
+    } catch (error: any) {
+      this.errorCertificado = error?.error?.error || error?.message || 'No se pudo generar el certificado.';
+    } finally { this.generandoCertificado = false; }
   }
 
   async descargarCert(): Promise<void> {
-    const u = this.auth.getUsuario();
-    if (!u || !this.evento || !this.inscripto) return;
-
-    const perfil =
-      this.perfilesDeportivos.find((p) => p.id === this.perfilSeleccionadoId) ??
-      this.perfilesDeportivos[0];
-
-    const certUsuario: CertUsuario = {
-      nombre: u.nombre,
-      dni: u.dni,
-      club: perfil?.club ?? u.club ?? '',
-      categoria: perfil?.categoria ?? u.categoria ?? '',
-      disciplina: perfil?.disciplina ?? 'Patinaje Artístico',
-      licencia: perfil?.licencia ?? '',
-      modalidad: perfil?.modalidad ?? '',
-      divisional: perfil?.divisional ?? '',
-    };
-
-    const certEvento: CertEvento = {
-      titulo: this.evento.titulo || this.evento.nombre || 'Evento sin título',
-      fechaInicio: this.evento.fechaInicio ?? new Date(),
-      lugar: this.evento.lugar ?? '............................',
-      nivel: this.evento.nivel ?? '',
-    };
-
-    await this.certServ.generar(certUsuario, certEvento, {
-      filename: `cert_${u.dni}_${this.evento.id}.pdf`,
-    });
+    if (this.evento) await this.descargarCertificado(this.evento);
   }
 
   verDetalleEvento(id: number) {
@@ -457,3 +431,4 @@ export class EventoDetailComponent implements OnInit {
     });
   }
 }
+

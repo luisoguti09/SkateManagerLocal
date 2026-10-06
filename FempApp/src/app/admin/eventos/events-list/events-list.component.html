@@ -21,7 +21,9 @@
     <app-circuito-evento [eventoId]="evento.id"></app-circuito-evento>
   </section>
 
-  <table mat-table [dataSource]="data" class="mat-elevation-z8">
+  <app-eventos-agrupados [eventos]="data" [plantilla]="tabla"></app-eventos-agrupados>
+  <ng-template #tabla let-filas>
+  <table mat-table [dataSource]="filas" class="mat-elevation-z8">
 
     <ng-container matColumnDef="nombre">
       <th mat-header-cell *matHeaderCellDef>Nombre</th>
@@ -65,4 +67,5 @@
     <tr mat-header-row *matHeaderRowDef="displayed"></tr>
     <tr mat-row *matRowDef="let row; columns: displayed"></tr>
   </table>
+  </ng-template>
 </div>

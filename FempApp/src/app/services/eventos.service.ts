@@ -172,7 +172,15 @@ export class EventosService {
     );
   }
 
+  datosCertificado(id: number) {
+    const headers = new HttpHeaders({ Authorization: `Bearer ${this.authSrv.getToken() || ''}` });
+    return this.http.get<{ usuario: import('../interfaces/certificados').CertUsuario;
+      evento: import('../interfaces/certificados').CertEvento; emitidoAt: string }>(
+      `${this.base}/${id}/certificado-datos`, { headers });
+  }
+
 }
+
 
 
 

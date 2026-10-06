@@ -7,19 +7,22 @@
   </div>
 
   <div class="content">
+    <p *ngIf="errorCertificado" role="alert">{{ errorCertificado }}</p>
     <!-- ===== LISTA ===== -->
     <ng-container *ngIf="listMode; else detalle">
       <h2>{{ listTitle }}</h2>
 
       <ng-container *ngIf="eventos?.length; else noHay">
+        <app-eventos-agrupados [eventos]="eventos" [plantilla]="tarjetas"></app-eventos-agrupados>
+        <ng-template #tarjetas let-filas>
         <div class="eventos-grid">
           <mat-card
             class="evento-card"
-            *ngFor="let ev of eventos; trackBy: trackById"
+            *ngFor="let ev of filas; trackBy: trackById"
           >
             <mat-card-header>
               <p>
-                <strong>Nombre:</strong> {{ evento.nombre || evento.titulo }}
+                <strong>Nombre:</strong> {{ ev.nombre || ev.titulo }}
               </p>
               <mat-card-subtitle>{{
                 ev.fechaInicio | date: 'dd/MM/yyyy'
@@ -42,6 +45,7 @@
             </mat-card-actions>
           </mat-card>
         </div>
+        </ng-template>
       </ng-container>
       <ng-template #noHay>
         <p style="opacity: 0.8">
@@ -82,9 +86,9 @@
             mat-stroked-button
             class="btn-secundario"
             (click)="descargarCert()"
-            [disabled]="!inscripto"
+            [disabled]="generandoCertificado"
           >
-            Descargar certificado
+            {{ generandoCertificado ? 'Generando…' : 'Descargar certificado' }}
           </button>
 
           <button
@@ -99,9 +103,10 @@
         </div>
 
         <p class="hint-certificado" *ngIf="!inscripto">
-          Debés estar inscripto para descargar el certificado.
+          Para descargar necesitás estar inscripto y, si el evento es pago, tener el pago aprobado.
         </p>
       </div>
     </ng-template>
   </div>
 </div>
+

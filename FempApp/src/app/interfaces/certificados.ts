@@ -22,7 +22,8 @@ export interface CertUsuario {
 
 export type CertEvento = {
   titulo: string;
-  fechaInicio: string | Date;
+  fechaInicio?: string | Date | null;
+  fechaFin?: string | Date | null;
   lugar?: string | null;
   nivel?: string | null;
 };
@@ -32,5 +33,6 @@ export interface CertificateResponse {
   meta: CertificateMeta;
   file: string;
 }
+
 
 

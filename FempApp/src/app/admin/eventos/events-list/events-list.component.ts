@@ -1,3 +1,4 @@
+import { EventosAgrupadosComponent } from '../../../shared/eventos-agrupados/eventos-agrupados.component';
 import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -16,6 +17,7 @@ import { CircuitoEventoComponent } from '../../../components/circuito-evento/cir
   styleUrls: ['./events-list.component.scss'],
   imports: [
     CommonModule,
+    EventosAgrupadosComponent,
     BackBarComponent,
     MatTableModule,
     MatButtonModule,
@@ -30,7 +32,7 @@ export class EventsListComponent implements OnInit {
 
   public data: Evento[] = [];
   public seleccionado: Evento | null = null;
-  public displayed = ['nombre', 'fecha', 'precio', 'acciones'];
+  public displayed = ['nombre', 'fecha', 'acciones'];
 
   ngOnInit(): void {
     //this.ev.getEventos().subscribe((x) => (this.data = x ?? []));
@@ -55,7 +57,7 @@ export class EventsListComponent implements OnInit {
     this.ev.getEventos().subscribe(evts => {
       const normalizados = (evts ?? []).map((e: any, index: number) => {
         const nombre = e.nombre || e.titulo || 'Sin nombre';
-        const fechaRaw = e.fecha ?? e.fechaInicio ?? null;
+        const fechaRaw = e.fechaInicio || e.fecha || null;
 
         let fechaMostrable: Date | null = null;
 
@@ -89,3 +91,4 @@ export class EventsListComponent implements OnInit {
 
 
 }
+

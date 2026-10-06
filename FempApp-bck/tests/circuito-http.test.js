@@ -493,3 +493,29 @@ test('real routes: permissions, ABM, immutable charge, retry and reconciliation'
     409,
   );
 });
+
+test('constancia: pago propio, bajas, reintegro y gratuito; sin exigir asistencia', async () => {
+  await db.Usuario.create({ id: 910, rol: 'deportista', aprobado: true, estado: 'aprobado', nombre: 'Deportista', dni: '123', club: 'Club' });
+  const evento = await db.Evento.create({ id: 900, titulo: 'Evento futuro', fechaInicio: '2030-11-20', fechaFin: '2030-11-22', inscripcionRequierePago: true });
+  const consultar = () => request('/eventos/900/certificado-datos', 'deportista', undefined, 'GET', 910);
+  assert.equal((await consultar()).status, 403);
+  const ins = await db.UsuarioEventos.create({ EventoId: 900, UsuarioId: 910, estadoInscripcion: 'confirmada', perfilDeportivoId: 999 });
+  await db.CargoInscripcion.create({ eventoId: 900, usuarioId: 4, estado: 'pagado' });
+  assert.equal((await consultar()).status, 403, 'El pago de otra persona no habilita');
+  const cargo = await db.CargoInscripcion.create({ eventoId: 900, usuarioId: 910, estado: 'adeudado', participacionesSnapshot: [{ perfilDeportivoId: 999, club: 'Club de la inscripción' }] });
+  assert.equal((await consultar()).status, 403);
+  await cargo.update({ estado: 'pagado' });
+  const permitido = await consultar();
+  assert.equal(permitido.status, 200);
+  assert.equal(permitido.data.evento.fechaInicio, '2030-11-20');
+  assert.equal(permitido.data.usuario.club, 'Club de la inscripción');
+  assert.ok(permitido.data.emitidoAt);
+  await cargo.update({ estado: 'requiere_revision' });
+  assert.equal((await consultar()).status, 403);
+  await evento.update({ inscripcionRequierePago: false });
+  assert.equal((await consultar()).status, 200);
+  await ins.update({ estadoInscripcion: 'baja' });
+  assert.equal((await consultar()).status, 403);
+  assert.equal((await request('/eventos/900/certificado-datos', null)).status, 401);
+  assert.equal((await request('/eventos/900/certificado-datos', 'administrador')).status, 403);
+});
