@@ -5,15 +5,15 @@
   max-width: 1100px;
   margin: 18px auto;
   padding: 24px;
-  background: #fff;
-  color: #183350;
-  border: 1px solid #dbe4ef;
+  background: #1257b8;
+  color: #fff;
+  border: 1px solid #ffffff50;
   border-radius: 16px;
   line-height: 1.5;
 }
 .circuito h2,
 .circuito h3 {
-  color: #143e82;
+  color: #fff;
 }
 .circuito label {
   display: inline-flex;
@@ -33,9 +33,9 @@
   font: inherit;
 }
 .circuito button {
-  background: #0b5bd3;
+  background: #104b9e;
   color: #fff;
-  border: 0;
+  border: 1px solid #ffffff70;
   border-radius: 8px;
   padding: 10px 16px;
   margin: 6px;
@@ -43,14 +43,20 @@
   font: inherit;
 }
 .circuito button:disabled {
-  opacity: 0.5;
+  background: #456da6;
+  color: #e4edfa;
+  border-color: #ffffff30;
+  opacity: 1;
   cursor: default;
 }
 .circuito .perfil {
   display: flex;
 }
 .circuito .error {
-  color: #a31c26;
+  color: #fff;
+  background: #922d42;
+  padding: 12px;
+  border-radius: 8px;
 }
 .tabla {
   overflow: auto;
@@ -62,11 +68,11 @@ table {
 td,
 th {
   padding: 10px;
-  border-bottom: 1px solid #dbe4ef;
+  border-bottom: 1px solid #ffffff35;
   text-align: left;
 }
 a {
-  color: #0b5bd3;
+  color: #fff;
 }
 @media (max-width: 600px) {
   .circuito {
@@ -77,3 +83,6 @@ a {
     display: flex;
   }
 }
+
+
+.circuito button:focus-visible, .circuito a:focus-visible { outline: 3px solid #ffdc73; outline-offset: 3px; }

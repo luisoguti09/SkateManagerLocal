@@ -57,7 +57,22 @@ export function grupoEvento(e: any, hoy = diaEvento(new Date())!): 'vigentes' | 
         <button type="button" [disabled]="numero(filas, clave) + 1 >= total(filas)" (click)="paginas[clave] = numero(filas, clave) + 1">Siguiente</button>
       </nav>
     </ng-template>`,
-  styles: [`:host{display:block}.grupo{margin:16px 0;padding:16px;border-radius:14px;background:#102b60;color:#fff;border:1px solid #33588c}h3{margin:0 0 16px}summary{cursor:pointer;font-weight:600;padding:8px 0}label{display:block;margin:12px 0}select,button{background:#163f80;color:#fff;border:1px solid #829bc3;border-radius:8px;padding:9px 14px}select{margin-left:8px}button{cursor:pointer}button:disabled{opacity:.45;cursor:default}nav{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:16px}.tabla{overflow-x:auto}`]
+  styles: [`
+    :host { display: block; }
+    .grupo { margin: 16px 0; padding: 18px; border-radius: 14px; background: #1762c1; color: #fff; border: 1px solid #ffffff45; box-shadow: 0 4px 14px #063c8520; }
+    h3 { margin: 0 0 16px; color: #fff; font-size: clamp(20px, 2.5vw, 26px); line-height: 1.3; }
+    summary { cursor: pointer; font-weight: 600; padding: 8px 0; color: #fff; }
+    label { display: block; margin: 12px 0; }
+    select, button { background: #104b9e; color: #fff; border: 1px solid #ffffff90; border-radius: 8px; padding: 9px 14px; font: inherit; }
+    select { margin-left: 8px; } option { background: #104b9e; color: #fff; }
+    button { cursor: pointer; } button:disabled { background: #456da6; color: #e4edfa; border-color: #ffffff30; cursor: default; }
+    nav { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 16px; }
+    .tabla { overflow-x: auto; }
+    summary:focus-visible, button:focus-visible, select:focus-visible { outline: 3px solid #ffdc73; outline-offset: 3px; }
+    :host ::ng-deep .grupo .evento-card { background: #1257b8; color: #fff; border: 1px solid #ffffff45; }
+    :host ::ng-deep .grupo .evento-card .mat-mdc-card-subtitle { color: #e4edfa; }
+    @media (max-width: 600px) { .grupo { padding: 14px; } }
+  `]
 })
 export class EventosAgrupadosComponent {
   @Input() eventos: any[] = [];

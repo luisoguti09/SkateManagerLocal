@@ -1,18 +1,10 @@
-.page {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 16px;
-}
-
-.qr-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-.qr-box {
-  background: #4a0bf7;
-  padding: 12px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
-}
+:host { display: block; min-height: 100%; background: linear-gradient(160deg, #1264ce, #1055b8); color: #fff; }
+.page { max-width: 960px; margin: 0 auto; padding: 24px 16px 36px; }
+h2 { color: #fff; text-align: center; font-size: clamp(24px, 4vw, 34px); line-height: 1.25; margin: 0 0 24px; overflow-wrap: anywhere; }
+.qr-wrap { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+app-qr-canvas { display: block; background: #fff; padding: 12px; border-radius: 12px; box-shadow: 0 8px 24px #063c8540; max-width: 100%; box-sizing: border-box; }
+:host ::ng-deep app-qr-canvas canvas { display: block; max-width: 100%; height: auto !important; }
+.qr-wrap > .flex { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+.qr-wrap button, .qr-wrap a { background: #fff !important; color: #104b9e !important; border: 1px solid #fff !important; font-weight: 700; min-height: 42px; padding: 0 18px; border-radius: 10px; text-decoration: none; }
+.qr-wrap button:hover, .qr-wrap a:hover { background: #e4efff !important; }
+.qr-wrap button:focus-visible, .qr-wrap a:focus-visible { outline: 3px solid #ffdc73; outline-offset: 4px; }
