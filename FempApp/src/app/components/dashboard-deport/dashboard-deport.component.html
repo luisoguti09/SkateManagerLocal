@@ -54,8 +54,10 @@
         <h2>Eventos Disponibles</h2>
 
         <ng-container *ngIf="eventosDisponibles.length; else noHay">
+          <app-eventos-agrupados [eventos]="eventosDisponibles" [plantilla]="tarjetas"></app-eventos-agrupados>
+          <ng-template #tarjetas let-filas>
           <div class="eventos-grid">
-            <mat-card class="evento-card" *ngFor="let evento of eventosDisponibles; trackBy: trackById" @fadeInCard>
+            <mat-card class="evento-card" *ngFor="let evento of filas; trackBy: trackById" @fadeInCard>
               <mat-card-header>
                 <mat-card-title>{{ evento.nombre || evento.titulo }}</mat-card-title>
                 <mat-card-subtitle>{{ evento.fechaInicio | date:'dd/MM/yyyy' }}</mat-card-subtitle>
@@ -80,6 +82,7 @@
               </mat-card-actions>
             </mat-card>
           </div>
+          </ng-template>
         </ng-container>
 
         <ng-template #noHay>

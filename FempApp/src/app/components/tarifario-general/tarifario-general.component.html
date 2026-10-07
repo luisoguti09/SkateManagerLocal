@@ -25,7 +25,7 @@
     <ng-template #consulta>
       <dl *ngIf="actual"><div *ngFor="let campo of campos"><dt>{{ campo.nombre }}</dt><dd>$ {{ actual[campo.clave] | number:'1.2-2' }}</dd></div></dl>
     </ng-template>
-    <p class="nota">Las participaciones individuales se calculan por escala. Cada pareja o conjunto se suma por separado. Gestión: $2.000 una sola vez por deportista y evento con costo. Los eventos gratuitos no generan este cargo.</p>
+    <p class="nota">Las participaciones individuales se calculan por escala. Cada pareja o conjunto se suma por separado. La gestión de $2.000 por inscripción pagada en la plataforma queda a cargo de FEMPA y no se suma al importe del deportista. Los eventos gratuitos no generan esta referencia.</p>
     <details *ngIf="puedeEditar && historial.length">
       <summary>Historial de aranceles · últimas 20 versiones</summary>
       <div class="tabla"><table>

@@ -11,15 +11,15 @@ const schedule = {
   pagoDesde: '2026-10-22T00:00:00-03:00',
   pagoHasta: '2026-10-25T00:00:00-03:00',
 };
-test('cargo fijo por evento; gratuito sin comisión; precisión decimal', () => {
+test('arancel sin recargo al deportista; gratuito y precisión decimal', () => {
   assert.deepEqual(R.montos('50000.00', true), {
     montoBase: '50000.00',
-    montoComision: '2000.00',
-    montoTotal: '52000.00',
+    montoComision: '0.00',
+    montoTotal: '50000.00',
   });
-  assert.equal(R.montos('65000', true).montoComision, '2000.00');
+  assert.equal(R.montos('65000', true).montoComision, '0.00');
   assert.equal(R.montos(null, false).montoTotal, '0.00');
-  assert.equal(R.montos('10.01', true).montoTotal, '2010.01');
+  assert.equal(R.montos('10.01', true).montoTotal, '10.01');
   for (const x of ['-1', '0', 'Infinity', '10.123', '1e4', null])
     assert.throws(() => R.montos(x, true));
 });

@@ -96,6 +96,9 @@ router.post(
         where: { cargoId: cargo.id },
         transaction: t,
       });
+      if (R.centavos(cargo.montoComision) !== 0 || R.centavos(cargo.montoTotal) !== R.centavos(cargo.montoBase) ||
+          (existente && (R.centavos(existente.montoComision) !== 0 || R.centavos(existente.montoTotal) !== R.centavos(cargo.montoBase))))
+        R.fail(409, 'Tesorería debe revisar este cargo anterior antes de habilitar el pago.');
       if (existente) return { nuevo: false, pago: existente };
       const snapshots = cargo.participacionesSnapshot;
       const clubs = [...new Set(snapshots.map((x) => x.club).filter(Boolean))];
@@ -115,7 +118,7 @@ router.post(
           montoComision: cargo.montoComision,
           montoTotal: cargo.montoTotal,
           porcentajeComision: 0,
-          tipoComision: 'fija_por_evento',
+          tipoComision: 'sin_recargo_deportista',
           estadoPago: 'creando',
           estadoConciliacion: 'pendiente',
           deportistaNombreSnapshot: snapshots[0]?.nombre,
@@ -140,7 +143,7 @@ router.post(
           quantity: 1,
           unit_price: Number(pago.montoTotal),
           currency_id: 'ARS',
-          description: `Inscripción: $${pago.montoBase} + gestión Skate Manager: $${pago.montoComision}`,
+          description: `Inscripción: $${pago.montoBase}`,
         },
       ],
       external_reference: pago.externalReference,
@@ -149,7 +152,7 @@ router.post(
         usuario_id: usuarioId,
         evento_id: eventoId,
         perfil_deportivo_ids: pago.perfilDeportivoIds,
-        tipo_comision: 'fija_por_evento',
+        tipo_comision: 'sin_recargo_deportista',
       },
       expires: true,
       expiration_date_from: new Date().toISOString(),

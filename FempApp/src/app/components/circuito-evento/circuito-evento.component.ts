@@ -61,6 +61,7 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
       }),
     };
   }
+  get yaInscripto(): boolean { return !!this.data?.inscripciones?.length; }
   get editable() {
     return this.data && ['inscripcion', 'abm'].includes(this.data.etapa);
   }
@@ -87,7 +88,7 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
     por_abrir: 'Inscripción aún no abierta',
     inscripcion: 'Inscripción abierta',
     cuadernillo: 'Preparación y difusión del cuadernillo',
-    abm: 'Altas, bajas y modificaciones',
+    abm: 'Edición de inscripciones habilitada',
     por_confirmar: 'Nómina pendiente de confirmación',
     gratuito_confirmado: 'Inscripción definitiva · evento gratuito',
     pago_por_abrir: 'Inscripción confirmada · pago aún no habilitado',
@@ -174,7 +175,7 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
             this.options,
           ),
         ),
-      'Inscripción guardada.',
+      'Tu inscripción se actualizó correctamente.',
     );
   }
   confirmar() {
@@ -250,7 +251,7 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
         .join(' / '),
       c.perfilDeportivoIds.length,
       c.montoBase,
-      c.montoComision,
+      c.estado === 'pagado' ? (c.liquidacionSnapshot?.gestionFempaReferencia || '') : '',
       c.montoTotal,
       c.estado,
       c.vencido ? 'Sí' : 'No',
@@ -258,7 +259,7 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
     this.descargar(
       new Blob(
         [
-          '\uFEFFEvento,Deportista,DNI,Club,Participaciones,Inscripción,Gestión,Total,Estado,Vencido\r\n' +
+          '\uFEFFEvento,Deportista,DNI,Club,Participaciones,Inscripción,Referencia FEMPA (no sumada),Total,Estado,Vencido\r\n' +
             rows.map((r) => r.map(esc).join(',')).join('\r\n'),
         ],
         { type: 'text/csv;charset=utf-8' },

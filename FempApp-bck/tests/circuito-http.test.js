@@ -131,6 +131,8 @@ require.cache[require.resolve('mercadopago')] = {
       async create(pref) {
         preferenceCalls++;
         assert.equal(pref.items[0].quantity, 1);
+        assert.equal(pref.items[0].unit_price, 65000);
+        assert.ok(!pref.items[0].description.includes('gestión'));
         return {
           body: {
             id: 'pref1',
@@ -370,7 +372,7 @@ test('real routes: permissions, ABM, immutable charge, retry and reconciliation'
     200,
   );
   assert.equal(tables.CargoInscripcion.length, 1);
-  assert.equal(tables.CargoInscripcion[0].montoTotal, '67000.00');
+  assert.equal(tables.CargoInscripcion[0].montoTotal, '65000.00');
   assert.equal(
     (
       await request(
@@ -392,7 +394,14 @@ test('real routes: permissions, ABM, immutable charge, retry and reconciliation'
     ).status,
     200,
   );
-  assert.equal(tables.CargoInscripcion[0].montoTotal, '67000.00');
+  assert.equal(tables.CargoInscripcion[0].montoTotal, '65000.00');
+  const antiguo = tables.CargoInscripcion[0];
+  antiguo.montoComision = '2000.00';
+  antiguo.montoTotal = '67000.00';
+  assert.equal((await request('/pagos/crear-preferencia', 'deportista', { eventoId: 1 })).status, 409);
+  assert.equal(preferenceCalls, 0);
+  antiguo.montoComision = '0.00';
+  antiguo.montoTotal = '65000.00';
   const results = await Promise.all([
     request('/pagos/crear-preferencia', 'deportista', {
       eventoId: 1,
@@ -422,7 +431,7 @@ test('real routes: permissions, ABM, immutable charge, retry and reconciliation'
     id: 123,
     collector_id: 987,
     currency_id: 'ARS',
-    transaction_amount: 67000,
+    transaction_amount: 65000,
     external_reference: tables.Pago[0].externalReference,
     status: 'approved',
     date_last_updated: new Date().toISOString(),
@@ -464,7 +473,7 @@ test('real routes: permissions, ABM, immutable charge, retry and reconciliation'
   };
   assert.equal((await request('/pagos/confirmar?payment_id=123')).status, 200);
   assert.equal(tables.CargoInscripcion[0].estado, 'requiere_revision');
-  assert.equal(tables.CargoInscripcion[0].montoTotal, '67000.00');
+  assert.equal(tables.CargoInscripcion[0].montoTotal, '65000.00');
   // A free event confirms at zero, without checkout or a platform fee.
   const free = await db.Evento.create({
     ...ev.toJSON(),
@@ -549,15 +558,15 @@ test('tarifario general: permisos, versiones, cargos mixtos y reutilización ent
   assert.equal((await request(`/eventos/${primero.id}/confirmar-inscripciones`, 'administrador', {})).status, 200);
   const cargo = tables.CargoInscripcion.find(c => c.eventoId === primero.id);
   assert.equal(cargo.montoBase, '160000.00');
-  assert.equal(cargo.montoTotal, '162000.00');
+  assert.equal(cargo.montoTotal, '160000.00');
   assert.equal(cargo.liquidacionSnapshot.tarifarioId, vigente.id);
   assert.equal(cargo.liquidacionSnapshot.detalle.find(x => x.concepto === 'conjunto').cantidad, 2);
   const revision = await request('/precios-participacion/general', 'tesoreria', { ...valores, individual2: 66000, versionActual: vigente.id });
   assert.equal(revision.status, 200);
   const segundo = await eventoMixto();
   assert.equal((await request(`/eventos/${segundo.id}/confirmar-inscripciones`, 'administrador', {})).status, 200);
-  assert.equal(tables.CargoInscripcion.find(c => c.eventoId === segundo.id).montoTotal, '163000.00');
-  assert.equal(cargo.montoTotal, '162000.00');
+  assert.equal(tables.CargoInscripcion.find(c => c.eventoId === segundo.id).montoTotal, '161000.00');
+  assert.equal(cargo.montoTotal, '160000.00');
   assert.equal(cargo.liquidacionSnapshot.tarifarioId, vigente.id);
   assert.equal((await request(`/eventos/${primero.id}/confirmar-inscripciones`, 'administrador', {})).status, 200);
   assert.equal(tables.CargoInscripcion.filter(c => c.eventoId === primero.id).length, 1);

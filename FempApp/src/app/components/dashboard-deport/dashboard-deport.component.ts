@@ -1,3 +1,4 @@
+import { EventosAgrupadosComponent } from '../../shared/eventos-agrupados/eventos-agrupados.component';
 import { Component, inject, OnInit, ViewEncapsulation, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { DeportistComponent } from '../deportist/deportist.component';
@@ -40,6 +41,7 @@ import { environment } from '../../../environments/environment.prod';
   selector: 'app-dashboard-deport',
   standalone: true,
   imports: [
+    EventosAgrupadosComponent,
     RouterOutlet,
     RouterLink,
     DeportistComponent,

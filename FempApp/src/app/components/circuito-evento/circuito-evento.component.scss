@@ -101,3 +101,10 @@ a {
 .resultados-eventos small { color: #d5e6ff; }
 .evento-elegido { padding: 14px; border: 1px solid #8fb9ef; border-radius: 10px; background: #104b9e; color: #fff; }
 .evento-elegido strong { display: block; margin: 6px 0; overflow-wrap: anywhere; }
+
+.circuito .perfil { display: flex; align-items: center; gap: 16px; padding: 20px; margin: 12px 0; min-height: 86px; background: #216ac4; border: 2px solid #72a4e5; border-radius: 14px; color: white; cursor: pointer; font-size: 16px; line-height: 1.5; }
+.circuito .perfil.elegido { background: #1457ad; border-color: #c3e1ff; }
+.circuito .perfil input { width: 24px; height: 24px; flex: 0 0 24px; accent-color: #0757b9; }
+.circuito .perfil strong { display: block; font-size: 20px; }
+.circuito .perfil span span { display: block; }
+.circuito .perfil:focus-within { outline: 3px solid #ffda72; outline-offset: 2px; }

@@ -29,8 +29,8 @@ function montos(base, conCosto) {
     fail(409, 'Falta un arancel positivo configurado por Tesorería.');
   return {
     montoBase: (c / 100).toFixed(2),
-    montoComision: conCosto ? '2000.00' : '0.00',
-    montoTotal: ((c + (conCosto ? 200000 : 0)) / 100).toFixed(2),
+    montoComision: '0.00',
+    montoTotal: (c / 100).toFixed(2),
   };
 }
 const camposFecha = [

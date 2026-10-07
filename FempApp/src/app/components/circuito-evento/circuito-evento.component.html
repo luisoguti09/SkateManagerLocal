@@ -37,7 +37,6 @@
     <button (click)="cargar()" [disabled]="ocupado">Reintentar consulta</button>
   </p>
   <p *ngIf="mensaje" role="status">{{ mensaje }}</p>
-  <app-tarifario-general *ngIf="eventoId && rol === 'deportista' && data?.evento?.inscripcionRequierePago"></app-tarifario-general>
   <ng-container *ngIf="data"
     ><h3>{{ etiquetas[data.etapa] }}</h3>
     <p>
@@ -46,7 +45,7 @@
           ? 'Costo pendiente de configurar'
           : data.evento.inscripcionRequierePago
             ? 'Evento con costo'
-            : 'Evento gratuito, sin comisión'
+            : 'Evento gratuito'
       }}
     </p>
     <p>
@@ -54,7 +53,7 @@
       {{ data.evento.inscripcionDesde | date: 'dd/MM/yyyy HH:mm' : '-0300' }} a
       {{
         data.evento.inscripcionHasta | date: 'dd/MM/yyyy HH:mm' : '-0300'
-      }}.<br />ABM desde {{ data.evento.abmDesde | date: 'dd/MM/yyyy HH:mm' : '-0300' }} hasta
+      }}.<br />Modificaciones desde {{ data.evento.abmDesde | date: 'dd/MM/yyyy HH:mm' : '-0300' }} hasta
       {{ data.evento.abmHasta | date: 'dd/MM/yyyy HH:mm' : '-0300' }}.
     </p>
     <p *ngIf="data.evento.inscripcionRequierePago">
@@ -80,37 +79,25 @@
       ><h3>Mis participaciones</h3>
       <p>
         Seleccioná todos los perfiles con los que vas a participar. Las bajas y
-        modificaciones se realizan durante ABM.
+        modificaciones se realizan durante el período de edición.
       </p>
-      <label *ngFor="let p of data.perfiles" class="perfil"
+      <label *ngFor="let p of data.perfiles" class="perfil" [class.elegido]="seleccion.includes(p.id)"
         ><input
           type="checkbox"
           [checked]="seleccion.includes(p.id)"
-          [disabled]="ocupado || !editable"
+          [disabled]="ocupado || !editable || (yaInscripto && data.etapa !== 'abm')"
           (change)="toggle(p.id, $any($event.target).checked)"
-        />{{ p.disciplina }} · {{ p.modalidad }} · {{ p.categoria }} ·
-        {{ p.divisional }}</label
+        /><span><strong>{{ p.disciplina }}</strong><span>{{ p.modalidad }} · {{ p.categoria }} · {{ p.divisional }}</span></span></label
       >
       <p *ngIf="!data.perfiles.length">
         Cargá tus perfiles deportivos desde Mi perfil.
       </p>
-      <button (click)="guardar()" [disabled]="ocupado || !editable">
-        Guardar inscripción / ABM
+      <button (click)="guardar()" [disabled]="ocupado || !editable || (yaInscripto && data.etapa !== 'abm')">
+        {{ yaInscripto ? (data.etapa === 'abm' ? 'Editar inscripción' : 'Ya estás inscripto/a') : 'Inscribirme' }}
       </button>
       <div *ngIf="data.cargo as c">
         <h3>Mi inscripción confirmada</h3>
-        <p>
-          Inscripción: $ {{ c.montoBase }} · Gestión: $ {{ c.montoComision }} ·
-          Total: $ {{ c.montoTotal }}
-        </p>
-        <details *ngIf="c.liquidacionSnapshot?.detalle?.length">
-          <summary>Ver desglose del arancel confirmado</summary>
-          <ul><li *ngFor="let linea of c.liquidacionSnapshot.detalle">
-            {{ linea.concepto === 'individual' ? 'Individuales (escala)' : linea.concepto === 'pareja' ? 'Parejas' : 'Conjuntos' }}:
-            {{ linea.cantidad }} participación/es · $ {{ linea.importe }}
-          </li></ul>
-          <p>Tarifario #{{ c.liquidacionSnapshot.tarifarioId }} · Gestión: $ {{ c.liquidacionSnapshot.gestion }}</p>
-        </details>
+        <p>Total de la inscripción: $ {{ c.montoTotal }}</p>
         <p>Estado: {{ c.estado }} {{ c.vencido ? '· Plazo vencido' : '' }}</p>
         <button
           (click)="pagar()"
@@ -127,6 +114,7 @@
   >
   <ng-container *ngIf="rol === 'tesoreria' && eventoId"
     ><h3>Cargos confirmados</h3>
+    <p>Referencia FEMPA: $2.000 por inscripción pagada en la plataforma, a cargo de FEMPA. No se suma al deportista. Esta referencia no acredita una liquidación al proveedor.</p>
     <p>
       Incluye inscripciones cuyo checkout todavía no se abrió. El mes
       corresponde a la confirmación, en horario argentino.
@@ -157,7 +145,7 @@
             <th>Deportista</th>
             <th>Participaciones</th>
             <th>Base</th>
-            <th>Gestión</th>
+            <th>Referencia FEMPA</th>
             <th>Total</th>
             <th>Estado</th>
           </tr>
@@ -167,7 +155,7 @@
             <td>{{ c.deportista }}</td>
             <td>{{ c.perfilDeportivoIds.length }}</td>
             <td>{{ c.montoBase }}</td>
-            <td>{{ c.montoComision }}</td>
+            <td>{{ c.estado === 'pagado' ? (c.liquidacionSnapshot?.gestionFempaReferencia || '—') : '—' }}</td>
             <td>{{ c.montoTotal }}</td>
             <td>{{ c.estado }}{{ c.vencido ? ' · Vencido' : '' }}</td>
           </tr>

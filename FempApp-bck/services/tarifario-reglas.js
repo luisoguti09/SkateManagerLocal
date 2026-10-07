@@ -32,7 +32,7 @@ function calcular(participaciones, tarifario, conCosto) {
   if (cantidades.individual) detalle.push({ concepto: 'individual', cantidad: cantidades.individual, importe: valores['individual' + cantidades.individual] });
   for (const concepto of ['pareja', 'conjunto']) if (cantidades[concepto]) detalle.push({ concepto, cantidad: cantidades[concepto], unitario: valores[concepto], importe: (R.centavos(valores[concepto]) * cantidades[concepto] / 100).toFixed(2) });
   const base = detalle.reduce((sum, item) => sum + R.centavos(item.importe), 0);
-  if (!Number.isSafeInteger(base) || base + 200000 > 999999999999) R.fail(409, 'El importe excede el máximo permitido.');
-  return { ...R.montos((base / 100).toFixed(2), true), liquidacionSnapshot: { tarifarioId: tarifario.id, detalle, gestion: '2000.00' } };
+  if (!Number.isSafeInteger(base) || base > 999999999999) R.fail(409, 'El importe excede el máximo permitido.');
+  return { ...R.montos((base / 100).toFixed(2), true), liquidacionSnapshot: { tarifarioId: tarifario.id, detalle, gestionFempaReferencia: '2000.00', gestionACargoDe: 'FEMPA' } };
 }
 module.exports = { campos, validar, tipo, calcular };

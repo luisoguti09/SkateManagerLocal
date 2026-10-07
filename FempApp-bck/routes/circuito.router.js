@@ -41,6 +41,10 @@ router.get(
         where: { eventoId: ev.id, usuarioId: req.auth.id },
       });
       result.cargo = cargo ? datoCargo(cargo, ev) : null;
+      if (result.cargo?.liquidacionSnapshot) {
+        const { gestion, gestionFempaReferencia, gestionACargoDe, ...detalle } = result.cargo.liquidacionSnapshot;
+        result.cargo.liquidacionSnapshot = detalle;
+      }
     }
     res.json(result);
   }),
@@ -61,7 +65,7 @@ async function guardar(req, res, append = false) {
       !['inscripcion', 'abm'].includes(stage) ||
       ev.inscripcionesConfirmadasAt
     )
-      R.fail(409, 'La inscripción o el período ABM no están abiertos.');
+      R.fail(409, 'La inscripción o el período de edición no están abiertos.');
     const existentes = await db.UsuarioEventos.findAll({
       where: { EventoId: ev.id, UsuarioId: req.auth.id },
       transaction: t,
