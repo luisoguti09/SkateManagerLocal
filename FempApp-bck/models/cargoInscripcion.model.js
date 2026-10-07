@@ -8,6 +8,7 @@ module.exports = sequelize.define(
     usuarioId: { type: DataTypes.INTEGER, allowNull: false },
     perfilDeportivoIds: { type: DataTypes.JSON, allowNull: false },
     participacionesSnapshot: { type: DataTypes.JSON, allowNull: false },
+    liquidacionSnapshot: { type: DataTypes.JSON, allowNull: true },
     montoBase: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     montoComision: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     montoTotal: { type: DataTypes.DECIMAL(12, 2), allowNull: false },

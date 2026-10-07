@@ -1,0 +1,37 @@
+<section class="tarifario" aria-label="Tarifario general">
+  <header>
+    <p class="eyebrow">Inscripciones federadas</p>
+    <h2>Tarifario general</h2>
+    <p>Vigente hasta que Tesorería lo actualice. Se aplica al confirmar la nómina de los eventos con costo.</p>
+  </header>
+  <p *ngIf="cargando" role="status">Cargando aranceles…</p>
+  <div *ngIf="error" class="error" role="alert">{{ error }} <button type="button" (click)="cargar()" [disabled]="cargando || guardando">Recargar</button></div>
+  <p *ngIf="mensaje" class="mensaje" role="status">{{ mensaje }}</p>
+  <ng-container *ngIf="listo">
+    <p *ngIf="!actual" class="aviso">Todavía no se publicó un tarifario general.</p>
+    <p *ngIf="actual">Versión {{ actual.id }} · Publicada el {{ actual.createdAt | date:'dd/MM/yyyy HH:mm':'-0300' }} (Argentina).</p>
+    <form *ngIf="puedeEditar; else consulta" #form="ngForm" (ngSubmit)="guardar()">
+      <div class="campos">
+        <label *ngFor="let campo of campos" [for]="'tarifa-' + campo.clave">
+          {{ campo.nombre }}
+          <span class="importe"><span aria-hidden="true">$</span><input [id]="'tarifa-' + campo.clave" [name]="campo.clave" type="number" min="0.01" max="9999999999.99" step="0.01" required [(ngModel)]="formulario[campo.clave]" [disabled]="guardando" /></span>
+        </label>
+      </div>
+      <div class="acciones">
+        <button type="button" *ngIf="!actual" (click)="completarComunicado()" [disabled]="guardando">Completar con comunicado 36/26</button>
+        <button type="submit" class="principal" [disabled]="form.invalid || guardando || !listo">{{ guardando ? 'Publicando…' : 'Publicar tarifario' }}</button>
+      </div>
+    </form>
+    <ng-template #consulta>
+      <dl *ngIf="actual"><div *ngFor="let campo of campos"><dt>{{ campo.nombre }}</dt><dd>$ {{ actual[campo.clave] | number:'1.2-2' }}</dd></div></dl>
+    </ng-template>
+    <p class="nota">Las participaciones individuales se calculan por escala. Cada pareja o conjunto se suma por separado. Gestión: $2.000 una sola vez por deportista y evento con costo. Los eventos gratuitos no generan este cargo.</p>
+    <details *ngIf="puedeEditar && historial.length">
+      <summary>Historial de aranceles · últimas 20 versiones</summary>
+      <div class="tabla"><table>
+        <thead><tr><th>Versión / publicación</th><th>1 individual</th><th>2 individuales</th><th>3 individuales</th><th>Pareja</th><th>Conjunto</th></tr></thead>
+        <tbody><tr *ngFor="let t of historial"><td>#{{ t.id }} · {{ t.createdAt | date:'dd/MM/yyyy HH:mm':'-0300' }}</td><td>$ {{ t.individual1 | number:'1.2-2' }}</td><td>$ {{ t.individual2 | number:'1.2-2' }}</td><td>$ {{ t.individual3 | number:'1.2-2' }}</td><td>$ {{ t.pareja | number:'1.2-2' }}</td><td>$ {{ t.conjunto | number:'1.2-2' }}</td></tr></tbody>
+      </table></div>
+    </details>
+  </ng-container>
+</section>

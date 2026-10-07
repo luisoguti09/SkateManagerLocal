@@ -1,7 +1,8 @@
 <section class="circuito">
   <ng-container *ngIf="rol === 'tesoreria'"
     ><a routerLink="/dashboard-tesoreria">Volver a pagos</a>
-    <h2>Aranceles e inscripciones confirmadas</h2>
+    <app-tarifario-general [editar]="true"></app-tarifario-general>
+    <h2>Consultar cargos por evento</h2>
     <label
       >Evento
       <select
@@ -22,50 +23,7 @@
     <button (click)="cargar()" [disabled]="ocupado">Reintentar consulta</button>
   </p>
   <p *ngIf="mensaje" role="status">{{ mensaje }}</p>
-  <ng-container *ngIf="eventoId && rol !== 'administrador'"
-    ><h3>Aranceles vigentes</h3>
-    <ul>
-      <li *ngFor="let p of precios">
-        {{ p.cantidadParticipaciones }} participación/es: $ {{ p.monto }} ·
-        {{ p.activo ? 'Vigente' : 'Inactivo' }}
-        <button
-          *ngIf="rol === 'tesoreria' && p.activo"
-          (click)="desactivar(p)"
-          [disabled]="ocupado"
-        >
-          Desactivar
-        </button>
-      </li>
-    </ul>
-    <p *ngIf="!ocupado && !precios.length">Sin aranceles configurados.</p>
-    <form *ngIf="rol === 'tesoreria'" (ngSubmit)="guardarPrecio()">
-      <label
-        >Participaciones
-        <input
-          name="cantidad"
-          type="number"
-          min="1"
-          max="100"
-          step="1"
-          [(ngModel)]="cantidad"
-          required /></label
-      ><label
-        >Arancel de inscripción
-        <input
-          name="monto"
-          type="number"
-          min="0.01"
-          step="0.01"
-          [(ngModel)]="monto"
-          required /></label
-      ><button [disabled]="ocupado || !monto">Guardar arancel</button>
-      <p>
-        Gestión Skate Manager: $2.000 por deportista y evento con costo,
-        independientemente de las modalidades. Los cargos confirmados conservan
-        su valor.
-      </p>
-    </form></ng-container
-  >
+  <app-tarifario-general *ngIf="eventoId && rol === 'deportista' && data?.evento?.inscripcionRequierePago"></app-tarifario-general>
   <ng-container *ngIf="data"
     ><h3>{{ etiquetas[data.etapa] }}</h3>
     <p>
@@ -131,6 +89,14 @@
           Inscripción: $ {{ c.montoBase }} · Gestión: $ {{ c.montoComision }} ·
           Total: $ {{ c.montoTotal }}
         </p>
+        <details *ngIf="c.liquidacionSnapshot?.detalle?.length">
+          <summary>Ver desglose del arancel confirmado</summary>
+          <ul><li *ngFor="let linea of c.liquidacionSnapshot.detalle">
+            {{ linea.concepto === 'individual' ? 'Individuales (escala)' : linea.concepto === 'pareja' ? 'Parejas' : 'Conjuntos' }}:
+            {{ linea.cantidad }} participación/es · $ {{ linea.importe }}
+          </li></ul>
+          <p>Tarifario #{{ c.liquidacionSnapshot.tarifarioId }} · Gestión: $ {{ c.liquidacionSnapshot.gestion }}</p>
+        </details>
         <p>Estado: {{ c.estado }} {{ c.vencido ? '· Plazo vencido' : '' }}</p>
         <button
           (click)="pagar()"

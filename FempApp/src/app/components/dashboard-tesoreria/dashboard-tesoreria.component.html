@@ -1,8 +1,3 @@
-<a
-  routerLink="/tesoreria/aranceles"
-  style="display: block; padding: 16px; background: #fff; color: #0b5bd3"
-  >Aranceles y cargos confirmados</a
->
 <section class="tesoreria-page" lang="es" translate="no">
   <nav class="topbar" aria-label="Navegación de Tesorería">
     <span class="brand"
@@ -32,6 +27,10 @@
         </p>
       </div>
 
+      <div class="header-actions">
+        <a mat-raised-button class="aranceles-button" routerLink="/tesoreria/aranceles">
+          <mat-icon>payments</mat-icon> Configurar aranceles
+        </a>
       <button
         mat-raised-button
         class="export-button"
@@ -43,6 +42,7 @@
         <mat-icon>download</mat-icon>
         Exportar resultados (CSV)
       </button>
+      </div>
     </header>
 
     <p class="summary-caption">
@@ -411,3 +411,4 @@
     </mat-card>
   </main>
 </section>
+

@@ -100,6 +100,8 @@ for (const n of [
   'Club',
   'ClubSede',
   'PrecioParticipacionEvento',
+  'TarifarioGeneral',
+  'TarifarioEstado',
   'CargoInscripcion',
   'Pago',
   'CambioInscripcion',
@@ -207,6 +209,7 @@ test('real routes: permissions, ABM, immutable charge, retry and reconciliation'
       nombre: 'Persona ' + id,
       dni: '100' + id,
     });
+  await db.TarifarioEstado.create({ id: 1, tarifarioId: null });
   ev = await db.Evento.create({
     nombre: 'Evento',
     titulo: 'Evento',
@@ -257,10 +260,8 @@ test('real routes: permissions, ABM, immutable charge, retry and reconciliation'
   );
   assert.equal(
     (
-      await request('/precios-participacion', 'tesoreria', {
-        eventoId: 1,
-        cantidadParticipaciones: 3,
-        monto: 65000,
+      await request('/precios-participacion/general', 'tesoreria', {
+        versionActual: null, individual1: 55000, individual2: 65000, individual3: 65000, pareja: 35000, conjunto: 30000,
       })
     ).status,
     200,
@@ -385,10 +386,8 @@ test('real routes: permissions, ABM, immutable charge, retry and reconciliation'
   assert.equal(admin.data.cargo, null);
   assert.equal(
     (
-      await request('/precios-participacion', 'tesoreria', {
-        eventoId: 1,
-        cantidadParticipaciones: 3,
-        monto: 90000,
+      await request('/precios-participacion/general', 'tesoreria', {
+        versionActual: 1, individual1: 55000, individual2: 65000, individual3: 90000, pareja: 35000, conjunto: 30000,
       })
     ).status,
     200,
@@ -518,4 +517,48 @@ test('constancia: pago propio, bajas, reintegro y gratuito; sin exigir asistenci
   assert.equal((await consultar()).status, 403);
   assert.equal((await request('/eventos/900/certificado-datos', null)).status, 401);
   assert.equal((await request('/eventos/900/certificado-datos', 'administrador')).status, 403);
+});
+
+
+
+test('tarifario general: permisos, versiones, cargos mixtos y reutilización entre eventos', async () => {
+  const valores = { individual1: 55000, individual2: 65000, individual3: 70000, pareja: 35000, conjunto: 30000 };
+  assert.equal((await request('/precios-participacion/general', null)).status, 401);
+  assert.equal((await request('/precios-participacion/general', 'administrador')).status, 403);
+  assert.equal((await request('/precios-participacion/general', 'deportista', { ...valores, versionActual: 2 })).status, 403);
+  assert.equal((await request('/precios-participacion', 'tesoreria', {})).status, 410);
+  const original = (await request('/precios-participacion/general', 'tesoreria')).data.actual;
+  assert.equal((await request('/precios-participacion/general', 'tesoreria', { ...valores, versionActual: original.id, pareja: -1 })).status, 400);
+  assert.equal((await request('/precios-participacion/general', 'tesoreria', { ...valores, versionActual: null })).status, 409);
+  const versiones = await Promise.all([1,2].map(() => request('/precios-participacion/general', 'tesoreria', { ...valores, versionActual: original.id })));
+  assert.deepEqual(versiones.map(x => x.status).sort(), [200,409]);
+  const vigente = (await request('/precios-participacion/general', 'tesoreria')).data.actual;
+  const historialAntes = tables.TarifarioGeneral.length;
+  assert.equal((await request('/precios-participacion/general', 'tesoreria', { ...valores, versionActual: vigente.id })).status, 200);
+  assert.equal(tables.TarifarioGeneral.length, historialAntes);
+  assert.equal((await request('/precios-participacion/general', 'deportista')).data.historial.length, 0);
+  for (const [id, disciplina, modalidad] of [[51,'Libre','Individual'],[52,'Figuras Obligatorias','Individual'],[53,'Parejas','Parejas'],[54,'Precisión','Show'],[55,'Precisión','Cuarteto']]) {
+    await db.PerfilDeportivo.create({ id, usuarioId: 1, activa: true, disciplina, modalidad, club: 'Club A' });
+  }
+  async function eventoMixto() {
+    const e = await db.Evento.create({ titulo: 'Mixto', inscripcionRequierePago: true, inscripcionDesde: at(-90000), inscripcionHasta: at(-80000), abmDesde: at(-70000), abmHasta: at(-60000), pagoDesde: at(-50000), pagoHasta: at(500000) });
+    for (const id of [51,52,53,54,55]) await db.UsuarioEventos.create({ EventoId: e.id, UsuarioId: 1, perfilDeportivoId: id, estadoInscripcion: 'provisoria' });
+    return e;
+  }
+  const primero = await eventoMixto();
+  assert.equal((await request(`/eventos/${primero.id}/confirmar-inscripciones`, 'administrador', {})).status, 200);
+  const cargo = tables.CargoInscripcion.find(c => c.eventoId === primero.id);
+  assert.equal(cargo.montoBase, '160000.00');
+  assert.equal(cargo.montoTotal, '162000.00');
+  assert.equal(cargo.liquidacionSnapshot.tarifarioId, vigente.id);
+  assert.equal(cargo.liquidacionSnapshot.detalle.find(x => x.concepto === 'conjunto').cantidad, 2);
+  const revision = await request('/precios-participacion/general', 'tesoreria', { ...valores, individual2: 66000, versionActual: vigente.id });
+  assert.equal(revision.status, 200);
+  const segundo = await eventoMixto();
+  assert.equal((await request(`/eventos/${segundo.id}/confirmar-inscripciones`, 'administrador', {})).status, 200);
+  assert.equal(tables.CargoInscripcion.find(c => c.eventoId === segundo.id).montoTotal, '163000.00');
+  assert.equal(cargo.montoTotal, '162000.00');
+  assert.equal(cargo.liquidacionSnapshot.tarifarioId, vigente.id);
+  assert.equal((await request(`/eventos/${primero.id}/confirmar-inscripciones`, 'administrador', {})).status, 200);
+  assert.equal(tables.CargoInscripcion.filter(c => c.eventoId === primero.id).length, 1);
 });

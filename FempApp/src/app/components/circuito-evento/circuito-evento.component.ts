@@ -4,12 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { RouterLink } from '@angular/router';
+import { TarifarioGeneralComponent } from '../tarifario-general/tarifario-general.component';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-circuito-evento',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, TarifarioGeneralComponent],
   templateUrl: './circuito-evento.component.html',
   styleUrls: ['./circuito-evento.component.scss'],
 })
@@ -21,11 +22,8 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
   rol = this.auth.getRolNombre();
   eventos: any[] = [];
   data: any = null;
-  precios: any[] = [];
   cargos: any[] = [];
   seleccion: number[] = [];
-  cantidad = 1;
-  monto: number | null = null;
   ocupado = false;
   error = '';
   mensaje = '';
@@ -91,19 +89,10 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
     const seq = ++this.sequence;
     this.error = '';
     this.data = null;
-    this.precios = [];
     this.cargos = [];
     if (!this.eventoId) return;
     this.ocupado = true;
     try {
-      const precios = await firstValueFrom(
-        this.http.get<any[]>(
-          `${this.api}/precios-participacion/evento/${this.eventoId}`,
-          this.options,
-        ),
-      );
-      if (seq !== this.sequence) return;
-      this.precios = precios;
       if (this.rol === 'tesoreria') {
         const cargos = await firstValueFrom(
           this.http.get<any[]>(
@@ -182,36 +171,6 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
           ),
         ),
       'Nómina confirmada.',
-    );
-  }
-  guardarPrecio() {
-    return this.accion(
-      () =>
-        firstValueFrom(
-          this.http.post(
-            `${this.api}/precios-participacion`,
-            {
-              eventoId: this.eventoId,
-              cantidadParticipaciones: this.cantidad,
-              monto: this.monto,
-              activo: true,
-            },
-            this.options,
-          ),
-        ),
-      'Arancel guardado. Los cargos confirmados conservan sus importes.',
-    );
-  }
-  desactivar(p: any) {
-    return this.accion(
-      () =>
-        firstValueFrom(
-          this.http.delete(
-            `${this.api}/precios-participacion/${p.id}`,
-            this.options,
-          ),
-        ),
-      'Arancel desactivado.',
     );
   }
   async pagar() {

@@ -1,5 +1,7 @@
 const db = require('../models');
 const R = require('./circuito-reglas');
+const T = require('./tarifario-reglas');
+const Tarifarios = require('./tarifario');
 const { Op } = require('sequelize');
 const wrap = (fn) => async (req, res, next) => {
   try {
@@ -95,7 +97,8 @@ async function confirmar(eventoId, actor) {
         perfilDeportivoId: p.id,
         nombre: u.nombre,
         dni: u.dni,
-        disciplina: row.disciplina,
+        disciplina: p.disciplina,
+        modalidad: p.modalidad,
         categoria: row.categoria,
         division: row.division,
         grupo: row.grupo,
@@ -106,18 +109,12 @@ async function confirmar(eventoId, actor) {
       });
       users.set(u.id, group);
     }
-    for (const [usuarioId, participaciones] of users) {
-      let precio = null;
-      if (ev.inscripcionRequierePago)
-        precio = await db.PrecioParticipacionEvento.findOne({
-          where: {
-            eventoId: ev.id,
-            cantidadParticipaciones: participaciones.length,
-            activo: true,
-          },
-          transaction: t,
-        });
-      const amounts = R.montos(precio?.monto, !!ev.inscripcionRequierePago);
+    // Un único tarifario para toda la nómina, bloqueado frente a actualizaciones concurrentes.
+    const tarifario = ev.inscripcionRequierePago && users.size ? await Tarifarios.vigente(t) : null;
+    const liquidaciones = [...users].map(([usuarioId, participaciones]) => ({
+      usuarioId, participaciones, amounts: T.calcular(participaciones, tarifario, !!ev.inscripcionRequierePago),
+    }));
+    for (const { usuarioId, participaciones, amounts } of liquidaciones) {
       await db.CargoInscripcion.create(
         {
           eventoId: ev.id,
