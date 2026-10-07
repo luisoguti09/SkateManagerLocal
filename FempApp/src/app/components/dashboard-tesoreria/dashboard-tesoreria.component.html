@@ -134,13 +134,14 @@
         </button>
       </div>
       <div class="filters-grid">
-        <mat-form-field
+        <div class="filtro-campo">
+          <span class="filtro-etiqueta" id="filtro-evento">Evento</span>
+<mat-form-field
           appearance="outline"
-          floatLabel="always"
+          floatLabel="auto"
           subscriptSizing="dynamic"
         >
-          <mat-label>Evento</mat-label>
-          <mat-select
+          <mat-select aria-labelledby="filtro-evento"
             panelClass="tesoreria-select-panel"
             [(ngModel)]="filtros.eventoId"
             (selectionChange)="onEventoChange()"
@@ -151,14 +152,16 @@
             </mat-option>
           </mat-select>
         </mat-form-field>
+        </div>
 
-        <mat-form-field
+        <div class="filtro-campo">
+          <span class="filtro-etiqueta" id="filtro-club">Club / sede</span>
+<mat-form-field
           appearance="outline"
-          floatLabel="always"
+          floatLabel="auto"
           subscriptSizing="dynamic"
         >
-          <mat-label>Club / sede</mat-label>
-          <mat-select
+          <mat-select aria-labelledby="filtro-club"
             panelClass="tesoreria-select-panel"
             [value]="clubSeleccionado"
             [disabled]="!!errorClubes"
@@ -176,14 +179,16 @@
             </mat-option>
           </mat-select>
         </mat-form-field>
+        </div>
 
-        <mat-form-field
+        <div class="filtro-campo">
+          <span class="filtro-etiqueta" id="filtro-estado">Estado</span>
+<mat-form-field
           appearance="outline"
-          floatLabel="always"
+          floatLabel="auto"
           subscriptSizing="dynamic"
         >
-          <mat-label>Estado</mat-label>
-          <mat-select
+          <mat-select aria-labelledby="filtro-estado"
             panelClass="tesoreria-select-panel"
             [(ngModel)]="filtros.estado"
             (selectionChange)="aplicarFiltros()"
@@ -194,38 +199,45 @@
             <mat-option value="observado">Observado</mat-option>
           </mat-select>
         </mat-form-field>
+        </div>
 
-        <mat-form-field
+        <div class="filtro-campo">
+          <span class="filtro-etiqueta" id="filtro-buscar">Buscar</span>
+<mat-form-field
           appearance="outline"
-          floatLabel="always"
+          floatLabel="auto"
           subscriptSizing="dynamic"
         >
-          <mat-label>Buscar</mat-label>
-          <input
+          <input aria-labelledby="filtro-buscar"
             matInput
             [(ngModel)]="filtros.buscar"
             placeholder="Nombre, DNI o referencia de pago"
             (keyup.enter)="aplicarFiltros()"
           />
         </mat-form-field>
+        </div>
 
-        <mat-form-field
+        <div class="filtro-campo">
+          <span class="filtro-etiqueta" id="filtro-desde">Solicitud desde</span>
+<mat-form-field
           appearance="outline"
-          floatLabel="always"
+          floatLabel="auto"
           subscriptSizing="dynamic"
         >
-          <mat-label>Solicitud desde</mat-label>
-          <input matInput type="date" [(ngModel)]="filtros.fechaDesde" />
+          <input aria-labelledby="filtro-desde" matInput type="date" [(ngModel)]="filtros.fechaDesde" />
         </mat-form-field>
+        </div>
 
-        <mat-form-field
+        <div class="filtro-campo">
+          <span class="filtro-etiqueta" id="filtro-hasta">Solicitud hasta</span>
+<mat-form-field
           appearance="outline"
-          floatLabel="always"
+          floatLabel="auto"
           subscriptSizing="dynamic"
         >
-          <mat-label>Solicitud hasta</mat-label>
-          <input matInput type="date" [(ngModel)]="filtros.fechaHasta" />
+          <input aria-labelledby="filtro-hasta" matInput type="date" [(ngModel)]="filtros.fechaHasta" />
         </mat-form-field>
+        </div>
       </div>
 
       <div class="catalog-warning" *ngIf="errorRangoFechas" role="alert">

@@ -86,3 +86,18 @@ a {
 
 
 .circuito button:focus-visible, .circuito a:focus-visible { outline: 3px solid #ffdc73; outline-offset: 3px; }
+
+.buscador-eventos { margin: 18px 0 24px; }
+.buscador-etiqueta { display: block; color: #fff; font-weight: 600; margin-bottom: 8px; }
+.buscador-controles { display: flex; flex-wrap: wrap; gap: 10px; }
+.buscador-controles input { flex: 1 1 240px; width: 100%; min-width: 0; box-sizing: border-box; background: #fff; color: #142c4b; padding: 12px; border: 1px solid #9dcaff; border-radius: 8px; font: inherit; }
+.buscador-ayuda { color: #e2efff; margin: 10px 0; }
+.resultados-eventos { list-style: none; padding: 0; margin: 0; max-height: 280px; overflow-y: auto; border: 1px solid #8fb9ef; border-radius: 10px; background: #104b9e; }
+.resultados-eventos li + li { border-top: 1px solid #5488ce; }
+.resultados-eventos button { display: block; width: 100%; box-sizing: border-box; margin: 0; padding: 13px 16px; text-align: left; white-space: normal; overflow-wrap: anywhere; border: 0; border-radius: 0; background: transparent; color: #fff; font: inherit; cursor: pointer; }
+.resultados-eventos button:hover, .resultados-eventos button[aria-pressed="true"] { background: #246dd0; }
+.resultados-eventos button:focus-visible { outline: 3px solid #ffda80; outline-offset: -3px; }
+.resultados-eventos button:disabled { cursor: default; color: #d5e6ff; }
+.resultados-eventos small { color: #d5e6ff; }
+.evento-elegido { padding: 14px; border: 1px solid #8fb9ef; border-radius: 10px; background: #104b9e; color: #fff; }
+.evento-elegido strong { display: block; margin: 6px 0; overflow-wrap: anywhere; }

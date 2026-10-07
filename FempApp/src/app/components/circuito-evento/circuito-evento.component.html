@@ -3,20 +3,34 @@
     ><a routerLink="/dashboard-tesoreria">Volver a pagos</a>
     <app-tarifario-general [editar]="true"></app-tarifario-general>
     <h2>Consultar cargos por evento</h2>
-    <label
-      >Evento
-      <select
-        [(ngModel)]="eventoId"
-        (ngModelChange)="cargar()"
-        [disabled]="ocupado"
-      >
-        <option [ngValue]="null">Seleccionar</option>
-        <option *ngFor="let ev of eventos" [ngValue]="ev.id">
-          {{ ev.titulo || ev.nombre || 'Evento #' + ev.id }}
-        </option>
-      </select></label
-    ></ng-container
-  >
+    <div class="buscador-eventos">
+      <p *ngIf="eventoSeleccionado as ev" class="evento-elegido">
+        Evento seleccionado: <strong>{{ ev.titulo || ev.nombre || 'Evento #' + ev.id }}</strong>
+        <button type="button" (click)="mostrarBuscador = !mostrarBuscador" [disabled]="ocupado">
+          {{ mostrarBuscador ? 'Cerrar búsqueda' : 'Cambiar evento' }}
+        </button>
+      </p>
+      <div *ngIf="!eventoId || mostrarBuscador">
+        <label for="buscar-evento-cargos" class="buscador-etiqueta">Buscar evento por nombre</label>
+        <div class="buscador-controles">
+          <input id="buscar-evento-cargos" type="search" [(ngModel)]="busquedaEvento"
+            placeholder="Ej.: Copa Copadísima" autocomplete="off" [disabled]="ocupado"
+            aria-controls="resultados-eventos" />
+          <button type="button" *ngIf="busquedaEvento" (click)="busquedaEvento = ''" [disabled]="ocupado">Limpiar búsqueda</button>
+        </div>
+        <p class="buscador-ayuda" role="status">{{ eventosFiltrados.length }} eventos encontrados</p>
+        <ul id="resultados-eventos" class="resultados-eventos" aria-label="Resultados de eventos">
+          <li *ngFor="let ev of eventosFiltrados">
+            <button type="button" (click)="seleccionarEvento(ev)" [disabled]="ocupado"
+              [attr.aria-pressed]="eventoId === ev.id">
+              {{ ev.titulo || ev.nombre || 'Evento #' + ev.id }} <small>· #{{ ev.id }}</small>
+            </button>
+          </li>
+        </ul>
+        <p *ngIf="!eventosFiltrados.length">No hay eventos que coincidan con la búsqueda.</p>
+      </div>
+    </div>
+  </ng-container>
   <p *ngIf="ocupado" role="status">Cargando…</p>
   <p *ngIf="error" role="alert" class="error">
     {{ error }}

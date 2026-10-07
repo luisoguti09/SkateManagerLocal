@@ -21,6 +21,29 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
   private api = environment.SERVER_API;
   rol = this.auth.getRolNombre();
   eventos: any[] = [];
+  busquedaEvento = '';
+  mostrarBuscador = false;
+  private textoBusqueda(value: unknown): string {
+    return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+  }
+  get eventosFiltrados(): any[] {
+    const palabras = this.textoBusqueda(this.busquedaEvento).split(/\s+/).filter(Boolean);
+    return this.eventos.filter(ev => {
+      const nombre = this.textoBusqueda(`${ev.titulo || ''} ${ev.nombre || ''} ${ev.id}`);
+      return palabras.every(palabra => nombre.includes(palabra));
+    }).sort((a, b) => String(a.titulo || a.nombre || '').localeCompare(String(b.titulo || b.nombre || ''), 'es', { sensitivity: 'base' }) || Number(a.id) - Number(b.id));
+  }
+  get eventoSeleccionado(): any {
+    return this.eventos.find(ev => Number(ev.id) === Number(this.eventoId));
+  }
+  seleccionarEvento(ev: any): void {
+    if (this.ocupado) return;
+    this.eventoId = Number(ev.id);
+    this.mostrarBuscador = false;
+    this.busquedaEvento = '';
+    this.mensaje = '';
+    void this.cargar();
+  }
   data: any = null;
   cargos: any[] = [];
   seleccion: number[] = [];

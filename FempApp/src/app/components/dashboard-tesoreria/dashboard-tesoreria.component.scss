@@ -598,3 +598,7 @@ tr.mat-mdc-row:hover {
     .header-actions { width: 100%; }
     .header-actions a, .header-actions button { width: 100%; }
 }
+
+/* Etiquetas externas: no se recortan sobre los bordes blancos. */
+.filtro-campo { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.filtro-etiqueta { display: block; color: #fff !important; font-size: 14px; font-weight: 600; line-height: 1.4; }
