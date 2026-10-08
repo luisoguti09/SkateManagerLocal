@@ -35,6 +35,17 @@ function mpConfigurado() {
   )
     R.fail(503, 'La integración de pagos todavía no está configurada.');
 }
+function fechaMercadoPago(valor) {
+  const fecha = new Date(valor);
+
+  if (Number.isNaN(fecha.getTime())) {
+    throw new Error('Fecha inválida para crear el checkout.');
+  }
+
+  return new Date(fecha.getTime() - 3 * 60 * 60 * 1000)
+    .toISOString()
+    .replace('Z', '-03:00');
+}
 function datosCheckout(pago) {
   let raw = pago.rawPreference;
   if (typeof raw === 'string') {
@@ -155,8 +166,8 @@ router.post(
         tipo_comision: 'sin_recargo_deportista',
       },
       expires: true,
-      expiration_date_from: new Date().toISOString(),
-      expiration_date_to: new Date(ev.pagoHasta).toISOString(),
+      expiration_date_from: fechaMercadoPago(new Date()),
+      expiration_date_to: fechaMercadoPago(ev.pagoHasta),
       ...(FRONT_BASE.startsWith('https://') && {
         back_urls: {
           success: `${FRONT_BASE}/pago-exitoso`,
