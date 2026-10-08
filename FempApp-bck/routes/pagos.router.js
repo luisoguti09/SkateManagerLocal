@@ -89,7 +89,7 @@ router.post(
       if (
         req.body.perfilDeportivoIds &&
         JSON.stringify(R.ids(req.body.perfilDeportivoIds)) !==
-          JSON.stringify(cargo.perfilDeportivoIds)
+        JSON.stringify(cargo.perfilDeportivoIds)
       )
         R.fail(409, 'El pago debe incluir todos los perfiles confirmados.');
       const existente = await db.Pago.findOne({
@@ -97,7 +97,7 @@ router.post(
         transaction: t,
       });
       if (R.centavos(cargo.montoComision) !== 0 || R.centavos(cargo.montoTotal) !== R.centavos(cargo.montoBase) ||
-          (existente && (R.centavos(existente.montoComision) !== 0 || R.centavos(existente.montoTotal) !== R.centavos(cargo.montoBase))))
+        (existente && (R.centavos(existente.montoComision) !== 0 || R.centavos(existente.montoTotal) !== R.centavos(cargo.montoBase))))
         R.fail(409, 'Tesorería debe revisar este cargo anterior antes de habilitar el pago.');
       if (existente) return { nuevo: false, pago: existente };
       const snapshots = cargo.participacionesSnapshot;
@@ -179,6 +179,34 @@ router.post(
       });
       res.json(datosCheckout(pago));
     } catch (error) {
+      // Registrar el diagnóstico sin imprimir credenciales,
+      // encabezados, datos del comprador ni la respuesta completa.
+      const limpiar = (valor) => {
+        let texto = String(valor ?? '');
+        for (const secreto of [
+          process.env.MP_ACCESS_TOKEN,
+          process.env.MP_WEBHOOK_SECRET,
+        ]) {
+          if (secreto) texto = texto.split(secreto).join('[OCULTO]');
+        }
+        return texto.slice(0, 600);
+      };
+
+      console.error('[MP_CHECKOUT_ERROR]', {
+        pagoId: pago.id,
+        cargoId: pago.cargoId,
+        nombre: limpiar(error?.name),
+        estado: limpiar(error?.status || error?.statusCode),
+        codigo: limpiar(error?.code || error?.error),
+        mensaje: limpiar(error?.message),
+        causas: Array.isArray(error?.cause)
+          ? error.cause.map((causa) => ({
+            codigo: limpiar(causa?.code),
+            descripcion: limpiar(causa?.description),
+          }))
+          : [],
+      });
+
       await pago.update({
         estadoPago: 'error_creacion',
         estadoConciliacion: 'requiere_revision',
