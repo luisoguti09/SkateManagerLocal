@@ -12,6 +12,11 @@
     <ng-container *ngIf="listMode; else detalle">
       <h2>{{ listTitle }}</h2>
 
+      <p *ngIf="cargandoEventos" role="status">Cargando eventos…</p>
+      <p *ngIf="errorEventos" role="alert">{{ errorEventos }}
+        <button mat-stroked-button (click)="cargarListado()">Reintentar</button>
+      </p>
+      <ng-container *ngIf="!cargandoEventos && !errorEventos">
       <ng-container *ngIf="eventos?.length; else noHay">
         <app-eventos-agrupados [eventos]="eventos" [plantilla]="tarjetas"></app-eventos-agrupados>
         <ng-template #tarjetas let-filas>
@@ -56,6 +61,7 @@
           }}
         </p>
       </ng-template>
+      </ng-container>
     </ng-container>
 
     <!-- ===== DETALLE ===== -->

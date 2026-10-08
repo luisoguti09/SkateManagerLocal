@@ -39,15 +39,7 @@
   <p *ngIf="mensaje" role="status">{{ mensaje }}</p>
   <ng-container *ngIf="data"
     ><h3>{{ etiquetas[data.etapa] }}</h3>
-    <p>
-      {{
-        data.evento.inscripcionRequierePago === null
-          ? 'Costo pendiente de configurar'
-          : data.evento.inscripcionRequierePago
-            ? 'Evento con costo'
-            : 'Evento gratuito'
-      }}
-    </p>
+    <p *ngIf="data.evento.inscripcionRequierePago === false">Evento gratuito</p>
     <p>
       Inscripción:
       {{ data.evento.inscripcionDesde | date: 'dd/MM/yyyy HH:mm' : '-0300' }} a

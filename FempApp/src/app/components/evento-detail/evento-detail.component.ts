@@ -1,6 +1,6 @@
 import { EventosAgrupadosComponent } from '../../shared/eventos-agrupados/eventos-agrupados.component';
 import { CircuitoEventoComponent } from '../circuito-evento/circuito-evento.component';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Evento, EventoLite } from '../../interfaces/evento';
 import { NuevoEventoDto, EditEventoDto } from '../../interfaces/evento-dto';
 import {
@@ -93,6 +93,9 @@ export class EventoDetailComponent implements OnInit {
   public deportistasInscritos: any[] = [];
   public eventos: Evento[] = [];
   public deportistas: any[] = [];
+  private cdr = inject(ChangeDetectorRef);
+  public cargandoEventos = false;
+  public errorEventos = '';
   public listMode = false;
   public data: Evento[] = [];
   injectedRoute = inject(ActivatedRoute);
@@ -113,19 +116,7 @@ export class EventoDetailComponent implements OnInit {
       this.listTitle =
         mode === 'inscriptos' ? 'Mis Eventos' : 'Eventos Disponibles';
 
-      if (mode === 'inscriptos') {
-        const dni = this.auth.getUsuario()?.dni;
-        if (dni != null) {
-          this.eventServ.getEventosDelUsuario(Number(dni)).subscribe({
-            next: (evs) => (this.eventos = evs ?? []),
-            error: () => (this.eventos = []),
-          });
-        } else {
-          this.eventos = [];
-        }
-      } else {
-        this.mostrarTodosEventos();
-      }
+      this.cargarListado();
       return;
     }
 
@@ -146,6 +137,34 @@ export class EventoDetailComponent implements OnInit {
     });
     this.formularioInscripcion();
     this.cargarPerfiles();
+  }
+
+  cargarListado(): void {
+    this.cargandoEventos = true;
+    this.errorEventos = '';
+    const mode = this.injectedRoute.snapshot.data?.['mode'];
+    const dni = this.auth.getUsuario()?.dni;
+    if (mode === 'inscriptos' && (dni == null || String(dni).trim() === '')) {
+      this.cargandoEventos = false;
+      this.errorEventos = 'No se pudo identificar tu usuario. Volvé a iniciar sesión.';
+      this.cdr.markForCheck();
+      return;
+    }
+    const consulta = mode === 'inscriptos'
+      ? this.eventServ.getEventosDelUsuario(String(dni).trim())
+      : this.eventServ.getEventos();
+    consulta.subscribe({
+      next: (eventos) => {
+        this.eventos = eventos ?? [];
+        this.cargandoEventos = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.cargandoEventos = false;
+        this.errorEventos = 'No se pudieron cargar tus eventos. Intentá nuevamente.';
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   cargarPerfiles(): void {
