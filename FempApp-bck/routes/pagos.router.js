@@ -260,8 +260,28 @@ router.post(
   '/webhook',
   wrap(async (req, res) => {
     mpConfigurado();
-    if (!R.firmaValida(req.query, req.headers, process.env.MP_WEBHOOK_SECRET))
+    if (!R.firmaValida(req.query, req.headers, process.env.MP_WEBHOOK_SECRET)) {
+      const signature = String(req.headers['x-signature'] || '');
+      const parts = Object.fromEntries(
+        signature.split(',').map((item) => item.trim().split('='))
+      );
+
+      console.warn('[MP_WEBHOOK_FIRMA_RECHAZADA]', {
+        tieneSecreto: Boolean(process.env.MP_WEBHOOK_SECRET),
+        tieneFirma: Boolean(signature),
+        tieneRequestId: Boolean(req.headers['x-request-id']),
+        tieneDataIdEnQuery: Boolean(req.query['data.id']),
+        tipoDataIdEnQuery: typeof req.query['data.id'],
+        tieneDataIdAnidado: Boolean(req.query.data?.id),
+        tieneDataIdEnBody: Boolean(req.body?.data?.id),
+        tieneIdIPN: Boolean(req.query.id),
+        tieneTopicIPN: Boolean(req.query.topic),
+        timestampValido: /^\d+$/.test(parts.ts || ''),
+        formatoFirmaValido: /^[a-f0-9]{64}$/i.test(parts.v1 || '')
+      });
+
       R.fail(401, 'Firma inválida.');
+    }
     if ((req.query.type || req.body?.type) !== 'payment')
       return res.sendStatus(200);
     const paymentId = R.id(req.query['data.id']);
