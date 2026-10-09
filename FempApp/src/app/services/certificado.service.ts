@@ -52,21 +52,23 @@ export class CertificadoService {
     });
     const plantilla = await this.cargarPlantilla();
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    await this.registrarFuentes(doc);
     const ancho = doc.internal.pageSize.getWidth();
     doc.addImage(plantilla, 'JPEG', 0, 0, ancho, doc.internal.pageSize.getHeight());
     const x = 58, anchoTexto = ancho - x * 2;
     doc.setTextColor('#111111');
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('CertificadoSans', 'normal');
+    doc.setCharSpace(0);
     doc.setFontSize(11);
     doc.text(`Mendoza, ${fechaEmision}`, ancho - x, 119, { align: 'right' });
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('CertificadoSans', 'bold');
     doc.text('Ref.: JUSTIFICACIÓN – LEY 20.596', ancho - x, 151, { align: 'right' });
     const parrafos = [
       `Por medio de la presente se certifica que el/la deportista ${limpiar(usuario.nombre)}, DNI N.º ${limpiar(usuario.dni)}, perteneciente al club ${limpiar(usuario.club)}, participará del Evento Torneo ${limpiar(evento.titulo)}, a realizarse ${periodo}, en ${limpiar(evento.lugar)}, en carácter de atleta.`,
       'Se extiende la presente nota para ser presentada ante las autoridades que correspondan, a fin de solicitar la justificación y el no cómputo de inasistencias conforme a lo establecido en la Ley del Deporte N.º 20.596, en virtud de encontrarse afectada a la actividad deportiva mencionada.',
       'Sin otro particular, y sirviendo la presente de formal constancia, saludo a Uds. con atenta consideración.'
     ];
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('CertificadoSans', 'normal');
     let tam = 11;
     const preparar = () => { doc.setFontSize(tam); return parrafos.map(p => doc.splitTextToSize(p, anchoTexto) as string[]); };
     let bloques = preparar();
@@ -75,19 +77,43 @@ export class CertificadoService {
     if (altura() > 250) throw new Error('Los datos son demasiado extensos para la plantilla. Solicitá su revisión.');
     let y = 185;
     for (const lineas of bloques) {
-      lineas.forEach((linea, i) => {
-        const palabras = linea.split(' ');
-        if (i === lineas.length - 1 || palabras.length < 2) doc.text(linea, x, y);
-        else {
-          const espacio = (anchoTexto - palabras.reduce((s, p) => s + doc.getTextWidth(p), 0)) / (palabras.length - 1);
-          let cursor = x;
-          for (const palabra of palabras) { doc.text(palabra, cursor, y); cursor += doc.getTextWidth(palabra) + espacio; }
-        }
-        y += tam * 1.45;
+      // Un bloque por párrafo: jsPDF ajusta los espacios entre palabras y
+      // mantiene la última línea alineada a la izquierda.
+      doc.text(lineas, x, y, {
+        align: 'justify',
+        maxWidth: anchoTexto,
+        lineHeightFactor: 1.45,
+        charSpace: 0,
       });
-      y += 16;
+      y += lineas.length * tam * 1.45 + 16;
     }
     doc.save(opts?.filename ?? `cert_${limpiar(usuario.dni)}.pdf`);
+  }
+
+  private fuentes?: Promise<string[]>;
+
+  private async registrarFuentes(doc: jsPDF): Promise<void> {
+    const nombres = ['DejaVuSans.ttf', 'DejaVuSans-Bold.ttf'];
+    if (!this.fuentes) {
+      this.fuentes = Promise.all(nombres.map(async nombre => {
+        const respuesta = await fetch('assets/certificate/fonts/' + nombre);
+        if (!respuesta.ok) throw new Error('No se pudo cargar la tipografía del certificado. Intentá nuevamente.');
+        const bytes = new Uint8Array(await respuesta.arrayBuffer());
+        let binario = '';
+        for (let inicio = 0; inicio < bytes.length; inicio += 8192) {
+          binario += String.fromCharCode(...bytes.subarray(inicio, inicio + 8192));
+        }
+        return btoa(binario);
+      })).catch(error => {
+        this.fuentes = undefined;
+        throw error;
+      });
+    }
+    const fuentes = await this.fuentes;
+    nombres.forEach((nombre, i) => {
+      doc.addFileToVFS(nombre, fuentes[i]);
+      doc.addFont(nombre, 'CertificadoSans', i === 0 ? 'normal' : 'bold');
+    });
   }
 
   private cargarPlantilla(): Promise<HTMLImageElement> {

@@ -237,6 +237,15 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
       if (typeof r.init_point !== 'string' || !r.init_point.startsWith('https://')) {
         throw new Error('Respuesta de checkout inválida');
       }
+      // Contexto de navegación; nunca se usa para dar un pago por aprobado.
+      if (r.id && this.eventoId) {
+        try {
+          sessionStorage.setItem('fempa.checkout.' + String(r.id), JSON.stringify({
+            eventoId: this.eventoId,
+            usuarioId: this.auth.getUsuario()?.id,
+          }));
+        } catch { /* Si el navegador bloquea el almacenamiento, vuelve a Mis eventos. */ }
+      }
       window.location.assign(r.init_point);
     } catch (e: any) {
       this.error = e.error?.error || 'No se pudo abrir el pago.';

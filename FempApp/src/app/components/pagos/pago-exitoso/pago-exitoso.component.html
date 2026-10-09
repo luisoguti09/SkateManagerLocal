@@ -3,7 +3,7 @@
   <div class="indicador" [class.acreditado]="validado" aria-hidden="true">{{ validado ? '✓' : '…' }}</div>
   <h1 id="titulo-pago">{{ validado ? '¡Tu pago fue acreditado!' : 'Verificación del pago' }}</h1>
   <p *ngIf="cargando" role="status">Estamos consultando tu pago. Esperá un momento…</p>
-  <p *ngIf="validado" role="status">Tu pago está confirmado. Te llevamos a Mis eventos.</p>
+  <p *ngIf="validado" role="status">Tu pago está confirmado. {{ eventoDestino ? 'Te llevamos al evento para consultar tu inscripción y descargar el certificado.' : 'Te llevamos a Mis eventos.' }}</p>
   <p *ngIf="error" role="alert" class="error">{{ error }}</p>
   <p *ngIf="!cargando && !error && !validado" role="status">
     Todavía no pudimos confirmar la acreditación de tu inscripción.
@@ -13,6 +13,6 @@
     <button *ngIf="!validado" mat-stroked-button (click)="verificar()" [disabled]="cargando || !paymentId">
       Actualizar estado
     </button>
-    <button mat-flat-button color="primary" (click)="volver()">Ir a Mis eventos</button>
+    <button mat-flat-button color="primary" (click)="volver()">{{ validado && eventoDestino ? 'Ir al evento' : 'Ir a Mis eventos' }}</button>
   </div>
 </section>

@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { timeout } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PagosService } from '../../../services/pagos.service';
+import { AuthService } from '../../../services/auth.service';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 @Component({
@@ -16,6 +17,8 @@ export class PagoExitosoComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private pagos = inject(PagosService);
+  private auth = inject(AuthService);
+  eventoDestino: number | null = null;
   private destroyRef = inject(DestroyRef);
   private redireccion?: ReturnType<typeof setTimeout>;
   paymentId = '';
@@ -51,6 +54,7 @@ export class PagoExitosoComponent implements OnInit {
           d.status === 'approved' && d.estadoConciliacion === 'ok';
         this.cargando = false;
         if (this.validado) {
+          this.eventoDestino = this.recuperarEvento();
           this.redireccion = setTimeout(() => this.volver(), 1800);
         }
       },
@@ -61,8 +65,23 @@ export class PagoExitosoComponent implements OnInit {
       },
     });
   }
+  private recuperarEvento(): number | null {
+    const preferenceId = this.route.snapshot.queryParamMap.get('preference_id');
+    if (!preferenceId) return null;
+    try {
+      const contexto = JSON.parse(sessionStorage.getItem('fempa.checkout.' + preferenceId) || 'null');
+      const usuarioId = this.auth.getUsuario()?.id;
+      const eventoId = Number(contexto?.eventoId);
+      if (usuarioId != null && String(contexto?.usuarioId) === String(usuarioId) &&
+          Number.isSafeInteger(eventoId) && eventoId > 0) return eventoId;
+    } catch { /* Contexto ausente o inválido: usar Mis eventos. */ }
+    return null;
+  }
   volver() {
     clearTimeout(this.redireccion);
-    void this.router.navigate(['/dashboard-deport/mis-eventos'], { replaceUrl: true });
+    const destino = this.validado && this.eventoDestino
+      ? ['/evento-detail', this.eventoDestino]
+      : ['/dashboard-deport/mis-eventos'];
+    void this.router.navigate(destino, { replaceUrl: true });
   }
 }
