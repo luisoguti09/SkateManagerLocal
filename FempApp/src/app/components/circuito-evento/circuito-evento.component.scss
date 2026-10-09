@@ -108,3 +108,7 @@ a {
 .circuito .perfil strong { display: block; font-size: 20px; }
 .circuito .perfil span span { display: block; }
 .circuito .perfil:focus-within { outline: 3px solid #ffda72; outline-offset: 2px; }
+
+.resumen-pago { margin-top: 24px; padding: 20px; border: 1px solid #a5c8f5; border-radius: 12px; }
+.resumen-pago.pagado { background: #075943; border-color: #8ae4bc; }
+.estado-pago { font-weight: 700; font-size: 1.15rem; }

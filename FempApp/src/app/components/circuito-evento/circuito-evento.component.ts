@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnInit, inject } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -60,6 +60,31 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
         Authorization: `Bearer ${this.auth.getToken() || ''}`,
       }),
     };
+  }
+  private readonly moneda = new Intl.NumberFormat('es-AR', {
+    style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 2,
+  });
+  formatoImporte(valor: unknown): string {
+    if (valor === null || valor === undefined || valor === '') return '—';
+    const numero = Number(valor);
+    return Number.isFinite(numero) ? this.moneda.format(numero) : '—';
+  }
+  get pagado(): boolean { return this.data?.cargo?.estado === 'pagado'; }
+  get puedePagar(): boolean {
+    return this.data?.etapa === 'pago' &&
+      ['adeudado', 'pendiente'].includes(this.data?.cargo?.estado);
+  }
+  estadoCargo(estado: string): string {
+    return ({
+      pagado: 'Pagado', adeudado: 'Adeudado',
+      pendiente: 'Pendiente de acreditación', sin_cargo: 'Sin cargo',
+      requiere_revision: 'En revisión',
+    } as Record<string, string>)[estado] || estado;
+  }
+  @HostListener('window:focus')
+  alRecuperarFoco(): void {
+    if (this.rol === 'deportista' && this.eventoId && !this.ocupado &&
+        (!this.editable || this.yaInscripto)) void this.cargar();
   }
   get yaInscripto(): boolean { return !!this.data?.inscripciones?.length; }
   get editable() {
@@ -198,6 +223,7 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
     );
   }
   async pagar() {
+    if (this.ocupado || !this.puedePagar) return;
     this.ocupado = true;
     this.error = '';
     try {
@@ -208,6 +234,9 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
           this.options,
         ),
       );
+      if (typeof r.init_point !== 'string' || !r.init_point.startsWith('https://')) {
+        throw new Error('Respuesta de checkout inválida');
+      }
       window.location.assign(r.init_point);
     } catch (e: any) {
       this.error = e.error?.error || 'No se pudo abrir el pago.';

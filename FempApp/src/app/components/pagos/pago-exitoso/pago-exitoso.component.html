@@ -1,11 +1,18 @@
-<div class="wrap">
-  <h2>{{ validado ? 'Pago acreditado' : 'Verificación del pago' }}</h2>
-  <p *ngIf="cargando" role="status">Consultando el estado del pago…</p>
-  <p *ngIf="error" role="alert">{{ error }}</p>
-  <p *ngIf="!cargando && !error && !validado">
-    El pago todavía no figura conciliado. Estado informado: {{ estado }}.
+<section class="wrap" aria-labelledby="titulo-pago" [attr.aria-busy]="cargando">
+  <span class="marca">FEMPA · Inscripciones</span>
+  <div class="indicador" [class.acreditado]="validado" aria-hidden="true">{{ validado ? '✓' : '…' }}</div>
+  <h1 id="titulo-pago">{{ validado ? '¡Tu pago fue acreditado!' : 'Verificación del pago' }}</h1>
+  <p *ngIf="cargando" role="status">Estamos consultando tu pago. Esperá un momento…</p>
+  <p *ngIf="validado" role="status">Tu pago está confirmado. Te llevamos a Mis eventos.</p>
+  <p *ngIf="error" role="alert" class="error">{{ error }}</p>
+  <p *ngIf="!cargando && !error && !validado" role="status">
+    Todavía no pudimos confirmar la acreditación de tu inscripción.
+    Si ya pagaste, no repitas el pago: actualizá el estado en unos momentos.
   </p>
-  <button mat-stroked-button (click)="verificar()" [disabled]="cargando">
-    Actualizar estado</button
-  ><button mat-stroked-button (click)="volver()">Volver a mis eventos</button>
-</div>
+  <div class="acciones">
+    <button *ngIf="!validado" mat-stroked-button (click)="verificar()" [disabled]="cargando || !paymentId">
+      Actualizar estado
+    </button>
+    <button mat-flat-button color="primary" (click)="volver()">Ir a Mis eventos</button>
+  </div>
+</section>

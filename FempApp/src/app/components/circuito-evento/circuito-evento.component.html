@@ -37,6 +37,8 @@
     <button (click)="cargar()" [disabled]="ocupado">Reintentar consulta</button>
   </p>
   <p *ngIf="mensaje" role="status">{{ mensaje }}</p>
+  <button *ngIf="rol === 'deportista' && eventoId" type="button"
+    (click)="cargar()" [disabled]="ocupado">Actualizar estado de inscripción</button>
   <ng-container *ngIf="data"
     ><h3>{{ etiquetas[data.etapa] }}</h3>
     <p *ngIf="data.evento.inscripcionRequierePago === false">Evento gratuito</p>
@@ -87,17 +89,18 @@
       <button (click)="guardar()" [disabled]="ocupado || !editable || (yaInscripto && data.etapa !== 'abm')">
         {{ yaInscripto ? (data.etapa === 'abm' ? 'Editar inscripción' : 'Ya estás inscripto/a') : 'Inscribirme' }}
       </button>
-      <div *ngIf="data.cargo as c">
+      <div *ngIf="data.cargo as c" class="resumen-pago" [class.pagado]="pagado">
         <h3>Mi inscripción confirmada</h3>
-        <p>Total de la inscripción: $ {{ c.montoTotal }}</p>
-        <p>Estado: {{ c.estado }} {{ c.vencido ? '· Plazo vencido' : '' }}</p>
+        <p>Total de la inscripción: {{ formatoImporte(c.montoTotal) }}</p>
+        <p class="estado-pago" role="status">
+          Estado: {{ estadoCargo(c.estado) }} {{ c.vencido && !pagado ? '· Plazo vencido' : '' }}
+        </p>
+        <p *ngIf="pagado">¡Tu pago fue acreditado! Tu inscripción ya figura pagada.</p>
+        <p *ngIf="c.estado === 'pendiente'">Si ya pagaste, actualizá el estado antes de iniciar otro pago.</p>
         <button
+          *ngIf="['adeudado', 'pendiente'].includes(c.estado)"
           (click)="pagar()"
-          [disabled]="
-            ocupado ||
-            data.etapa !== 'pago' ||
-            !['adeudado', 'pendiente'].includes(c.estado)
-          "
+          [disabled]="ocupado || !puedePagar"
         >
           Pagar inscripción
         </button>
