@@ -72,6 +72,7 @@ function model(name) {
       )
         throw Error('unique cargo');
       const row = instance({
+        ...(name === 'Usuario' ? { sessionVersion: 0 } : {}),
         id: tables[name].length + 1,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -122,32 +123,28 @@ db.sequelize = {
   },
 };
 require.cache[require.resolve('../models')] = { exports: db };
+require.cache[require.resolve('../models/usuario.model')] = { exports: db.Usuario };
 let preferenceCalls = 0;
 let latestPayment;
 require.cache[require.resolve('mercadopago')] = {
   exports: {
-    configure() {},
-    preferences: {
-      async create(pref) {
+    MercadoPagoConfig: class { constructor(config) { assert.equal(config.accessToken, 'TEST-only'); } },
+    Preference: class {
+      async create({ body: pref }) {
         preferenceCalls++;
         assert.equal(pref.items[0].quantity, 1);
         assert.equal(pref.items[0].unit_price, 65000);
         assert.ok(!pref.items[0].description.includes('gestión'));
-        return {
-          body: {
-            id: 'pref1',
-            init_point: 'https://test.invalid/checkout',
-            ...pref,
-          },
-        };
-      },
+        return { id: 'pref1', init_point: 'https://test.invalid/checkout', ...pref };
+      }
     },
-    payment: {
-      async get() {
-        return { body: latestPayment };
-      },
-    },
-  },
+    Payment: class {
+      async get({ id }) {
+        assert.equal(id, 123);
+        return latestPayment;
+      }
+    }
+  }
 };
 const app = express();
 app.use(express.json());

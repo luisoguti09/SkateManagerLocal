@@ -1,53 +1,18 @@
 import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
+import { map, catchError, of } from 'rxjs';
 import { AuthService } from '../services/auth.service';
-
-function destinoPorRol(rol: string | undefined): string {
-  const destinos: Record<string, string> = {
-    administrador: '/dashboard-admin',
-    tecnico: '/dashboard-tecnico',
-    deportista: '/dashboard-deport',
-    tesoreria: '/dashboard-tesoreria'
-  };
-  return rol ? destinos[rol] ?? '/login' : '/login';
-}
-
-export const authGuard: CanActivateFn = (route, state) => {
-  const authService = inject(AuthService);
-  const router = inject(Router);
-
-  const usuario = authService.getUsuario();
-
-
-  if (!authService.isLoggedIn() || !usuario) {
-    return router.createUrlTree(['/login']);
-  }
-
-  authService.loggedUser = usuario;
-
-  const rolesPermitidos = route.data?.['roles'] as string[] | undefined;
-
-  if (!rolesPermitidos || rolesPermitidos.length === 0) {
+export const authGuard: CanActivateFn = route => {
+  const auth=inject(AuthService),router=inject(Router);
+  if(!auth.isLoggedIn())return router.createUrlTree(['/login']);
+  return auth.refreshSession().pipe(map(res=>{
+    if(res.usuario.estado!=='aprobado')return router.createUrlTree(['/mi-solicitud']);
+    const roles=route.data?.['roles'] as string[] | undefined;
+    if(roles?.length && !roles.includes(res.usuario.rol))return router.createUrlTree(['/mi-solicitud']);
     return true;
-  }
-
-  const rolUsuario = authService.getRolNombre() ?? '';
-
-  const autorizado = rolesPermitidos
-    .map(r => String(r).trim().toLowerCase())
-    .includes(rolUsuario);
-
-  if (autorizado) {
-    return true;
-  }
-
-  console.warn('[authGuard] Rol no autorizado:', {
-    url: state.url,
-    rolUsuario,
-    rolesPermitidos
-  });
-
-  return router.createUrlTree([
-    destinoPorRol(authService.getRolNombre())
-  ]);
+  }),catchError(()=>of(router.createUrlTree(['/login']))));
+};
+export const sessionGuard: CanActivateFn = () => {
+  const auth=inject(AuthService),router=inject(Router);
+  return auth.isLoggedIn() || router.createUrlTree(['/login']);
 };

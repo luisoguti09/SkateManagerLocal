@@ -58,7 +58,7 @@ export class RegistroComponent implements OnDestroy {
       nombre: ['', Validators.required],
       edad: [null, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', Validators.required],
+      password: ['', [Validators.required, Validators.minLength(12)]],
       confirmPass: ['', Validators.required],
       dni: ['', Validators.required],
       rolId: [null, Validators.required],
@@ -244,6 +244,7 @@ export class RegistroComponent implements OnDestroy {
       this.errorMsg = 'Revisá los campos obligatorios, el email, la edad y el rol.';
       return;
     }
+    if (new TextEncoder().encode(raw.password || '').length > 72) { this.errorMsg = 'La contraseña no debe superar 72 bytes.'; return; }
     if (raw.password !== raw.confirmPass) {
       this.errorMsg = 'Las contraseñas no coinciden.';
       return;
@@ -269,8 +270,8 @@ export class RegistroComponent implements OnDestroy {
     this.regServ.guardar(payload).pipe(takeUntil(this.destroy$),
       finalize(() => this.cargando = false)).subscribe({
         next: () => {
-          this.successMsg = 'Cuenta creada. Si tu rol requiere aprobación, la Federación deberá habilitarla antes de que puedas ingresar.';
-          this.redirectTimer = setTimeout(() => this.router.navigate(['/login']), 4000);
+          this.successMsg = 'Solicitud recibida. Ingresá para completar tus datos y cargar los documentos. La Federación debe aprobarte para habilitar inscripciones y pagos.';
+          this.redirectTimer = setTimeout(() => this.router.navigate(['/login'], { queryParams: { estado: 'pendiente' } }), 2500);
         },
         error: e => this.errorMsg = e?.error?.message || e?.error?.error || 'Ocurrió un error al registrar. Podés reintentar.'
       });

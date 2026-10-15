@@ -437,6 +437,8 @@ export class MyProfileComponent implements OnInit {
           });
         }
 
+        // Los datos guardados de la cuenta prevalecen sobre la consulta pública del padrón.
+        this.aplicarDatosCuenta();
         // 4) Aseguramos render del form
         this.form.updateValueAndValidity({ emitEvent: false });
       },
@@ -448,9 +450,20 @@ export class MyProfileComponent implements OnInit {
           dni,
           nombre: this.usuario?.nombre ?? ''
         });
+        this.aplicarDatosCuenta();
       }
     });
   }
+
+  private aplicarDatosCuenta(): void {
+    for (const field of ['club', 'categoria', 'nivel', 'domicilio', 'telefono',
+      'fechaNacimiento', 'instagram', 'facebook', 'tiktok']) {
+      if (this.usuario?.[field] != null) {
+        this.form.patchValue({ [field]: this.usuario[field] });
+      }
+    }
+  }
+
   guardar(): void {
     const payload: PerfilEditable = {
       dni: this.usuario.dni,
@@ -467,6 +480,9 @@ export class MyProfileComponent implements OnInit {
 
     this.authService.updatePerfilUsuario(payload).subscribe({
       next: () => {
+        // Mantener el formulario y la sesión local alineados con los datos guardados.
+        this.usuario = { ...this.usuario, ...payload };
+        this.authService.setUsuario(this.usuario);
         this.snackBar.open('Datos actualizados correctamente', 'Cerrar', {
           duration: 3000,
           horizontalPosition: 'right',

@@ -1,8 +1,8 @@
-
 const express = require('express');
 const router = express.Router();
 const Evento = require('../models/evento.model');
-const { authMiddleware } = require('../middleware/auth.middleware');
+const { verifyToken, requireRole } = require('../middleware/auth.middleware');
+const {limite}=require('../middleware/cuenta-limites');
 const Padron = require('../models/padron.model');
 const multer = require('multer');
 const path = require('path');
@@ -22,7 +22,7 @@ function formatearDniConPuntos(value) {
 }
 
 // Obtener todos los patinadores registrados (authMiddleware)
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, requireRole('administrador','tecnico'), async (req, res) => {
   try {
     const padron = await Padron.findAll();
     res.json(padron);
@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
   }
 });
 // Obtener todos los patinadores registrados (authMiddleware)
-router.get('/:dni', async (req, res) => {
+router.get('/:dni', limite('padron',30), async (req, res) => {
   try {
     const dniLimpio = normalizarDni(req.params.dni);
     const dniConPuntos = formatearDniConPuntos(dniLimpio);
@@ -45,7 +45,7 @@ router.get('/:dni', async (req, res) => {
       }
     });
 
-    res.json(padron || null);
+    res.json(padron ? { apellidoYNombre:padron.apellidoYNombre, club:padron.club, categoria:padron.categoria } : null);
   } catch (error) {
     console.error('Error buscando DNI en padrón:', error);
     res.status(500).json({ error: 'No se encuentra el DNI en la base de datos!' });
@@ -53,7 +53,7 @@ router.get('/:dni', async (req, res) => {
 });
 
 // Crear un nuevo registro de deportista
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, requireRole('administrador'), async (req, res) => {
   try {
     const {
       licNacionalNumero, documentoN, apellidoYNombre, fechadeNacimiento, sexo,
@@ -75,7 +75,7 @@ router.post('/', async (req, res) => {
  * Massive insert for padron model
  */
 // Crear un nuevo registro de deportista
-router.post('/massive-insert', async (req, res) => {
+router.post('/massive-insert', verifyToken, requireRole('administrador'), async (req, res) => {
   try {
     /*const { 
         licNacionalNumero, documentoN, apellidoYNombre, fechadeNacimiento, sexo, 
@@ -84,7 +84,9 @@ router.post('/massive-insert', async (req, res) => {
     } = req.body;*/
 
     const fullPadron = req.body;
-    fullPadron.forEach(async (p) => {
+    if(!Array.isArray(fullPadron) || fullPadron.length>1000)return res.status(400).json({error:'Enviá hasta 1000 filas.'});
+    await Padron.sequelize.transaction(async transaction=>{
+    for(const p of fullPadron) {
       const {
         licNacionalNumero, documentoN, apellidoYNombre, fechadeNacimiento, sexo,
         nacionalidad, club, categoria, funcion, domicilio, cP, localidad,
@@ -94,8 +96,9 @@ router.post('/massive-insert', async (req, res) => {
         licNacionalNumero, documentoN, apellidoYNombre, fechadeNacimiento, sexo,
         nacionalidad, club, categoria, funcion, domicilio, cP, localidad,
         provincia, telefono, tipoLicencia, federeada
-      });
-    })
+      },{transaction});
+    }
+    });
 
     const finalize = { "success": true };
     res.status(201).json(finalize);
@@ -118,7 +121,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Subir foto de perfil
-router.post('/:id/upload', upload.single('fotoPerfil'), (req, res) => {
+router.post('/:id/upload', verifyToken, requireRole('administrador'), upload.single('fotoPerfil'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No se envió ninguna imagen' });
   }
@@ -128,7 +131,7 @@ router.post('/:id/upload', upload.single('fotoPerfil'), (req, res) => {
 });
 
 // Obtener foto de perfil
-router.get('/:id/profile-picture', (req, res) => {
+router.get('/:id/profile-picture', verifyToken, requireRole('administrador'), (req, res) => {
   const filename = `patinador_${req.params.id}`;
   const dir = path.join(__dirname, '../uploads');
   const files = fs.readdirSync(dir);
@@ -142,7 +145,7 @@ router.get('/:id/profile-picture', (req, res) => {
 });
 
 // Eliminar foto de perfil
-router.delete('/:id/profile-picture', (req, res) => {
+router.delete('/:id/profile-picture', verifyToken, requireRole('administrador'), (req, res) => {
   const filename = `patinador_${req.params.id}`;
   const dir = path.join(__dirname, '../uploads');
   const files = fs.readdirSync(dir);

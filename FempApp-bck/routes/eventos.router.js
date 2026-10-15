@@ -11,14 +11,6 @@ const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 const { sesion, roles, R, db } = require('../services/circuito');
 router.use(require('./circuito.router'));
 
-//const authOptional = (req, res, next) => next();
-
-const authOptional = (req, res, next) => {
-  const h = req.headers.authorization || '';
-  if (h.startsWith('Bearer ')) return verifyToken(req, res, next);
-  return next();
-};
-
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 
@@ -50,7 +42,8 @@ function mapEventoPayload(body = {}) {
 function mapEventoResponse(evento) {
   if (!evento) return null;
 
-  const plain = evento.toJSON ? evento.toJSON() : evento;
+  const plain = { ...(evento.toJSON ? evento.toJSON() : evento) };
+  delete plain.qrEventCode;
 
   return {
     ...plain,
@@ -211,7 +204,7 @@ router.put(
 );
 
 // Recibir los eventos de un usuario (patinador)
-router.get('/usuarios/:usuarioId/eventos', async (req, res) => {
+router.get('/usuarios/:usuarioId/eventos', verifyToken, (req,res,next)=>Number(req.params.usuarioId)===req.auth.id || req.auth.rol==='administrador'?next():res.status(403).json({error:'No autorizado.'}), async (req, res) => {
   const { usuarioId } = req.params;
 
   try {
@@ -244,7 +237,7 @@ router.get(
   async (req, res) => {
     try {
       const { eventoId } = req.params;
-      const evento = await Evento.findByPk(eventoId, { include: Usuario });
+      const evento = await Evento.findByPk(eventoId, { include: {model:Usuario,attributes:['id','nombre','dni','club','categoria','estado']} });
       if (!evento)
         return res.status(404).json({ error: 'Evento no encontrado' });
       res.json(evento.Usuarios);
@@ -257,7 +250,7 @@ router.get(
 );
 
 // GET /eventos/:eventId/qr.png
-router.get('/:eventId/qr.png', authOptional, async (req, res) => {
+router.get('/:eventId/qr.png', verifyToken, requireRole('administrador','tecnico'), async (req, res) => {
   const id = Number(req.params.eventId);
   const ev = await Evento.findByPk(id);
   if (!ev) return res.status(404).send('Evento no encontrado');
@@ -284,7 +277,7 @@ router.get('/:eventId/qr.png', authOptional, async (req, res) => {
 });
 
 // POST /eventos/:eventId/qr
-router.post('/:eventId/qr', authOptional, async (req, res) => {
+router.post('/:eventId/qr', verifyToken, requireRole('administrador'), async (req, res) => {
   const id = Number(req.params.eventId);
   const ev = await Evento.findByPk(id);
   if (!ev) return res.status(404).send('Evento no encontrado');
@@ -295,7 +288,9 @@ router.post('/:eventId/qr', authOptional, async (req, res) => {
 
 // helpers
 function haversineMeters(lat1, lon1, lat2, lon2) {
-  /* ... */
+  const rad=x=>x*Math.PI/180;
+  const a=Math.sin(rad(lat2-lat1)/2)**2+Math.cos(rad(lat1))*Math.cos(rad(lat2))*Math.sin(rad(lon2-lon1)/2)**2;
+  return 6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(Math.max(0,1-a)));
 }
 function inWindow(ev) {
   if (!ev.checkinOpenAt || !ev.checkinCloseAt) return true;
@@ -306,10 +301,10 @@ function inWindow(ev) {
 }
 
 // POST /eventos/:eventId/checkin
-router.post('/:eventId/checkin', authOptional, async (req, res) => {
+router.post('/:eventId/checkin', verifyToken, async (req, res) => {
   const id = Number(req.params.eventId);
   const token = String(req.body?.token || '');
-  const userId = req.user?.id || req.body?.userId;
+  const userId = req.auth.id;
   if (!userId) {
     return res.status(401).json({ error: 'Usuario no autenticado' });
   }
@@ -317,12 +312,7 @@ router.post('/:eventId/checkin', authOptional, async (req, res) => {
   const ev = await Evento.findByPk(id);
   if (!ev) return res.status(404).json({ error: 'Evento inexistente' });
 
-  console.log('CHECKIN DEBUG →', {
-    eventId: id,
-    tokenFromBody: token,
-    tokenInDb: ev.qrEventCode,
-    equals: token === ev.qrEventCode,
-  });
+
 
   if (!token || token !== ev.qrEventCode)
     return res.status(400).json({ error: 'QR inválido' });

@@ -11,27 +11,31 @@ import { DashboardTecnicoComponent } from './dashboard-tecnico/dashboard-tecnico
 import { DialogsComponent } from './components/dialogs/dialogs.component';
 import { UsuariosComponent } from './components/usuarios/usuarios.component';
 import { DocumentacionComponent } from './components/documentacion/documentacion.component';
-import { authGuard } from './guards/auth.guard';
+import { authGuard, sessionGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
 import { EventEditorComponent } from './admin/eventos/event-editor/event-editor.component';
 import { EventsListComponent } from './admin/eventos/events-list/events-list.component';
 import { EventQrComponent } from './admin/eventos/event-qr/event-qr.component';
 
 export const routes: Routes = [
+  { path: 'mi-solicitud', canActivate: [sessionGuard], loadComponent: () => import('./components/solicitud/solicitud.component').then(m => m.SolicitudComponent) },
+  { path: 'recuperar-cuenta', loadComponent: () => import('./components/recuperar-cuenta/recuperar-cuenta.component').then(m => m.RecuperarCuentaComponent) },
   { path: 'login', component: LoginComponent }, // canActivate: [noAuthGuard] },
   { path: 'registro', component: RegistroComponent }, // canActivate: [noAuthGuard] },
-  { path: 'registroFast', component: RegistroFastComponent }, // canActivate: [noAuthGuard] },
+  { path: 'registroFast', redirectTo: 'registro', pathMatch: 'full' }, // canActivate: [noAuthGuard] },
 
-  { path: 'deportist', component: DeportistComponent },
-  { path: 'evento-detail/:evento', component: EventoDetailComponent },
-  { path: 'elementos/:id', component: ElementosDetailComponent },
-  { path: 'dialogs', component: DialogsComponent },
-  { path: 'usuarios', component: UsuariosComponent },
-  { path: 'documentacion', component: DocumentacionComponent },
+  { path: 'deportist', component: DeportistComponent, canActivate: [authGuard] },
+  { path: 'evento-detail/:evento', component: EventoDetailComponent, canActivate: [authGuard] },
+  { path: 'elementos/:id', component: ElementosDetailComponent, canActivate: [authGuard] },
+  { path: 'dialogs', component: DialogsComponent, canActivate: [authGuard] },
+  { path: 'usuarios', component: UsuariosComponent, canActivate: [authGuard], data: { roles: ['administrador'] } },
+  { path: 'documentacion', component: DocumentacionComponent, canActivate: [authGuard] },
   { path: 'test', component: LoginComponent },
   {
     path: 'dashboard-deport',
     component: DashboardDeportComponent,
+    canActivate: [authGuard],
+    canActivateChild: [authGuard],
     children: [
       {
         path: 'mis-datos',
@@ -72,7 +76,7 @@ export const routes: Routes = [
       ),
   },
   { path: 'dashboard-admin', redirectTo: 'admin', pathMatch: 'full' }, // canActivate: [authGuard] },
-  { path: 'dashboard-tecnico', component: DashboardTecnicoComponent }, // canActivate: [authGuard] },
+  { path: 'dashboard-tecnico', component: DashboardTecnicoComponent, canActivate: [authGuard], data: { roles: ['tecnico', 'administrador'] } }, // canActivate: [authGuard] },
   {
     path: 'dashboard-prof',
     redirectTo: 'dashboard-tecnico',
@@ -92,7 +96,8 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
-    canActivate: [adminGuard],
+    canActivate: [authGuard, adminGuard],
+    canActivateChild: [authGuard],
     loadComponent: () =>
       import('./admin/admin-shell/admin-shell.component').then(
         (c) => c.AdminShellComponent,
@@ -102,15 +107,15 @@ export const routes: Routes = [
       {
         path: 'usuarios/pendientes',
         loadComponent: () =>
-          import('./admin/users/pending-users/pending-users.component').then(
-            (c) => c.PendingUsersComponent,
+          import('./admin/users/revision-cuentas/revision-cuentas.component').then(
+            (c) => c.RevisionCuentasComponent,
           ),
       },
       {
         path: 'usuarios/todos',
         loadComponent: () =>
-          import('./admin/users/all-users/all-users.component').then(
-            (c) => c.AllUsersComponent,
+          import('./admin/users/revision-cuentas/revision-cuentas.component').then(
+            (c) => c.RevisionCuentasComponent,
           ),
       },
       {
@@ -124,6 +129,8 @@ export const routes: Routes = [
   },
   {
     path: 'asistencias',
+    canActivate: [authGuard],
+    canActivateChild: [authGuard],
     children: [
       {
         path: '',
@@ -146,6 +153,7 @@ export const routes: Routes = [
   // ...otras
   {
     path: 'eventos/:id/qr',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('../app/pages/evento-qr-page/evento-qr-page.component').then(
         (m) => m.EventoQrPageComponent,

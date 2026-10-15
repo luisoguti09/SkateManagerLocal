@@ -64,7 +64,7 @@ export class AuthService {
       tap((res) => {
         const rolId = res?.rolId || res?.usuario?.rolId;
 
-        if (res?.token && rolId && res?.usuario) {
+        if (res?.token && rolId && ['pendiente','requiere_correcciones','aprobado'].includes(res?.usuario?.estado) && this.tokenVigente(res.token)) {
           localStorage.setItem(this.tokenKey, res.token);
           localStorage.setItem(this.rolKey, String(rolId));
           localStorage.setItem('user_rol_nombre', res.usuario?.rol || '');
@@ -78,26 +78,34 @@ export class AuthService {
 
           this.loggedUser = usuarioNormalizado;
           this.setLoggedUser(this.normalizeFoto(usuarioNormalizado));
+        } else {
+          this.clearSession();
+          throw new Error('Respuesta de acceso inválida');
         }
       }),
       catchError(err => {
-        console.error('Error en login completo:', err);
-        console.error('Status:', err?.status);
-        console.error('Message:', err?.message);
-        console.error('URL:', err?.url);
-        console.error('Error body:', err?.error);
-
+        this.clearSession();
         return throwError(() => err);
       })
     );
   }
 
-  logout(): void {
+  refreshSession(): Observable<any> {
+    return this.http.get<any>(`${this.apiURL}/auth/me`, {headers: {Authorization: `Bearer ${this.getToken() || ''}`}}).pipe(
+      tap(res => this.setUsuario(res.usuario))
+    );
+  }
+
+  clearSession(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.rolKey);
     localStorage.removeItem('user_rol_nombre');
     this.setLoggedUser(null);
     localStorage.removeItem('usuarioId');
+  }
+
+  logout(): void {
+    this.clearSession();
     this.router.navigate(['/login']);
   }
 
@@ -139,12 +147,27 @@ export class AuthService {
   }
 
 
+  // Comprobación de vencimiento para la interfaz. La firma y el estado se validan en el servidor.
+  private tokenVigente(token: string): boolean {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return false;
+      const segment = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(segment.padEnd(Math.ceil(segment.length / 4) * 4, '=')));
+      return typeof payload.exp === 'number' && payload.exp * 1000 > Date.now();
+    } catch { return false; }
+  }
+
   isLoggedIn(): boolean {
-    return !!localStorage.getItem(this.tokenKey);
+    const token = localStorage.getItem(this.tokenKey);
+    const usuario = this.readUserFromStorage();
+    if (token && this.tokenVigente(token) && ['pendiente','requiere_correcciones','aprobado'].includes(usuario?.estado)) return true;
+    this.clearSession();
+    return false;
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    return this.isLoggedIn() ? localStorage.getItem(this.tokenKey) : null;
   }
 
   getRol(): string | null {
@@ -172,6 +195,7 @@ export class AuthService {
 
   // ¿tiene exactamente este rol?
   hasRole(role: RolNombre | string): boolean {
+    if(this.getUsuario()?.estado !== 'aprobado') return false;
     const current = this.getRolNombre();
     if (!current) return false;
     return current.toLowerCase() === String(role).toLowerCase();
@@ -179,6 +203,7 @@ export class AuthService {
 
   // ¿tiene cualquiera de estos roles?
   hasAnyRole(roles: (RolNombre | string)[]): boolean {
+    if(this.getUsuario()?.estado !== 'aprobado') return false;
     const current = this.getRolNombre();
     if (!current) return false;
     return roles.some(r => current.toLowerCase() === String(r).toLowerCase());

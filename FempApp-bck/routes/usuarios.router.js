@@ -4,11 +4,14 @@ const Usuario = require('../models/usuario.model');
 const Rol = require('../models/rol.model');
 const Evento = require('../models/evento.model');
 const multer = require('multer');
-const upload = require('../middleware/upload.middleware');
+
 const jwt = require('jsonwebtoken');
 const QRCode = require('qrcode');
 const { verifyToken, requireRole } = require('../middleware/auth.middleware');
-const authOptional = (req, res, next) => next();
+const {v4:uuidv4}=require('uuid');
+const C=require('../services/cuenta');
+const F=require('../services/cuenta-archivos');
+const {limite}=require('../middleware/cuenta-limites');
 
 const path = require('path');
 const fs = require('fs');
@@ -202,7 +205,11 @@ router.put('/:dni/perfil', verifyToken, async (req, res) => {
 
     if (Number(usuario.id) !== Number(req.auth.id))
       return res.status(403).json({ error: 'Solo podés editar tu perfil.' });
-    await usuario.update(datos);
+    const validados=C.R.perfil(datos);
+    await Usuario.sequelize.transaction(async t=>{
+      const locked=await Usuario.findByPk(usuario.id,{transaction:t,lock:t.LOCK.UPDATE});
+      await locked.update({...validados,revision:locked.revision+1},{transaction:t});
+    });
     res.status(200).json({ message: 'Datos actualizados correctamente' });
   } catch (error) {
     console.error(error);
@@ -210,58 +217,25 @@ router.put('/:dni/perfil', verifyToken, async (req, res) => {
   }
 });
 
-// === SUBIR foto de perfil ===
-router.post(
-  '/:dni/fotoPerfil',
-  upload.single('fotoPerfil'),
-  async (req, res) => {
-    try {
-      const { dni } = req.params;
-      const usuario = await Usuario.findOne({ where: { dni } });
-      if (!usuario)
-        return res.status(404).json({ error: 'Usuario no encontrado' });
 
-      // ✅ Guarda la ruta relativa en la BD
-      usuario.fotoPerfil = `uploads/usuarios/${req.file.filename}`;
-      await usuario.save();
-
-      // ✅ Devuelve la URL completa para el frontend
-      res.status(200).json({
-        message: 'Foto de perfil actualizada',
-        url: `${req.protocol}://${req.get('host')}/uploads/usuarios/${req.file.filename}`,
-      });
-    } catch (error) {
-      console.error('Error al subir foto de perfil:', error);
-      res.status(500).json({ error: 'Error al subir foto de perfil' });
-    }
-  },
-);
-
-// === ELIMINAR foto de perfil ===
-router.delete('/:dni/fotoPerfil', async (req, res) => {
-  try {
-    const { dni } = req.params;
-    const usuario = await Usuario.findOne({ where: { dni } });
-    if (!usuario || !usuario.fotoPerfil)
-      return res.status(404).json({ error: 'Foto no encontrada' });
-
-    // Borra archivo físico
-    const filePath = path.join(__dirname, '..', usuario.fotoPerfil);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-
-    usuario.fotoPerfil = null;
-    await usuario.save();
-
-    res.status(200).json({ message: 'Foto de perfil eliminada' });
-  } catch (error) {
-    console.error('Error al eliminar foto de perfil:', error);
-    res.status(500).json({ error: 'Error al eliminar foto de perfil' });
-  }
-});
-
+const propia=(req,res,next)=>String(req.params.dni).replace(/\D/g,'')===String(req.auth.dni).replace(/\D/g,'')?next():res.status(403).json({error:'Solo podés modificar tu perfil.'});
+router.get('/:dni/perfil',verifyToken,propia,C.wrap(async(req,res)=>res.json(C.R.safe(req.cuenta))));
+router.post('/:dni/fotoPerfil',verifyToken,propia,limite('foto',30,3600000,req=>req.auth.id),F.recibir,C.wrap(async(req,res)=>{
+  if(Object.keys(req.files || {}).some(k=>k!=='fotoPerfil'))C.R.fail(400,'Usá la sección Documentación para estos archivos.');
+  const files=await F.guardar(req.auth.id,req.files,req.auth.id);
+  const url=new URL(files.fotoPerfil,process.env.API_PUBLIC_URL+'/').href;
+  res.json({url});
+}));
+router.delete('/:dni/fotoPerfil',verifyToken,propia,C.wrap(async(req,res)=>{
+  let old;
+  await Usuario.sequelize.transaction(async t=>{
+    const u=await Usuario.findByPk(req.auth.id,{transaction:t,lock:t.LOCK.UPDATE});old=u.fotoPerfil;
+    await u.update({fotoPerfil:null,revision:u.revision+1},{transaction:t});
+  });await F.borrar(old,'fotoPerfil');res.json({message:'Foto eliminada.'});
+}));
 // Obteniene un usuario por DNI (retorna null si no existe)
 
-router.get('/dni/:dni', async (req, res) => {
+router.get('/dni/:dni', limite('dni',30), async (req, res) => {
   try {
     const dniLimpio = normalizarDni(req.params.dni);
     const dniConPuntos = formatearDniConPuntos(dniLimpio);
@@ -272,14 +246,14 @@ router.get('/dni/:dni', async (req, res) => {
       },
     });
 
-    return res.json(usuario || null);
+    return res.json(usuario ? { existe: true } : null);
   } catch (e) {
     console.error('Error /usuarios/dni/:dni', e);
     res.status(500).json({ error: 'Error consultando usuario por DNI' });
   }
 });
 
-router.get('/:dni/eventos', async (req, res) => {
+router.get('/:dni/eventos', verifyToken, propia, async (req, res) => {
   const { dni } = req.params;
 
   try {
@@ -367,143 +341,17 @@ router.get(
 
 router.post('/:id/solicitar-rol', verifyToken, async (req, res) => {
   const { id } = req.params;
-  const { rol } = req.body; // 'tecnico'|'deportista'
+  const { rol } = req.body;
+  if(!['tecnico','deportista','tesoreria'].includes(rol))return res.status(400).json({error:'Rol inválido.'});
   if (+id !== req.user.id)
     return res.status(403).json({ error: 'No autorizado' });
   const u = await Usuario.findByPk(id);
+  if(!u)return res.status(404).json({error:'Usuario no encontrado.'});
   u.rolSolicitado = rol;
   await u.save();
   res.json({ ok: true });
 });
 
-// === Aprobar usuario por ID ===
-
-router.patch(
-  '/:id/aprobar',
-  verifyToken,
-  requireRole('administrador'),
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { aprobar, rol } = req.body;
-
-      const usuario = await Usuario.findByPk(id);
-
-      if (!usuario) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-      }
-
-      if (Number(usuario.id) === Number(req.user.id) && aprobar === false) {
-        return res.status(400).json({
-          error: 'No podés bloquear tu propio usuario administrador',
-        });
-      }
-
-      if (aprobar) {
-        usuario.estado = 'aprobado';
-        usuario.aprobado = true;
-
-        if (rol) {
-          const rolNormalizado =
-            ROL_CANON[String(rol).trim().toLowerCase()] || rol;
-
-          if (
-            !['administrador', 'tecnico', 'deportista', 'tesoreria'].includes(
-              rolNormalizado,
-            )
-          ) {
-            return res.status(400).json({
-              error: 'Rol no válido para aprobación',
-              detalle: rol,
-            });
-          }
-
-          usuario.rol = rolNormalizado;
-        }
-      } else {
-        usuario.estado = 'bloqueado';
-        usuario.aprobado = false;
-      }
-
-      await usuario.save();
-
-      return res.status(200).json({
-        ok: true,
-        usuario: {
-          id: usuario.id,
-          dni: usuario.dni,
-          nombre: usuario.nombre,
-          email: usuario.email,
-          rol: usuario.rol,
-          rolId: usuario.rolId,
-          estado: usuario.estado,
-          aprobado: usuario.aprobado,
-        },
-      });
-    } catch (error) {
-      console.error('PATCH /usuarios/:id/aprobar error', error);
-      return res.status(500).json({
-        error: 'Error al actualizar aprobación del usuario',
-      });
-    }
-  },
-);
-
-// GET /eventos/:id/qr.png  => PNG del QR del evento (único)
-router.get('/:eventId/qr.png', authOptional, async (req, res) => {
-  const id = Number(req.params.eventId);
-  const ev = await Evento.findByPk(id);
-  if (!ev) return res.status(404).send('Evento no encontrado');
-
-  if (!ev.qrEventCode) {
-    ev.qrEventCode = uuidv4();
-    await ev.save();
-  }
-
-  const payload = `FEMPAPP://checkin?e=${id}&t=${ev.qrEventCode}`;
-  const png = await QRCode.toBuffer(payload, { width: 256 });
-  res.type('png').send(png);
-});
-
-// POST /eventos/:id/qr  => regenerar el token del evento
-router.post('/:eventId/qr', authOptional, async (req, res) => {
-  const id = Number(req.params.eventId);
-  const ev = await Evento.findByPk(id);
-  if (!ev) return res.status(404).send('Evento no encontrado');
-  ev.qrEventCode = uuidv4();
-  await ev.save();
-  res.json({ ok: true, token: ev.qrEventCode });
-});
-
-// POST /eventos/:id/checkin  => atleta escanea QR del evento con su app
-router.post('/:eventId/checkin', authOptional, async (req, res) => {
-  const id = Number(req.params.eventId);
-  const token = String(req.body?.token || req.query?.token || '');
-  const userId = req.user?.id || req.auth?.id || req.body?.userId; // si usás JWT, tomalo de ahí
-
-  const ev = await Evento.findByPk(id);
-  if (!ev || !token || token !== ev.qrEventCode) {
-    return res.status(400).json({ error: 'QR inválido' });
-  }
-
-  // validar inscripción (UsuarioEventos)
-  const ue = await UsuarioEventos.findOne({
-    where: { EventoId: id, UsuarioId: userId },
-  });
-  if (!ue) return res.status(400).json({ error: 'No inscripto' });
-
-  try {
-    // registrar asistencia (índice único evita duplicados)
-    await Asistencia.create({
-      eventoId: id,
-      usuarioId: userId,
-      checkedAt: new Date(),
-    });
-    return res.json({ created: true });
-  } catch (err) {
-    // ER_DUP_ENTRY = ya estaba
-    return res.json({ created: false });
-  }
-});
-
-module.exports = router;
+// Evita que clientes antiguos omitan motivo, revisión y notificación.
+router.patch('/:id/aprobar',verifyToken,requireRole('administrador'),(req,res)=>res.status(409).json({error:'Actualizá la aplicación y revisá la solicitud desde Usuarios.'}));
+module.exports=router;

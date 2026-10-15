@@ -1,0 +1,29 @@
+<main class="cuenta" [attr.aria-busy]="busy">
+ <header class="cabecera"><div><span class="eyebrow">FEMPA · Tu cuenta</span><h1>Mi solicitud</h1><p>Tu lugar para completar los datos y seguir la revisión.</p></div><img class="marca" src="assets/icons/MARCAFEMPAPA2.png" alt="FEMPA"></header>
+ <p *ngIf="error" class="error" role="alert">{{error}}</p><p *ngIf="ok" class="ok" role="status">{{ok}}</p>
+ <div class="acciones"><button class="secundario" (click)="cargar()" [disabled]="busy">Actualizar estado</button><button class="secundario" (click)="auth.logout()">Cerrar sesión</button></div>
+ <p *ngIf="busy" role="status">Procesando…</p>
+ <ng-container *ngIf="u">
+ <section class="panel"><span class="estado" [ngClass]="u.estado">{{estados[u.estado]}}</span>
+ <p *ngIf="u.estado==='pendiente'">La Federación está revisando tu cuenta. Completá los datos y los archivos que falten. Las inscripciones y los pagos se habilitan después de la aprobación.</p>
+ <p *ngIf="u.estado==='requiere_correcciones'">Revisá las observaciones, guardá los cambios y reenviá esta misma solicitud.</p>
+ <p *ngIf="u.estado==='aprobado'">Tu cuenta está habilitada. La revisión de documentos para licencia se muestra por separado.</p>
+ <p>Te notificaremos por correo cuando cambie el estado. También podés consultarlo acá.</p>
+ <div class="observaciones" *ngIf="u.correcciones">{{u.correcciones}}</div>
+ <ul *ngIf="u.camposCorregir?.length"><ng-container *ngFor="let c of campos.concat(archivos)"><li *ngIf="u.camposCorregir.includes(c.key)">{{c.label}}</li></ng-container></ul>
+ <a class="boton" *ngIf="u.estado==='aprobado'" [routerLink]="destino">Entrar a la aplicación</a></section>
+ <section class="panel"><h2>Datos de la solicitud</h2><p class="mini">{{u.email}} · DNI {{u.dni}} · Rol solicitado: {{u.rol}}</p>
+ <form (ngSubmit)="guardar()"><div class="grid"><label *ngFor="let c of campos">{{c.label}}<input [name]="c.key" [(ngModel)]="form[c.key]" [type]="c.key==='edad'?'number':c.key==='fechaNacimiento'?'date':'text'" [disabled]="busy" maxlength="255"></label></div>
+ <p><label class="check"><input type="checkbox" name="licencia" [(ngModel)]="form.solicitaLicenciaProvincial" [disabled]="busy">Solicito licencia provincial</label></p>
+ <p class="mini">Si luego tramitás la licencia nacional, primero necesitás la provincial. Esta opción no verifica ni otorga la licencia nacional.</p>
+ <button [disabled]="busy">Guardar datos</button></form></section>
+ <section class="panel"><h2>Foto y documentación</h2><p>Foto de perfil obligatoria. <span *ngIf="u.requiereDni">La licencia provincial requiere frente y dorso del DNI.</span></p>
+ <p class="mini">JPG, PNG o WebP, hasta 6 MB de origen. Se optimizan y se admite un máximo final de 2 MB por archivo. La ficha médica también admite PDF de hasta 2 MB. Los documentos son privados.</p>
+ <p>Revisión documental: <strong>{{u.documentacionAprobada?'Aprobada':'Pendiente de revisión'}}</strong></p>
+ <div class="archivos"><div class="archivo" *ngFor="let c of archivos"><label>{{c.label}}<input type="file" [accept]="c.key==='fichaMedica'?'image/jpeg,image/png,image/webp,application/pdf':'image/jpeg,image/png,image/webp'" (change)="seleccionar($event,c.key)" [disabled]="busy"></label>
+ <p class="mini">{{u.documentos[c.key]?'Archivo cargado':'Sin archivo'}}</p><button class="secundario" *ngIf="u.documentos[c.key]" (click)="descargar(c.key)">Descargar para revisar</button></div></div>
+ <div class="acciones"><button (click)="subir()" [disabled]="busy">Guardar archivos seleccionados</button></div></section>
+ <section class="panel" *ngIf="u.estado==='requiere_correcciones'"><h2>¿Ya corregiste todo?</h2><p>Guardá primero los datos y los archivos. Al reenviar, la Federación recibirá tu solicitud para una nueva revisión.</p><button (click)="reenviar()" [disabled]="busy">Reenviar solicitud</button></section>
+ <section class="panel"><h2>Historial</h2><p *ngIf="!u.historial.length">Todavía no hay movimientos.</p><ul class="lista"><li *ngFor="let h of u.historial"><strong>{{estados[h.estado]}}</strong> · {{h.createdAt | date:'dd/MM/yyyy HH:mm'}}<p>{{h.accion.replaceAll('_',' ')}}</p><p *ngIf="h.motivo" style="white-space:pre-wrap">{{h.motivo}}</p></li></ul></section>
+ </ng-container>
+</main>

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const mercadopago = require('mercadopago');
+const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const { randomUUID } = require('crypto');
 const { verifyToken } = require('../middleware/auth.middleware');
 const {
@@ -14,7 +14,12 @@ const {
   Op,
 } = require('../services/circuito');
 const { conciliar } = require('../services/pagos-conciliacion');
-mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
+const mpClient = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN || '',
+  options: { timeout: 15000, maxRetries: 0 },
+});
+const mpPreferences = new Preference(mpClient);
+const mpPayments = new Payment(mpClient);
 const auth = [verifyToken, sesion];
 const tesoreria = [...auth, roles('tesoreria')];
 const FRONT_BASE = (
@@ -182,10 +187,10 @@ router.post(
       statement_descriptor: 'SKATE MANAGER',
     };
     try {
-      const mp = await mercadopago.preferences.create(pref);
+      const mp = await mpPreferences.create({ body: pref });
       await pago.update({
-        preferenceId: mp.body.id,
-        rawPreference: mp.body,
+        preferenceId: mp.id,
+        rawPreference: mp,
         estadoPago: 'pendiente',
       });
       res.json(datosCheckout(pago));
@@ -236,7 +241,7 @@ router.get(
   wrap(async (req, res) => {
     mpConfigurado();
     const paymentId = R.id(req.query.payment_id);
-    const payment = (await mercadopago.payment.get(paymentId)).body;
+    const payment = await mpPayments.get({ id: paymentId });
     const local = await db.Pago.findOne({
       where: { externalReference: String(payment.external_reference || '') },
     });
@@ -285,7 +290,7 @@ router.post(
     if ((req.query.type || req.body?.type) !== 'payment')
       return res.sendStatus(200);
     const paymentId = R.id(req.query['data.id']);
-    const payment = (await mercadopago.payment.get(paymentId)).body;
+    const payment = await mpPayments.get({ id: paymentId });
     await conciliar(payment);
     res.sendStatus(200);
   }),

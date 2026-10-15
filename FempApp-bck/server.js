@@ -38,6 +38,9 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const app = express();
+// Railway proxy: use 1 only behind its single public ingress.
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 0));
+const archivos=require('./config/archivos');
 const port = process.env.PORT || 3000;
 
 const padronImportRouter = require('./routes/padronImport.router');
@@ -65,6 +68,7 @@ db.sequelize
 // Middlewares
 
 const allowedOrigins = [
+  ...(process.env.FRONTEND_URL ? [new URL(process.env.FRONTEND_URL).origin] : []),
   'http://localhost:4200',
   'http://127.0.0.1:4200',
   //'https://fempapp-production.up.railway.app',
@@ -108,9 +112,15 @@ app.options(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads/usuarios', express.static(archivos.publicDir, {index:false,dotfiles:'deny',setHeaders:res=>res.setHeader('X-Content-Type-Options','nosniff')}));
+app.use('/uploads', (_req,res)=>res.status(404).end());
 
 // Rutas
+const {verifyToken,requireRole}=require('./middleware/auth.middleware');
+app.use('/patinadores',verifyToken,requireRole('administrador','tecnico'));
+app.use('/padron-import',verifyToken,requireRole('administrador'));
+app.use(['/roles','/clubes'],(req,res,next)=>['GET','HEAD','OPTIONS'].includes(req.method)?next():verifyToken(req,res,()=>requireRole('administrador')(req,res,next)));
+app.use(['/asistencias','/perfiles-deportivos','/evaluaciones','/elementos','/componentes'],verifyToken);
 app.use('/pagos', pagosRouter);
 app.use('/eventos', eventosRouter);
 app.use('/precios-participacion', preciosParticipacionRouter);
@@ -122,6 +132,7 @@ app.use('/roles', require('./routes/rol.router'));
 app.use('/documentacion', require('./routes/documentacion.router'));
 app.use('/usuarios', require('./routes/usuarios.router'));
 app.use('/auth', require('./routes/auth.router'));
+app.use('/cuenta', require('./routes/cuenta.router'));
 app.use('/asistencias', require('./routes/asistencias.router'));
 app.use('/perfiles-deportivos', perfilesDeportivosRouter);
 app.use('/evaluaciones', evaluacionesRouter);
@@ -135,13 +146,13 @@ app.get('/', (req, res) => {
   res.send('Bienvenido a la API de Patinadores!');
 });
 
-// Iniciar servidor y sincronizar base de datos
-app.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 Servidor escuchando en http://localhost:${port}`);
-});
-db.sequelize
-  .authenticate()
-  .then(() =>
-    console.log('Base conectada; esquema gestionado por migraciones.'),
-  )
-  .catch((err) => console.error('Error de conexión:', err.message));
+
+// No comenzar a atender con un esquema incompleto.
+async function start() {
+  await db.sequelize.authenticate();
+  await db.Usuario.findOne({attributes:['id','sessionVersion','revision','camposCorregir','solicitaLicenciaProvincial']});
+  await db.CuentaCorreo.count();await db.CuentaHistorial.count();await db.CuentaReset.count();
+  require('./services/cuenta-correo').start();
+  app.listen(port,'0.0.0.0',()=>console.log('FEMPA API lista. Archivos persistentes configurados.'));
+}
+start().catch(e=>{console.error('No se pudo iniciar. Revisá migración y variables:',e.name,e.message);process.exitCode=1;});

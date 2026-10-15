@@ -5,13 +5,13 @@ const Padron = require('./padron.model');
 const Evento = require('./evento.model');
 const Role = require('./rol.model');
 const { v4: uuidv4 } = require('uuid');
-hooks: {
-  beforeCreate: (u) => { if (!u.qrJti) u.qrJti = uuidv4(); }
-}
-
-
 const Usuario = sequelize.define('Usuario', {
 
+  sessionVersion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  revision: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  correcciones: { type: DataTypes.TEXT, allowNull: true },
+  camposCorregir: { type: DataTypes.JSON, allowNull: true },
+  solicitaLicenciaProvincial: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   nombre: {
     type: DataTypes.STRING,
     allowNull: false
@@ -114,7 +114,7 @@ qrJti: {
   defaultValue: () => uuidv4()
 },
 estado: {
-  type: DataTypes.ENUM('pendiente','aprobado','bloqueado'),
+  type: DataTypes.ENUM('pendiente','requiere_correcciones','aprobado','bloqueado'),
   defaultValue: 'pendiente'
 },
 rolSolicitado: {

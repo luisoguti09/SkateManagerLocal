@@ -1,0 +1,6 @@
+<main class="cuenta" style="max-width:520px"><section class="panel"><span class="eyebrow">FEMPA · Acceso</span><h1>{{token?'Elegí una nueva contraseña':'Recuperá tu cuenta'}}</h1>
+<p *ngIf="!token">Ingresá el email de tu cuenta. Si está registrado, te enviaremos un enlace válido por 30 minutos.</p>
+<p *ngIf="error" class="error" role="alert">{{error}}</p><p *ngIf="message" class="ok" role="status">{{message}}</p>
+<form *ngIf="!done" (ngSubmit)="enviar()"><label *ngIf="!token">Email<input type="email" name="email" [(ngModel)]="email" autocomplete="email" required [disabled]="busy"></label>
+<ng-container *ngIf="token"><label>Nueva contraseña<input type="password" name="password" [(ngModel)]="password" autocomplete="new-password" minlength="12" required [disabled]="busy"></label><p class="mini">Al menos 12 caracteres; podés usar una frase larga.</p><label>Repetir contraseña<input type="password" name="confirm" [(ngModel)]="confirm" autocomplete="new-password" required [disabled]="busy"></label></ng-container>
+<div class="acciones"><button [disabled]="busy">{{busy?'Procesando…':token?'Guardar contraseña':'Enviar enlace'}}</button></div></form><p><a routerLink="/login">Volver al ingreso</a></p></section></main>
