@@ -22,15 +22,18 @@ function match(row,where={}){
 }
 function model(name){
  const rows=[];
- const M={rows,name,sequelize:null,async create(data){const r={id:rows.length+1,revision:0,sessionVersion:0,createdAt:new Date(),intentos:0,...data};r.update=async function(d){Object.assign(this,d);return this;};r.save=async()=>r;rows.push(r);return r;},async findByPk(id){return rows.find(r=>String(r.id)===String(id)) || null;},async findOne(o={}){return rows.find(r=>match(r,o.where)) || null;},async findAll(o={}){return rows.filter(r=>match(r,o.where));},async findAndCountAll(o){const rows=await M.findAll(o);return{rows,count:rows.length};},async update(data,o){let n=0;for(const r of rows)if(match(r,o.where)){await r.update(data);n++;}return[n];}};
+ const M={rows,name,sequelize:null,async create(data){const r={id:rows.length+1,revision:0,sessionVersion:0,createdAt:new Date(),intentos:0,...data};r.update=async function(d){Object.assign(this,d);return this;};r.save=async()=>r;r.toJSON=()=>Object.fromEntries(Object.entries(r).filter(([k,v])=>typeof v!=='function'));rows.push(r);return r;},async findByPk(id){return rows.find(r=>String(r.id)===String(id)) || null;},async findOne(o={}){return rows.find(r=>match(r,o.where)) || null;},async findAll(o={}){return rows.filter(r=>match(r,o.where));},async findAndCountAll(o){const rows=await M.findAll(o);return{rows,count:rows.length};},async update(data,o){let n=0;for(const r of rows)if(match(r,o.where)){await r.update(data);n++;}return[n];}};
  all.push(M);return M;
 }
-const U=model('Usuario'),H=model('CuentaHistorial'),Q=model('CuentaCorreo'),Reset=model('CuentaReset'),Rol=model('Rol'),Padron=model('Padron');
-const transaction=async fn=>fn({LOCK:{UPDATE:'UPDATE'}});
+const U=model('Usuario'),H=model('CuentaHistorial'),Q=model('CuentaCorreo'),Reset=model('CuentaReset'),Rol=model('Rol'),Padron=model('Padron'),Club=model('Club');
+const transaction=async fn=>{
+ const snapshots=all.map(m=>({m,rows:[...m.rows],values:m.rows.map(r=>({...r}))}));
+ try{return await fn({LOCK:{UPDATE:'UPDATE'}});}catch(e){for(const x of snapshots){x.m.rows.splice(0,x.m.rows.length,...x.rows);x.rows.forEach((r,i)=>{for(const k of Object.keys(r))delete r[k];Object.assign(r,x.values[i]);});}throw e;}
+};
 for(const m of all)m.sequelize={transaction};
 const load=Module._load;
 Module._load=function(request,parent,isMain){
- const map={'usuario.model':U,'cuentahistorial.model':H,'cuentacorreo.model':Q,'cuentareset.model':Reset,'rol.model':Rol,'padron.model':Padron};
+ const map={'usuario.model':U,'cuentahistorial.model':H,'cuentacorreo.model':Q,'cuentareset.model':Reset,'rol.model':Rol,'padron.model':Padron,'club.model':Club};
  const key=path.basename(request).replace(/\.js$/,'');
  if(map[key])return map[key];return load.call(this,request,parent,isMain);
 };
@@ -43,8 +46,9 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
  const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));const base='http://127.0.0.1:'+server.address().port;
  const password=await bcrypt.hash('Mi contraseña de prueba',10);
  const admin=await U.create({nombre:'Admin',email:'admin@example.org',dni:'10000001',rol:'administrador',rolId:2,estado:'aprobado',aprobado:true,password});
- const user=await U.create({nombre:'Atleta',edad:20,email:'atleta@example.org',dni:'10000002',rol:'deportista',rolId:1,estado:'pendiente',aprobado:false,password});
+ const user=await U.create({club:'Giol',nombre:'Atleta',edad:20,email:'atleta@example.org',dni:'10000002',rol:'deportista',rolId:1,estado:'pendiente',aprobado:false,password});
  const other=await U.create({nombre:'Otro',dni:'10000003',email:'otro@example.org',estado:'pendiente',rol:'deportista',rolId:1,password});
+ await Club.create({nombre:'Giol',activo:true});
  await Rol.create({id:1,nombre:'deportista'});await Rol.create({id:2,nombre:'administrador'});
  const token=u=>jwt.sign({id:u.id,sv:u.sessionVersion},process.env.JWT_SECRET,{expiresIn:'1h'});
  const call=async(method,url,u,body)=>{
@@ -61,6 +65,7 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
  });
  await t.test('no puede consultar documentos de otra cuenta',async()=>{assert.equal((await call('GET',`/cuenta/${other.id}/archivo/dniFrente`,user)).status,403);assert.equal((await call('PUT',`/documentacion/${other.id}`,user,{})).status,403);});
  await t.test('no puede otorgarse rol ni aprobación desde su perfil',async()=>{const r=await call('PATCH','/cuenta/mia',user,{revision:user.revision,nombre:'Atleta',rol:'administrador',aprobado:true,estado:'aprobado'});assert.equal(r.status,200);assert.equal(user.rol,'deportista');assert.equal(user.estado,'pendiente');assert.equal(user.aprobado,false);});
+ await H.create({usuarioId:user.id,accion:'enviado'});
  await t.test('solicitar correcciones exige motivo y campos',async()=>{
   const body={revision:user.revision,estado:'requiere_correcciones'};assert.equal((await call('PATCH',`/cuenta/admin/usuarios/${user.id}/estado`,admin,body)).status,400);
   const r=await call('PATCH',`/cuenta/admin/usuarios/${user.id}/estado`,admin,{...body,motivo:'La foto no se ve correctamente.',campos:['fotoPerfil']});assert.equal(r.status,200);assert.equal(user.estado,'requiere_correcciones');assert.equal(Q.rows.at(-1).tipo,'requiere_correcciones');assert.ok(Q.rows.at(-1).payload);assert.ok(!Q.rows.at(-1).payload.includes(user.email));
@@ -83,7 +88,7 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
  await t.test('DNI opcional por política y obligatorio para licencia provincial',async()=>{
   user.solicitaLicenciaProvincial=true;assert.equal((await call('POST','/cuenta/mia/reenviar',user,{revision:user.revision})).status,400);
   process.env.REQUIRE_DNI_DOCUMENTS='false';assert.equal((await call('POST','/cuenta/mia/reenviar',user,{revision:user.revision})).status,200);assert.equal(user.estado,'pendiente');
-  process.env.REQUIRE_DNI_DOCUMENTS='true';user.solicitaLicenciaProvincial=false;
+  process.env.REQUIRE_DNI_DOCUMENTS='true';user.solicitaLicenciaProvincial=false;user.dniDorso=user.dniFrente;
  });
  await t.test('aprobar genera historial y aviso; habilita negocio',async()=>{
   const r=await call('PATCH',`/cuenta/admin/usuarios/${user.id}/estado`,admin,{estado:'aprobado',revision:user.revision,motivo:''});assert.equal(r.status,200);assert.equal(user.aprobado,true);assert.equal(Q.rows.at(-1).tipo,'aprobado');assert.ok(H.rows.some(h=>h.usuarioId===user.id && h.estado==='aprobado'));
@@ -110,8 +115,42 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
   const originalFetch=global.fetch;const row=Q.rows.find(r=>r.tipo==='aprobado');row.estado='pendiente';row.disponibleAt=new Date(0);for(const q of Q.rows)if(q!==row)q.estado='enviado';process.env.MAIL_ENABLED='true';
   global.fetch=async()=>({ok:false,status:503});try{await Mail.tick();assert.equal(row.estado,'pendiente');assert.equal(row.error,'OAUTH_503');assert.equal(row.intentos,1);assert.equal(user.estado,'bloqueado');
   row.disponibleAt=new Date(0);global.fetch=async(url)=>url.includes('oauth2')?{ok:true,json:async()=>({access_token:'test'})}:{ok:true};await Mail.tick();assert.equal(row.estado,'enviado');assert.equal(row.payload,null);
-  }finally{global.fetch=originalFetch;process.env.MAIL_ENABLED='false';}
+ 
+ }finally{global.fetch=originalFetch;process.env.MAIL_ENABLED='false';}
  });
  await t.test('contraseñas cortas y bcrypt truncado no se admiten',()=>{assert.equal(R.passwordValida('123'),false);assert.equal(R.passwordValida('á'.repeat(40)),false);assert.equal(R.passwordValida('Una frase de prueba segura'),true);});
+ await t.test('envío único: clubes, borrador, DNI por rol, rollback y reintento',async()=>{
+  const nuevo=await U.create({nombre:'Nueva',edad:21,club:'Giol',dni:'12345678',email:'nueva@example.org',rol:'deportista',estado:'pendiente'});
+  const imagen=await sharp({create:{width:20,height:20,channels:3,background:'#fff'}}).png().toBuffer();
+  const enviar=async(datos,keys=[])=>{
+    const f=new FormData();f.append('datos',JSON.stringify(datos));
+    for(const key of keys)f.append(key,new Blob([imagen],{type:'image/png'}),key+'.png');
+    const r=await fetch(base+'/cuenta/mia/enviar',{method:'POST',headers:{Authorization:'Bearer '+token(nuevo)},body:f});return {status:r.status,data:await r.json()};
+  };
+  assert.equal((await call('GET','/cuenta/clubes',nuevo)).data[0].nombre,'Giol');
+  assert.equal((await call('GET','/cuenta/mia',nuevo)).data.etapaSolicitud,'Por completar');
+  assert.equal((await call('PATCH',`/cuenta/admin/usuarios/${nuevo.id}/estado`,admin,{estado:'aprobado',revision:nuevo.revision})).status,409);
+  const datos={nombre:'Nueva',edad:21,club:'Giol',revision:0,solicitaLicenciaProvincial:false,categoria:'IGNORAR'};
+  const before=await fs.readdir(path.join(temp,'privado'));
+  assert.equal((await enviar(datos,['fotoPerfil','dniFrente'])).status,400);
+  assert.deepEqual(await fs.readdir(path.join(temp,'privado')),before);
+  assert.equal(nuevo.revision,0);assert.equal(nuevo.fotoPerfil,undefined);
+  assert.equal((await enviar({...datos,club:'Inventado'},['fotoPerfil','dniFrente','dniDorso'])).status,400);
+  const count=Q.rows.length;
+  const result=await enviar(datos,['fotoPerfil','dniFrente','dniDorso']);assert.equal(result.status,200);assert.equal(result.data.solicitudEnviada,true);assert.equal(result.data.etapaSolicitud,'En revisión');assert.equal(nuevo.solicitaLicenciaProvincial,true);assert.equal(nuevo.categoria,undefined);
+  assert.equal(Q.rows.length,count+1);
+  assert.equal((await enviar(datos)).status,200);assert.equal(Q.rows.length,count+1);
+  assert.equal((await call('PATCH','/cuenta/mia',nuevo,{revision:nuevo.revision,nombre:'Cambio'})).status,409);
+  const rev=await call('PATCH',`/cuenta/admin/usuarios/${nuevo.id}/estado`,admin,{estado:'requiere_correcciones',revision:nuevo.revision,motivo:'Completá el teléfono',campos:['telefono']});assert.equal(rev.status,200);
+  assert.equal((await enviar({...datos,revision:nuevo.revision})).status,400);
+  assert.equal((await enviar({...datos,revision:nuevo.revision,telefono:'2611234567'})).status,200);
+  assert.equal(Q.rows.at(-1).tipo,'reenviado');
+ });
+ await t.test('administrador no requiere DNI; aprobación no emite licencia ni pago',async()=>{
+  const a=await U.create({nombre:'Admin nuevo',edad:22,dni:'11112222',email:'admin2@example.org',rol:'administrador',estado:'pendiente'});
+  const imagen=await sharp({create:{width:20,height:20,channels:3,background:'#fff'}}).png().toBuffer();
+  const f=new FormData();f.append('datos',JSON.stringify({nombre:a.nombre,edad:22,revision:0}));f.append('fotoPerfil',new Blob([imagen],{type:'image/png'}),'foto.png');
+  const r=await fetch(base+'/cuenta/mia/enviar',{method:'POST',headers:{Authorization:'Bearer '+token(a)},body:f});assert.equal(r.status,200);const d=await r.json();assert.equal(d.requiereDni,false);assert.equal(d.solicitaLicenciaProvincial,false);assert.equal(a.aprobado,false);
+ });
  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));Module._load=load;await fs.rm(temp,{recursive:true,force:true});}
 });

@@ -8,7 +8,7 @@ import {CuentaService,estados,camposCuenta,guardarArchivo} from '../../../servic
 export class RevisionCuentasComponent implements OnInit{
  private vista=inject(ChangeDetectorRef);private host=inject(ElementRef);
  private api=inject(CuentaService);private router=inject(Router);
- estados=estados;campos=camposCuenta;estado=this.router.url.includes('/todos')?'':'pendiente';q='';page=1;total=0;usuarios:any[]=[];u:any=null;busy=false;error='';ok='';motivo='';nuevoEstado='aprobado';seleccion:Record<string,boolean>={};
+ estados=estados;campos=camposCuenta.filter(c=>c.key!=='categoria');estado=this.router.url.includes('/todos')?'':'pendiente';q='';page=1;total=0;usuarios:any[]=[];u:any=null;busy=false;error='';ok='';motivo='';nuevoEstado='aprobado';seleccion:Record<string,boolean>={};
  private enfocar(selector:string){
   this.vista.detectChanges();
   const elemento=this.host.nativeElement.querySelector(selector) as HTMLElement | null;

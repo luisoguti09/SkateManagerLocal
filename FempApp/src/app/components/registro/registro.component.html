@@ -60,11 +60,7 @@
             <input id="edad" type="number" matInput formControlName="edad" min="0" step="1" [readonly]="cargando">
             <mat-error *ngIf="form.get('edad')?.invalid">Ingresá una edad válida.</mat-error>
           </mat-form-field>
-          <mat-form-field *ngIf="form.get('rolId')?.value === 1" appearance="outline" floatLabel="always">
-            <mat-label>Categoría</mat-label>
-            <input matInput formControlName="categoria" />
-            <mat-error *ngIf="form.get('categoria')?.hasError('required')">Requerida</mat-error>
-          </mat-form-field>
+          <p>Las categorías y disciplinas se completan en los perfiles deportivos, después de aprobar la cuenta.</p>
 
           <!-- Nivel sólo para técnico -->
           <mat-form-field *ngIf="form.get('rolId')?.value === 3" appearance="outline" floatLabel="always">

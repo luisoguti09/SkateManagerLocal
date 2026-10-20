@@ -13,6 +13,8 @@ export const camposCuenta = [
 export class CuentaService {
  private http=inject(HttpClient); private auth=inject(AuthService); private base=environment.SERVER_API.replace(/\/$/,'')+'/cuenta';
  private get opts(){return {headers:{Authorization:'Bearer '+(this.auth.getToken() || '')}};}
+ clubes(){return this.http.get<{id:number;nombre:string}[]>(this.base+'/clubes',this.opts);}
+ enviar(files:FormData){return this.http.post<any>(this.base+'/mia/enviar',files,this.opts);}
  mia(){return this.http.get<any>(this.base+'/mia',this.opts);}
  guardar(data:any){return this.http.patch<any>(this.base+'/mia',data,this.opts);}
  subir(files:FormData){return this.http.post<any>(this.base+'/mia/archivos',files,this.opts);}

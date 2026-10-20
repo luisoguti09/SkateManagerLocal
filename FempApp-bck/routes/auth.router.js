@@ -100,16 +100,17 @@ router.post('/register', async (req, res) => {
       estado: 'pendiente',
       aprobado: false,
       club: typeof club === 'string' ? club.trim().slice(0, 255) : null,
+      solicitaLicenciaProvincial: isDep || isTec,
       rolSolicitado: rolCanon
     },{transaction:t});
     await C.historial(u,u.id,'registro',null,t);
-    await C.encolar(u,'pendiente',t);
+    // El aviso de solicitud se genera al pulsar Enviar, no al crear la cuenta.
     return u;
     });
 
     return res.status(201).json({
       code: 'ACCOUNT_PENDING_APPROVAL',
-      message: 'Tu solicitud fue recibida. Ingresá para completar tu solicitud y consultar la revisión de la Federación.',
+      message: 'Tu cuenta fue creada. Ingresá para completar los datos, cargar documentos y enviar tu solicitud a la Federación.',
       rolId: nuevo.rolId,
       usuario: {
         id: nuevo.id,

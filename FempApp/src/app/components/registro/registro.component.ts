@@ -131,12 +131,7 @@ export class RegistroComponent implements OnDestroy {
       control.disable({ emitEvent: false });
       control.setValue('', { emitEvent: false });
     }
-    if (rolId === 1) {
-      const categoria = this.form.get('categoria')!;
-      categoria.enable({ emitEvent: false });
-      categoria.setValidators(Validators.required);
-      categoria.setValue(this.pers?.categoria ?? '', { emitEvent: false });
-    } else if (rolId === 3) {
+    if (rolId === 3) {
       const nivel = this.form.get('nivel')!;
       nivel.enable({ emitEvent: false });
       nivel.setValidators(Validators.required);
@@ -263,14 +258,13 @@ export class RegistroComponent implements OnDestroy {
       rolId,
       clubId: this.clubSeleccionado?.id ?? null,
       club: this.clubSeleccionado?.nombre ?? this.pers?.club ?? null,
-      ...(rolId === 1 ? { categoria: raw.categoria } : {}),
       ...(rolId === 3 ? { nivel: raw.nivel } : {})
     };
     this.cargando = true;
     this.regServ.guardar(payload).pipe(takeUntil(this.destroy$),
       finalize(() => this.cargando = false)).subscribe({
         next: () => {
-          this.successMsg = 'Solicitud recibida. Ingresá para completar tus datos y cargar los documentos. La Federación debe aprobarte para habilitar inscripciones y pagos.';
+          this.successMsg = 'Cuenta creada. Ingresá para completar tus datos, cargar los documentos y enviar tu solicitud a la Federación.';
           this.redirectTimer = setTimeout(() => this.router.navigate(['/login'], { queryParams: { estado: 'pendiente' } }), 2500);
         },
         error: e => this.errorMsg = e?.error?.message || e?.error?.error || 'Ocurrió un error al registrar. Podés reintentar.'

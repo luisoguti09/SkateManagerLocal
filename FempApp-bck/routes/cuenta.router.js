@@ -5,12 +5,23 @@ const C=require('../services/cuenta');
 const F=require('../services/cuenta-archivos');
 const {Op}=require('sequelize');
 router.use(verifySession);
+router.get('/clubes',C.wrap(async(req,res)=>{
+  const Club=require('../models/club.model');
+  res.json(await Club.findAll({where:{activo:true},attributes:['id','nombre'],order:[['nombre','ASC']]}));
+}));
+router.post('/mia/enviar',limite('enviar-solicitud',20,3600000,req=>req.auth.id),F.recibir,C.wrap(async(req,res)=>{
+  let data;
+  try { data=JSON.parse(req.body.datos); } catch { C.R.fail(400,'Datos de solicitud inválidos.'); }
+  if(!data || typeof data!=='object' || Array.isArray(data))C.R.fail(400,'Datos de solicitud inválidos.');
+  res.json(await require('../services/solicitud').enviar(req.auth.id,data,req.files));
+}));
 router.get('/mia',C.wrap(async(req,res)=>res.json(await C.detalle(req.cuenta))));
 router.patch('/mia',C.wrap(async(req,res)=>{
   const data=C.R.perfil(req.body);
   await C.Usuario.sequelize.transaction(async t=>{
     const u=await C.Usuario.findByPk(req.auth.id,{transaction:t,lock:t.LOCK.UPDATE});
     if(u.estado==='bloqueado')C.R.fail(403,'Cuenta bloqueada.');
+    await C.editable(u,t);
     if(Number(req.body.revision)!==u.revision)C.R.fail(409,'Tu solicitud cambió. Actualizá la pantalla.');
     await u.update({...data,revision:u.revision+1},{transaction:t});
     await C.historial(u,u.id,'datos_actualizados',null,t);
@@ -21,15 +32,8 @@ router.post('/mia/archivos',limite('archivos',30,3600000,req=>req.auth.id),F.rec
   await F.guardar(req.auth.id,req.files,req.auth.id);res.json(await C.detalle(await C.Usuario.findByPk(req.auth.id)));
 }));
 router.post('/mia/reenviar',C.wrap(async(req,res)=>{
-  await C.Usuario.sequelize.transaction(async t=>{
-    const u=await C.Usuario.findByPk(req.auth.id,{transaction:t,lock:t.LOCK.UPDATE});
-    if(u.estado!=='requiere_correcciones')C.R.fail(409,'Tu solicitud no está esperando correcciones.');
-    if(Number(req.body.revision)!==u.revision)C.R.fail(409,'Actualizá la solicitud antes de reenviar.');
-    await C.completa(u);
-    await u.update({estado:'pendiente',aprobado:false,camposCorregir:[],correcciones:null,revision:u.revision+1},{transaction:t});
-    await C.historial(u,u.id,'reenviado',null,t);await C.encolar(u,'reenviado',t);
-  });
-  res.json(await C.detalle(await C.Usuario.findByPk(req.auth.id)));
+  const u=await C.Usuario.findByPk(req.auth.id);
+  res.json(await require('../services/solicitud').enviar(req.auth.id,{...Object.fromEntries(Object.entries(C.R.safe(u)).filter(([,v])=>v!==undefined)),revision:req.body.revision},{}));
 }));
 router.get('/:id/archivo/:campo',C.wrap(async(req,res)=>{
   const admin=req.auth.rol==='administrador' && req.cuenta.estado==='aprobado';
@@ -48,7 +52,8 @@ router.get('/admin/usuarios',C.wrap(async(req,res)=>{
   if(req.query.q){const q=String(req.query.q).slice(0,100);where[Op.or]=['nombre','dni','email'].map(k=>({[k]:{[Op.like]:`%${q}%`}}));}
   const page=Math.max(1,Number.parseInt(req.query.page,10)||1);
   const result=await C.Usuario.findAndCountAll({where,attributes:['id','nombre','dni','email','estado','rol','revision','createdAt'],order:[['id','DESC']],limit:50,offset:(page-1)*50});
-  res.json({usuarios:result.rows,total:result.count,page});
+  const usuarios=await Promise.all(result.rows.map(async u=>({...u.toJSON(),etapaSolicitud:u.estado==='pendiente'?(await C.presentada(u)?'En revisión':'Por completar'):null})));
+  res.json({usuarios,total:result.count,page});
 }));
 router.get('/admin/usuarios/:id',C.wrap(async(req,res)=>{
   const u=await C.Usuario.findByPk(req.params.id);if(!u)C.R.fail(404,'Cuenta no encontrada.');res.json(await C.detalle(u,true));
@@ -57,7 +62,8 @@ router.patch('/admin/usuarios/:id/estado',C.wrap(async(req,res)=>{
   await C.Usuario.sequelize.transaction(async t=>{
     const u=await C.Usuario.findByPk(req.params.id,{transaction:t,lock:t.LOCK.UPDATE});if(!u)C.R.fail(404,'Cuenta no encontrada.');
     const data=C.R.decision(u,req.body,req.auth.id);
-    if(data.estado==='aprobado')await C.completa(u);
+    if(['aprobado','requiere_correcciones'].includes(data.estado) && u.estado==='pendiente' && !await C.presentada(u,t))C.R.fail(409,'La persona todavía no envió la solicitud.');
+    if(data.estado==='aprobado'){await C.completa(u);data.solicitaLicenciaProvincial=C.deportiva(u);}
     await u.update(data,{transaction:t});await C.historial(u,req.auth.id,'estado_actualizado',data.correcciones,t);
     await C.encolar(u,data.estado,t);
   });
@@ -71,7 +77,7 @@ router.patch('/admin/usuarios/:id/documentacion',C.wrap(async(req,res)=>{
     const u=await C.Usuario.findByPk(req.params.id,{transaction:t,lock:t.LOCK.UPDATE});if(!u)C.R.fail(404,'Cuenta no encontrada.');
     if(Number(u.id)===req.auth.id)C.R.fail(400,'No podés revisar tus documentos.');
     if(Number(req.body.revision)!==u.revision)C.R.fail(409,'La solicitud cambió.');
-    if(req.body.aprobada)await C.completa(u);
+    if(req.body.aprobada){if(u.estado==='pendiente' && !await C.presentada(u,t))C.R.fail(409,'La persona todavía no envió la solicitud.');await C.completa(u);}
     await u.update({documentacionAprobada:req.body.aprobada,revision:u.revision+1},{transaction:t});
     await C.historial(u,req.auth.id,req.body.aprobada?'documentacion_aprobada':'documentacion_observada',motivo,t);
     await C.encolar(u,'documentacion',t);

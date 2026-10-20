@@ -7,9 +7,9 @@
     </mat-card-header>
     <mat-card-content>
       <section *ngIf="estado; else ingreso" role="status" aria-live="polite">
-        <h2>{{ estado === 'pendiente' ? 'Tu solicitud está en revisión' : 'Tu cuenta está bloqueada' }}</h2>
+        <h2>{{ estado === 'pendiente' ? 'Tu cuenta espera aprobación' : 'Tu cuenta está bloqueada' }}</h2>
         <ng-container *ngIf="estado === 'pendiente'; else bloqueada">
-          <p>La Federación revisará tu solicitud. Ingresá con tu email y contraseña para completar los datos y cargar los documentos.</p>
+          <p>Ingresá con tu email y contraseña para completar y enviar tu solicitud, o consultar su estado si ya la presentaste.</p>
           <p>Mientras esperás, no hace falta volver a registrarte. Las inscripciones y los pagos se habilitarán cuando tu cuenta esté aprobada.</p>
           <p>Te avisaremos por correo cuando cambie el estado. También podés consultarlo en la aplicación.</p>
         </ng-container>

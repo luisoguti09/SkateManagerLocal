@@ -52,12 +52,13 @@ async function preparar(files) {
 }
 async function guardar(usuarioId,files,actorId) {
   const Usuario=require('../models/usuario.model');
-  const {historial}=require('./cuenta');
+  const {historial,editable}=require('./cuenta');
   const prepared=await preparar(files);let old={};
   try {
     await Usuario.sequelize.transaction(async t=>{
       const u=await Usuario.findByPk(usuarioId,{transaction:t,lock:t.LOCK.UPDATE});
       if(!u || u.estado==='bloqueado')fail(403,'Cuenta no habilitada.');
+      await editable(u,t);
       for(const field of Object.keys(prepared))old[field]=u[field];
       await u.update({...prepared,documentacionAprobada:false,revision:u.revision+1},{transaction:t});
       await historial(u,actorId,'archivos_actualizados',Object.keys(prepared).join(', '),t);
@@ -66,4 +67,4 @@ async function guardar(usuarioId,files,actorId) {
   await Promise.all(Object.entries(old).map(([f,v])=>borrar(v,f)));
   return prepared;
 }
-module.exports={recibir,guardar,borrar,existe,fullpath,campos};
+module.exports={recibir,guardar,borrar,existe,fullpath,campos,preparar};
