@@ -1,5 +1,5 @@
 import { Component, inject, OnDestroy } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { RegistroService } from '../../services/registro.service';
 import { MatButtonModule } from '@angular/material/button';
@@ -53,12 +53,21 @@ export class RegistroComponent implements OnDestroy {
   public clubSeleccionado: ClubOption | null = null;
   public pers: PadronRegistro | null = null;
 
+  get passwordError(): string {
+    const c = this.form.get('password');
+    if (c?.hasError('required')) return 'Ingresá una contraseña.';
+    if (c?.hasError('minlength')) return 'Usá al menos 8 caracteres.';
+    if (c?.hasError('pattern')) return 'Incluí al menos una letra y un número.';
+    if (c?.hasError('passwordBytes')) return 'La contraseña es demasiado larga. Acortala un poco.';
+    return '';
+  }
+
   ngOnInit() {
     this.form = this.fb.group({
       nombre: ['', Validators.required],
       edad: [null, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(12)]],
+      password: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=[\s\S]*[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])(?=[\s\S]*[0-9])[\s\S]*$/), (control: AbstractControl) => new TextEncoder().encode(control.value || '').length > 72 ? {passwordBytes: true} : null]],
       confirmPass: ['', Validators.required],
       dni: ['', Validators.required],
       rolId: [null, Validators.required],

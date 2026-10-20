@@ -47,7 +47,7 @@ router.post('/register', async (req, res) => {
         !/^\d{6,9}$/.test(dniNormalizado) || !Number.isInteger(Number(rolId)) || Number(rolId) < 1 ||
         !nombre || nombre.length > 255 || edad === null || edad === undefined || edad === '' ||
         !Number.isInteger(Number(edad)) || Number(edad) < 0 || Number(edad) > 120) {
-      return res.status(400).json({ error: 'Revisá nombre, edad, DNI, rol, email y contraseña. La contraseña debe tener al menos 12 caracteres y hasta 72 bytes.' });
+      return res.status(400).json({ error: 'Revisá nombre, edad, DNI, rol, email y contraseña. La contraseña debe tener al menos 8 caracteres, una letra y un número, y hasta 72 bytes.' });
     }
 
     // email o dni ya usados
@@ -206,7 +206,7 @@ router.post('/forgot-password',limite('reset-ip',5,3600000),C.wrap(async(req,res
 router.post('/reset-password',limite('reset-confirm',10),C.wrap(async(req,res)=>{
   const {token,password}=req.body;
   if(typeof token!=='string' || !/^[a-f0-9]{64}$/.test(token))C.R.fail(400,'Enlace inválido o vencido.');
-  if(!C.R.passwordValida(password))C.R.fail(400,'Usá al menos 12 caracteres y hasta 72 bytes.');
+  if(!C.R.passwordValida(password))C.R.fail(400,'Usá al menos 8 caracteres, una letra y un número, y hasta 72 bytes.');
   const hashed=await bcrypt.hash(password,12);
   // Lock order is Usuario then Reset, matching the request route.
   const candidate=await Reset.findOne({where:{tokenHash:C.R.hashToken(token)}});

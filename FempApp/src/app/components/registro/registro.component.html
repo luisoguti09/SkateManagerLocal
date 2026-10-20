@@ -80,13 +80,17 @@
           </mat-form-field>
 
           <mat-form-field class="example-full-width" appearance="outline" floatLabel="always">
-            <mat-label for="password">Contraseña (mínimo 12 caracteres)</mat-label>
-            <input id="password" type="password" matInput formControlName="password" minlength="12">
+            <mat-label for="password">Contraseña</mat-label>
+            <input id="password" type="password" matInput formControlName="password" minlength="8" autocomplete="new-password">
+            <mat-hint>Mínimo 8 caracteres, con una letra y un número.</mat-hint>
+            <mat-error>{{ passwordError }}</mat-error>
           </mat-form-field>
 
           <mat-form-field class="example-full-width" appearance="outline" floatLabel="always">
             <mat-label>Confirmá tu contraseña</mat-label>
-            <input id="confirmPass" type="password" matInput formControlName="confirmPass">
+            <input id="confirmPass" type="password" matInput formControlName="confirmPass" autocomplete="new-password">
+            <mat-error>Repetí la contraseña.</mat-error>
+            <mat-hint *ngIf="form.get('confirmPass')?.value && form.get('confirmPass')?.value !== form.get('password')?.value" style="color:#b91c1c" role="status">Las contraseñas no coinciden.</mat-hint>
           </mat-form-field>
 
 

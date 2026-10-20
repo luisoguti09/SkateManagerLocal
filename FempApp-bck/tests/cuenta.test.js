@@ -109,7 +109,7 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
   const token='a'.repeat(64);await Reset.create({usuarioId:other.id,tokenHash:R.hashToken(token),venceAt:new Date(Date.now()-1000)});assert.equal((await call('POST','/auth/reset-password',null,{token,password:'Mi nueva contraseña 123'})).status,400);
  });
  await t.test('alta pública administrador siempre pendiente y sin token',async()=>{
-  const r=await call('POST','/auth/register',null,{nombre:'Nuevo Admin',edad:30,email:'nuevo@example.org',dni:'20000000',password:'Una contraseña extensa',rolId:2});assert.equal(r.status,201);assert.equal(r.data.usuario.aprobado,false);assert.equal(r.data.usuario.estado,'pendiente');assert.equal(r.data.token,undefined);
+  const r=await call('POST','/auth/register',null,{nombre:'Nuevo Admin',edad:30,email:'nuevo@example.org',dni:'20000000',password:'Una contraseña extensa 1',rolId:2});assert.equal(r.status,201);assert.equal(r.data.usuario.aprobado,false);assert.equal(r.data.usuario.estado,'pendiente');assert.equal(r.data.token,undefined);
  });
  await t.test('correo conserva aprobación ante error y reintenta sin enviar realmente',async()=>{
   const originalFetch=global.fetch;const row=Q.rows.find(r=>r.tipo==='aprobado');row.estado='pendiente';row.disponibleAt=new Date(0);for(const q of Q.rows)if(q!==row)q.estado='enviado';process.env.MAIL_ENABLED='true';
@@ -118,7 +118,7 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
  
  }finally{global.fetch=originalFetch;process.env.MAIL_ENABLED='false';}
  });
- await t.test('contraseñas cortas y bcrypt truncado no se admiten',()=>{assert.equal(R.passwordValida('123'),false);assert.equal(R.passwordValida('á'.repeat(40)),false);assert.equal(R.passwordValida('Una frase de prueba segura'),true);});
+ await t.test('contraseñas cortas y bcrypt truncado no se admiten',()=>{assert.equal(R.passwordValida('123'),false);assert.equal(R.passwordValida('á'.repeat(40)),false);assert.equal(R.passwordValida('Una frase de prueba segura'),false);assert.equal(R.passwordValida('Abcdefg1'),true);assert.equal(R.passwordValida('Abcdef1'),false);assert.equal(R.passwordValida('12345678'),false);assert.equal(R.passwordValida('ábcdefg1'),true);assert.equal(R.passwordValida('a'.repeat(71)+'1'),true);assert.equal(R.passwordValida('a'.repeat(72)+'1'),false);});
  await t.test('envío único: clubes, borrador, DNI por rol, rollback y reintento',async()=>{
   const nuevo=await U.create({nombre:'Nueva',edad:21,club:'Giol',dni:'12345678',email:'nueva@example.org',rol:'deportista',estado:'pendiente'});
   const imagen=await sharp({create:{width:20,height:20,channels:3,background:'#fff'}}).png().toBuffer();

@@ -1,6 +1,22 @@
-<main class="cuenta" style="max-width:520px"><section class="panel"><span class="eyebrow">FEMPA · Acceso</span><h1>{{token?'Elegí una nueva contraseña':'Recuperá tu cuenta'}}</h1>
-<p *ngIf="!token">Ingresá el email de tu cuenta. Si está registrado, te enviaremos un enlace válido por 30 minutos.</p>
-<p *ngIf="error" class="error" role="alert">{{error}}</p><p *ngIf="message" class="ok" role="status">{{message}}</p>
-<form *ngIf="!done" (ngSubmit)="enviar()"><label *ngIf="!token">Email<input type="email" name="email" [(ngModel)]="email" autocomplete="email" required [disabled]="busy"></label>
-<ng-container *ngIf="token"><label>Nueva contraseña<input type="password" name="password" [(ngModel)]="password" autocomplete="new-password" minlength="12" required [disabled]="busy"></label><p class="mini">Al menos 12 caracteres; podés usar una frase larga.</p><label>Repetir contraseña<input type="password" name="confirm" [(ngModel)]="confirm" autocomplete="new-password" required [disabled]="busy"></label></ng-container>
-<div class="acciones"><button [disabled]="busy">{{busy?'Procesando…':token?'Guardar contraseña':'Enviar enlace'}}</button></div></form><p><a routerLink="/login">Volver al ingreso</a></p></section></main>
+<main class="cuenta" style="max-width:520px"><section class="panel">
+<span class="eyebrow">FEMPA · Acceso</span>
+<h1>{{ token ? 'Elegí una nueva contraseña' : solicitado ? 'Revisá tu correo' : 'Recuperá tu cuenta' }}</h1>
+<p *ngIf="!token && !solicitado">Ingresá el correo que usaste al registrarte. Si está asociado a una cuenta, te enviaremos un enlace válido por 30 minutos.</p>
+<p *ngIf="error" class="error" role="alert">{{error}}</p>
+<p *ngIf="message" class="ok" role="status">{{message}}</p>
+<div *ngIf="solicitado && !token" role="status">
+  <p>Si tenés una cuenta asociada a <strong>{{emailOculto}}</strong>, te enviaremos un enlace para recuperar tu contraseña.</p>
+  <p>¿No llega? Revisá Spam y comprobá que ingresaste el correo que usaste al registrarte.</p>
+  <div class="acciones"><button type="button" class="secundario" (click)="corregirCorreo()">Corregir correo</button><a class="boton" routerLink="/registro">Registrarme</a></div>
+</div>
+<form *ngIf="!done && !solicitado" #formulario="ngForm" (ngSubmit)="formulario.valid && enviar()">
+<label *ngIf="!token">Correo electrónico<input type="email" name="email" [(ngModel)]="email" autocomplete="email" required email [disabled]="busy"></label>
+<ng-container *ngIf="token">
+<label>Nueva contraseña<input type="password" name="password" [(ngModel)]="password" autocomplete="new-password" minlength="8" required [disabled]="busy" aria-describedby="password-ayuda"></label>
+<p id="password-ayuda" class="mini" [class.aviso]="password && passwordError" aria-live="polite">{{ password ? passwordError || 'La contraseña cumple los requisitos.' : 'Mínimo 8 caracteres, con una letra y un número.' }}</p>
+<label>Repetir contraseña<input type="password" name="confirm" [(ngModel)]="confirm" autocomplete="new-password" required [disabled]="busy" aria-describedby="confirm-ayuda"></label>
+<p id="confirm-ayuda" class="mini aviso" aria-live="polite">{{ confirm && password !== confirm ? 'Las contraseñas no coinciden.' : '' }}</p>
+</ng-container>
+<div class="acciones"><button [disabled]="busy || formulario.invalid || (!!token && (!!passwordError || password !== confirm))">{{busy ? 'Procesando…' : token ? 'Guardar contraseña' : 'Enviar enlace'}}</button></div>
+</form><p><a routerLink="/login">Volver al ingreso</a></p>
+</section></main>

@@ -2,7 +2,7 @@ const crypto = require('node:crypto');
 const ESTADOS = ['pendiente', 'requiere_correcciones', 'aprobado', 'bloqueado'];
 const CAMPOS = ['nombre', 'edad', 'club', 'categoria', 'nivel', 'domicilio', 'telefono', 'fechaNacimiento', 'fotoPerfil', 'dniFrente', 'dniDorso', 'fichaMedica'];
 const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
-function passwordValida(p) { return typeof p === 'string' && p.length >= 12 && Buffer.byteLength(p) <= 72; }
+function passwordValida(p) { return typeof p === 'string' && p.length >= 8 && /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(p) && /[0-9]/.test(p) && Buffer.byteLength(p) <= 72; }
 function hashToken(token) { return crypto.createHash('sha256').update(token).digest('hex'); }
 function decision(u, body, actor) {
   if (!ESTADOS.includes(body.estado)) fail(400, 'Estado inválido.');
