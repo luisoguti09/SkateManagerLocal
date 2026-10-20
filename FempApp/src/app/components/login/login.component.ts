@@ -57,8 +57,7 @@ export class LoginComponent {
       finalize(() => this.cargando = false)
     ).subscribe({
       next: () => {
-        this.form.controls.password.reset();
-        if(this.auth.getUsuario()?.estado !== 'aprobado') { void this.router.navigate(['/mi-solicitud']); return; }
+        if (this.auth.getUsuario()?.estado !== 'aprobado') { void this.router.navigate(['/mi-solicitud']); return; }
         const destinos: Record<string, string> = {
           administrador: '/dashboard-admin', tecnico: '/dashboard-tecnico',
           deportista: '/dashboard-deport', tesoreria: '/dashboard-tesoreria'
