@@ -7,13 +7,13 @@ import { tap, catchError } from 'rxjs/operators';
 import { PerfilEditable } from '../interfaces/PerfilEditable';
 import { BehaviorSubject } from 'rxjs';
 
-type RolNombre = 'administrador' | 'tecnico' | 'deportista' | 'tesoreria';
+type RolNombre = 'administrador' | 'tecnico' | 'juez' | 'deportista' | 'tesoreria';
 
 const ROLE_BY_ID: Record<number, RolNombre> = {
   1: 'deportista',
   2: 'administrador',
   3: 'tecnico',
-  4: 'tecnico', // juez: compatibilidad vigente en el backend
+  4: 'juez',
   5: 'tesoreria'
 };
 
@@ -186,7 +186,7 @@ export class AuthService {
     const nombre = String(u.rol ?? '').trim().toLowerCase();
     const aliases: Record<string, RolNombre> = {
       admin: 'administrador', administrador: 'administrador',
-      auditor: 'tecnico', tecnico: 'tecnico', juez: 'tecnico',
+      auditor: 'tecnico', tecnico: 'tecnico', juez: 'juez',
       deportista: 'deportista', tesorero: 'tesoreria', tesoreria: 'tesoreria'
     };
     // Un nombre explícito prevalece sobre el ID; uno desconocido no otorga permisos.

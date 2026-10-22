@@ -1,4 +1,6 @@
-import {Component,OnInit,inject,ChangeDetectorRef,ElementRef} from '@angular/core';
+import {Component,OnInit,OnDestroy,inject,ChangeDetectorRef,ElementRef} from '@angular/core';
+import {DomSanitizer,SafeResourceUrl} from '@angular/platform-browser';
+import {Subscription} from 'rxjs';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {RouterLink} from '@angular/router';
@@ -6,28 +8,65 @@ import {finalize} from 'rxjs';
 import {CuentaService,estados,camposCuenta,guardarArchivo} from '../../services/cuenta.service';
 import {AuthService} from '../../services/auth.service';
 @Component({selector:'app-solicitud',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./solicitud.component.html',styleUrls:['./solicitud.component.scss']})
-export class SolicitudComponent implements OnInit {
+export class SolicitudComponent implements OnInit,OnDestroy {
+ private sanitizer=inject(DomSanitizer);
+ vistaArchivo: {key:string;label:string;url:string;pdf:SafeResourceUrl|null}|null=null;
+ cargandoArchivo='';errorArchivo='';
+ private peticionArchivo?:Subscription;
+ private versionArchivo=0;
+ cerrarArchivo(){
+  this.versionArchivo++;
+  this.peticionArchivo?.unsubscribe();this.peticionArchivo=undefined;
+  if(this.vistaArchivo)URL.revokeObjectURL(this.vistaArchivo.url);
+  this.vistaArchivo=null;this.cargandoArchivo='';this.errorArchivo='';
+ }
+ ngOnDestroy(){this.cerrarArchivo();}
+ verArchivo(key:string,label:string){
+  if(!this.u || this.busy)return;
+  this.cerrarArchivo();this.cargandoArchivo=key;
+  const version=this.versionArchivo;
+  this.peticionArchivo=this.api.archivo(this.u.id,key).subscribe({
+   next:async blob=>{
+    try {
+     // Solo se crean URL locales para imágenes y PDF recibidos por la API autenticada.
+     const bytes=new Uint8Array(await blob.slice(0,5).arrayBuffer());
+     if(version!==this.versionArchivo)return;
+     const pdf=String.fromCharCode(...bytes)==='%PDF-';
+     const jpg=bytes[0]===255 && bytes[1]===216 && bytes[2]===255;
+     if(!pdf && !jpg)throw new Error('unsupported');
+     const url=URL.createObjectURL(new Blob([blob],{type:pdf?'application/pdf':'image/jpeg'}));
+     this.vistaArchivo={key,label,url,pdf:pdf?this.sanitizer.bypassSecurityTrustResourceUrl(url):null};
+     this.cargandoArchivo='';this.enfocar('[data-visor]');
+    } catch {
+     if(version===this.versionArchivo){this.cargandoArchivo='';this.errorArchivo='No se pudo mostrar el archivo. Podés intentar descargarlo.';}
+    }
+   },
+   error:()=>{if(version===this.versionArchivo){this.cargandoArchivo='';this.errorArchivo='No se pudo abrir el documento. Actualizá el detalle y volvé a intentar.';}}
+  });
+ }
+
  private api=inject(CuentaService);private vista=inject(ChangeDetectorRef);private host=inject(ElementRef);
  auth=inject(AuthService);u:any;form:any={};busy=false;error='';ok='';estados=estados;
  clubes:{id:number;nombre:string}[]=[];cargandoClubes=false;errorClubes='';
  files:Record<string,File>={};
- archivos=camposCuenta.filter(c=>['fotoPerfil','dniFrente','dniDorso','fichaMedica'].includes(c.key));
+ get archivos(){return camposCuenta.filter(c=>this.u?.politicaDocumentos?.visibles?.includes(c.key));}
  get deportiva(){return ['deportista','tecnico'].includes(this.u?.rol);}
  get editable(){return this.u && (this.u.estado==='requiere_correcciones' || (this.u.estado==='pendiente' && !this.u.solicitudEnviada));}
  get campos(){return camposCuenta.filter(c=>!['fotoPerfil','dniFrente','dniDorso','fichaMedica','categoria','club'].includes(c.key) && (c.key!=='nivel' || this.u?.rol==='tecnico'));}
  get observacionesCampos(){return camposCuenta.filter(c=>c.key!=='categoria' && this.u?.camposCorregir?.includes(c.key));}
- get destino(){return ({administrador:'/admin',deportista:'/dashboard-deport',tecnico:'/dashboard-tecnico',tesoreria:'/dashboard-tesoreria'} as Record<string,string>)[this.u?.rol] || '/login';}
+ get destino(){return ({administrador:'/admin',deportista:'/dashboard-deport',tecnico:'/dashboard-prof',juez:'/dashboard-juez',tesoreria:'/dashboard-tesoreria'} as Record<string,string>)[this.u?.rol] || '/login';}
  get tituloEstado(){return this.u?.etapaSolicitud || this.estados[this.u?.estado] || 'Mi solicitud';}
  ngOnInit(){this.cargar();this.cargarClubes();}
  private enfocar(selector:string){this.vista.detectChanges();const el=this.host.nativeElement.querySelector(selector) as HTMLElement|null;el?.focus({preventScroll:true});el?.scrollIntoView({block:'start',behavior:'auto'});}
  set(data:any){this.u=data;this.form={};for(const c of this.campos)this.form[c.key]=data[c.key]??'';this.form.club=data.club??'';this.auth.setUsuario(data);}
- cargar(){if(this.busy)return;this.busy=true;this.error='';this.api.mia().pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.set(u);this.files={};},error:e=>{this.error=e.error?.error || 'No se pudo consultar la solicitud.';}});}
+ cargar(){if(this.busy)return;this.cerrarArchivo();this.busy=true;this.error='';this.api.mia().pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.set(u);this.files={};},error:e=>{this.error=e.error?.error || 'No se pudo consultar la solicitud.';}});}
  cargarClubes(){if(this.cargandoClubes)return;this.cargandoClubes=true;this.errorClubes='';this.api.clubes().pipe(finalize(()=>this.cargandoClubes=false)).subscribe({next:r=>{this.clubes=Array.isArray(r)?r:[];if(!this.clubes.length)this.errorClubes='No hay clubes disponibles. Consultá a la Federación antes de enviar.';},error:()=>this.errorClubes='No se pudo cargar el listado de clubes. Reintentá.'});}
  seleccionar(event:Event,key:string){const input=event.target as HTMLInputElement;const file=input.files?.[0];delete this.files[key];this.error='';if(!file)return;const pdf=key==='fichaMedica' && file.type==='application/pdf';if(!['image/jpeg','image/png','image/webp',...(key==='fichaMedica'?['application/pdf']:[])].includes(file.type)){this.error='Seleccioná JPG, PNG o WebP; la ficha médica también admite PDF.';input.value='';return;}if(file.size>(pdf?2:6)*1024*1024){this.error=pdf?'El PDF debe pesar hasta 2 MB.':'La imagen debe pesar hasta 6 MB.';input.value='';return;}this.files[key]=file;}
  enviar(){
   if(this.busy || !this.editable)return;
-  this.error='';this.ok='';
-  const faltantes=['fotoPerfil',...(this.u.requiereDni?['dniFrente','dniDorso']:[])].filter(k=>!this.files[k] && !this.u.documentos?.[k]);
+  this.cerrarArchivo();this.error='';this.ok='';
+  if(!this.u.politicaDocumentos){this.error='Actualizá la aplicación y el backend antes de enviar.';return;}
+  const faltantes=(this.u.politicaDocumentos.obligatorios as string[]).filter(k=>!this.files[k] && !this.u.documentos?.[k]);
   if(faltantes.length){this.error='Completá: '+this.archivos.filter(c=>faltantes.includes(c.key)).map(c=>c.label).join(', ')+'.';this.enfocar('.error');return;}
   if(this.deportiva && !this.clubes.some(c=>c.nombre===this.form.club)){this.error='Seleccioná un club del listado.';this.enfocar('.error');return;}
   const f=new FormData();f.append('datos',JSON.stringify({...this.form,revision:this.u.revision}));
@@ -38,6 +77,6 @@ export class SolicitudComponent implements OnInit {
    error:e=>{this.error=e.error?.error || 'No pudimos confirmar el envío. Tus datos siguen en pantalla. Podés reintentar; si ya se recibió, no se duplicará.';this.enfocar('.error');}
   });
  }
- salir(){if(this.busy)return;this.auth.logout();}
+ salir(){if(this.busy)return;this.cerrarArchivo();this.auth.logout();}
  descargar(key:string){this.api.descargar(this.u.id,key).subscribe({next:b=>guardarArchivo(b,key),error:()=>{this.error='No se pudo descargar el archivo.';this.enfocar('.error');}});}
 }

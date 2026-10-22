@@ -80,7 +80,7 @@ router.get('/usuario/:usuarioId', async (req, res) => {
     const { usuarioId } = req.params;
     if (
       Number(usuarioId) !== req.auth.id &&
-      !['administrador', 'tecnico'].includes(req.auth.rol)
+      !['administrador', 'juez'].includes(req.auth.rol)
     )
       return res.status(403).json({ error: 'Perfil ajeno.' });
 

@@ -76,11 +76,13 @@ export const routes: Routes = [
       ),
   },
   { path: 'dashboard-admin', redirectTo: 'admin', pathMatch: 'full' }, // canActivate: [authGuard] },
-  { path: 'dashboard-tecnico', component: DashboardTecnicoComponent, canActivate: [authGuard], data: { roles: ['tecnico', 'administrador'] } }, // canActivate: [authGuard] },
+  { path: 'dashboard-tecnico', redirectTo: 'dashboard-juez', pathMatch: 'full' },
+  { path: 'dashboard-juez', component: DashboardTecnicoComponent, canActivate: [authGuard], data: { roles: ['juez', 'administrador'] } }, // canActivate: [authGuard] },
   {
     path: 'dashboard-prof',
-    redirectTo: 'dashboard-tecnico',
-    pathMatch: 'full',
+    component: DashboardTecnicoComponent,
+    canActivate: [authGuard],
+    data: { roles: ['tecnico', 'administrador'] },
   }, // canActivate: [authGuard] },
   // Ruta por defecto redirige a login
   { path: '', redirectTo: 'login', pathMatch: 'full' },

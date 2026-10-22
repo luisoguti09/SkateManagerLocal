@@ -1,11 +1,11 @@
 <main class="cuenta" [attr.aria-busy]="busy">
- <header class="cabecera"><div><span class="eyebrow">FEMPA · Tu cuenta</span><h1>Mi solicitud</h1><p>Completá tus datos y seguí la revisión de la Federación.</p></div><img class="marca" src="assets/icons/fempa-blanco-negro.png" alt="FEMPA"></header>
+ <header class="cabecera"><div><span class="eyebrow">FEMPA · Tu cuenta</span><h1>{{editable ? "Completá tu solicitud" : "Mi solicitud"}}</h1><p>Completá tus datos y seguí la revisión de la Federación.</p></div><img class="marca" src="assets/icons/fempa-blanco-negro.png" alt="FEMPA"></header>
  <div class="acciones barra"><button type="button" class="secundario" (click)="cargar()" [disabled]="busy">Actualizar estado</button><button type="button" class="secundario" (click)="salir()" [disabled]="busy">Cerrar sesión</button></div>
  <p *ngIf="error" class="error" role="alert" tabindex="-1">{{error}}</p>
  <p *ngIf="busy" class="procesando" role="status">Procesando… Esperá la confirmación antes de cerrar.</p>
  <ng-container *ngIf="u">
  <section class="panel estado-panel" data-estado tabindex="-1">
-  <span class="estado" [ngClass]="u.estado">{{tituloEstado}}</span>
+  <span class="estado" [ngClass]="u.estado">{{u.estado==='pendiente' && !u.solicitudEnviada ? "Paso 2 · Datos y documentos" : tituloEstado}}</span>
   <p *ngIf="ok" class="ok" role="status">{{ok}}</p>
   <ng-container *ngIf="u.estado==='pendiente' && u.solicitudEnviada"><h2>Tu solicitud está en revisión</h2><p>Ya recibimos tus datos y documentos. No necesitás enviarlos de nuevo.</p><p>Podés cerrar sesión y volver a ingresar para consultar la respuesta.</p><button type="button" (click)="salir()" [disabled]="busy">Cerrar sesión y volver al inicio</button></ng-container>
   <p *ngIf="u.estado==='pendiente' && !u.solicitudEnviada">Completá el formulario y pulsá <strong>Enviar solicitud</strong>. Hasta ese momento tu solicitud no está presentada.</p>
@@ -15,21 +15,30 @@
   <p *ngIf="u.camposCorregir?.includes('categoria')" class="mini">La categoría se gestiona en los perfiles deportivos. No se pide nuevamente en esta solicitud.</p>
   <p *ngIf="u.estado==='aprobado'">Tu cuenta está aprobada. Las categorías y disciplinas se completan en tus perfiles deportivos.</p>
   <a *ngIf="u.estado==='aprobado'" class="boton" [routerLink]="destino">Entrar a la aplicación</a>
-  <p class="mini">Consultá el resultado acá. Las notificaciones por correo dependen del servicio de correo de la Federación.</p>
+  <p *ngIf="u.solicitudEnviada || u.estado!=='pendiente'" class="mini">Consultá el resultado acá. Las notificaciones por correo dependen del servicio de correo de la Federación.</p>
  </section>
  <form *ngIf="editable" #solicitud="ngForm" (ngSubmit)="enviar()">
  <section class="panel"><h2>Datos personales</h2><p class="mini">{{u.email}} · DNI {{u.dni}} · Rol solicitado: {{u.rol}}</p>
   <div class="grid"><label *ngFor="let c of campos">{{c.label}}<input [name]="c.key" [(ngModel)]="form[c.key]" [type]="c.key==='edad'?'number':c.key==='fechaNacimiento'?'date':c.key==='telefono'?'tel':'text'" [required]="c.key==='nombre' || c.key==='edad'" [disabled]="busy" maxlength="255" [attr.min]="c.key==='edad'?0:null" [attr.max]="c.key==='edad'?120:null"></label>
   <label *ngIf="deportiva">Club<select name="club" [(ngModel)]="form.club" required [disabled]="busy || cargandoClubes || !!errorClubes"><option value="">Seleccioná tu club</option><option *ngFor="let c of clubes" [value]="c.nombre">{{c.nombre}}</option></select></label></div>
   <p *ngIf="deportiva && errorClubes" class="error">{{errorClubes}} <button type="button" class="secundario" (click)="cargarClubes()" [disabled]="cargandoClubes">Reintentar clubes</button></p>
-  <p *ngIf="deportiva" class="nota">Esta solicitud corresponde a la licencia provincial. Su aprobación no genera un cobro ni acredita el pago de una licencia.</p>
+  <p *ngIf="u.rol==='deportista'" class="nota">Esta solicitud corresponde a la licencia provincial. Su aprobación no genera un cobro ni acredita el pago de una licencia.</p>
   <p class="mini">La categoría, disciplina y divisional se gestionan en los perfiles deportivos, después de aprobar la cuenta.</p>
  </section>
- <section class="panel"><h2>Foto y documentación</h2><p>Foto de perfil obligatoria. <span *ngIf="u.requiereDni">También se requieren frente y dorso del DNI.</span></p><p class="mini">Imágenes JPG, PNG o WebP de hasta 6 MB; se optimizan al guardarlas. Ficha médica: imagen o PDF de hasta 2 MB. La ficha es opcional salvo que la Federación la solicite expresamente.</p>
-  <div class="archivos"><div class="archivo" *ngFor="let c of archivos"><label>{{c.label}}<input type="file" [accept]="c.key==='fichaMedica'?'image/jpeg,image/png,image/webp,application/pdf':'image/jpeg,image/png,image/webp'" (change)="seleccionar($event,c.key)" [disabled]="busy"></label><p class="mini">{{files[c.key] ? 'Seleccionado: '+files[c.key].name : u.documentos?.[c.key] ? 'Archivo ya cargado; no hace falta seleccionarlo otra vez.' : 'Sin archivo'}}</p><button type="button" class="secundario" *ngIf="u.documentos?.[c.key]" (click)="descargar(c.key)">Ver archivo cargado</button></div></div>
+ <section class="panel"><h2>Foto y documentación</h2><p *ngIf="u.rol==='tecnico'" class="nota">La acreditación documental para trabajar con menores se coordina con la Federación. La aprobación de esta cuenta no reemplaza esa acreditación.</p><p>{{u.rol==='tesoreria'?'Foto de perfil opcional.':'Foto de perfil obligatoria.'}} <span *ngIf="u.requiereDni">También se requieren frente y dorso del DNI.</span></p><p class="mini">Imágenes JPG, PNG o WebP de hasta 6 MB; se optimizan al guardarlas. {{u.rol==='deportista'?'Ficha médica: imagen o PDF de hasta 2 MB. Es opcional salvo pedido de la Federación.':''}}</p>
+  <div class="archivos"><div class="archivo" *ngFor="let c of archivos"><label>{{c.label}}<input type="file" [accept]="c.key==='fichaMedica'?'image/jpeg,image/png,image/webp,application/pdf':'image/jpeg,image/png,image/webp'" (change)="seleccionar($event,c.key)" [disabled]="busy"></label><p class="mini">{{files[c.key] ? 'Seleccionado: '+files[c.key].name : u.documentos?.[c.key] ? 'Archivo ya cargado; no hace falta seleccionarlo otra vez.' : 'Sin archivo'}}</p><div class="acciones" *ngIf="u.documentos?.[c.key]"><button type="button" class="secundario" (click)="verArchivo(c.key,c.label)" [disabled]="busy || cargandoArchivo===c.key">Ver documento</button><button type="button" class="secundario" (click)="descargar(c.key)" [disabled]="busy">Descargar</button></div></div></div>
  </section>
  <section class="panel envio"><h2>Revisá y enviá</h2><p>El botón guarda los datos y documentos y presenta la solicitud en un único envío.</p><button type="submit" [disabled]="busy || solicitud.invalid || (deportiva && (cargandoClubes || !!errorClubes))">{{busy?'Enviando…':u.estado==='requiere_correcciones'?'Enviar correcciones':'Enviar solicitud'}}</button><p class="mini">Los cambios sin enviar se perderán si salís o actualizás el estado.</p></section>
  </form>
+<p *ngIf="cargandoArchivo" role="status">Cargando documento…</p>
+<p *ngIf="errorArchivo" class="error" role="alert">{{errorArchivo}}</p>
+<section *ngIf="vistaArchivo as archivo" class="visor" data-visor tabindex="-1" [attr.aria-label]="'Vista previa: '+archivo.label">
+ <div class="cabecera"><h3>{{archivo.label}}</h3><button type="button" class="secundario" (click)="cerrarArchivo()">Cerrar vista previa</button></div>
+ <iframe *ngIf="archivo.pdf; else imagenDocumento" [src]="archivo.pdf" [title]="archivo.label" class="visor-pdf"></iframe>
+ <ng-template #imagenDocumento><img [src]="archivo.url" [alt]="archivo.label" class="visor-imagen"></ng-template>
+ <p *ngIf="archivo.pdf" class="mini">Si tu navegador no muestra el PDF, usá Descargar.</p>
+</section>
+
  <details class="panel"><summary>Historial de la solicitud</summary><p *ngIf="!u.historial?.length">Todavía no hay movimientos.</p><ul class="lista"><li *ngFor="let h of u.historial"><strong>{{h.accion.replaceAll('_',' ')}}</strong> · {{h.createdAt | date:'dd/MM/yyyy HH:mm'}}<p *ngIf="h.motivo">{{h.motivo}}</p></li></ul></details>
  </ng-container>
 </main>

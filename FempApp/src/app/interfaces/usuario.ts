@@ -15,6 +15,6 @@ export interface Usuario {
   documentacionAprobada?: boolean;
    // nuevos opcionales hasta que ADMIN se encuentre habilitado
   estado?: 'pendiente'|'aprobado'|'bloqueado'|null;
-  rolSolicitado?: 'administrador'|'tecnico'|'deportista'|null;
+  rolSolicitado?: 'administrador'|'tecnico'|'juez'|'tesoreria'|'deportista'|null;
   qrJti?: string|null;
 }

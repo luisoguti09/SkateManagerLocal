@@ -9,7 +9,7 @@
       <mat-card-title>
         <img class="cardImg" mat-card-md-image src="../../../assets/icons/MARCAFEMPA2.png" alt="Logo de FEMPA">
       </mat-card-title>
-      <mat-card-subtitle>Ahora corroboremos tu DNI</mat-card-subtitle>
+      <mat-card-subtitle>{{cuentaCreada ? "Continuar solicitud" : "Paso 1 · Crear tu cuenta"}}</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
       <div *ngIf="errorMsg && !empadronada" class="error-message" role="alert">{{ errorMsg }}</div>
@@ -23,6 +23,15 @@
         <button mat-button type="button" (click)="cargarClubes()" [disabled]="cargandoClubes">Reintentar clubes</button>
       </div>
 
+      <section *ngIf="cuentaCreada">
+        <p *ngIf="cargando" role="status">Abriendo tus datos y documentación…</p>
+        <div *ngIf="!cargando">
+          <p class="error-message" role="alert">{{errorMsg}}</p>
+          <button mat-raised-button color="primary" type="button" (click)="continuarSolicitud()">Continuar solicitud</button>
+          <a mat-button routerLink="/login">Ingresar con mi cuenta</a>
+        </div>
+      </section>
+      <ng-container *ngIf="!cuentaCreada">
       <!-- Formulario de búsqueda de DNI -->
       <form [formGroup]="form" class="reg-form" (ngSubmit)="buscar()">
         <mat-form-field class="example-full-width" appearance="outline" floatLabel="always">
@@ -135,12 +144,13 @@
               [disabled]="cargando || cargandoBuscar || cargandoRoles || cargandoClubes || !!errorRoles || !!errorClubes || !!successMsg">
               <mat-progress-spinner *ngIf="cargando" mode="indeterminate" diameter="20"
                 color="accent"></mat-progress-spinner>
-              <span *ngIf="!cargando">Registrarme</span>
+              <span *ngIf="!cargando">Crear cuenta y continuar</span>
             </button>
           </section>
         </form>
       </div>
 
+      </ng-container>
     </mat-card-content>
   </mat-card>
 </div>

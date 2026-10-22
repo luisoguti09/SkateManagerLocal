@@ -22,9 +22,9 @@ function formatearDniConPuntos(value) {
 }
 
 // Obtener todos los patinadores registrados (authMiddleware)
-router.get('/', verifyToken, requireRole('administrador','tecnico'), async (req, res) => {
+router.get('/', verifyToken, requireRole('administrador','tecnico','juez'), async (req, res) => {
   try {
-    const padron = await Padron.findAll();
+    const padron = await require('../services/alcance-evaluaciones').deportistas(req.cuenta);
     res.json(padron);
   } catch (error) {
     res.status(500).json({ error: 'No se encuentra el DNI en la base de datos!' });

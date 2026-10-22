@@ -59,7 +59,7 @@ export class LoginComponent {
       next: () => {
         if (this.auth.getUsuario()?.estado !== 'aprobado') { void this.router.navigate(['/mi-solicitud']); return; }
         const destinos: Record<string, string> = {
-          administrador: '/dashboard-admin', tecnico: '/dashboard-tecnico',
+          administrador: '/dashboard-admin', tecnico: '/dashboard-prof', juez: '/dashboard-juez',
           deportista: '/dashboard-deport', tesoreria: '/dashboard-tesoreria'
         };
         const destino = destinos[this.auth.getRolNombre() ?? ''];

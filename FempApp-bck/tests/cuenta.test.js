@@ -56,6 +56,33 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
    const text=await response.text();let data;try{data=JSON.parse(text);}catch{data=text;}return{status:response.status,data};
  };
  try{
+ await t.test('roles separados: juez registra y accede como juez, tesorería envía sin foto',async()=>{
+  await Rol.create({id:3,nombre:'tecnico'});await Rol.create({id:4,nombre:'juez'});
+  const r=await call('POST','/auth/register',null,{nombre:'Juez nuevo',edad:35,email:'juez@example.org',dni:'22223333',password:'Contraseña123',rolId:4});
+  assert.equal(r.status,201);assert.equal(r.data.usuario.rol,'juez');assert.equal(r.data.rolId,4);
+  const juez=await U.findByPk(r.data.usuario.id);assert.equal(juez.solicitaLicenciaProvincial,false);
+  // Model substitute doesn't run bcrypt hook; provide the real hash for login.
+  juez.password=password;
+  const login=await call('POST','/auth/login',null,{email:juez.email,password:'Mi contraseña de prueba'});
+  assert.equal(login.status,200);assert.equal(login.data.usuario.rol,'juez');
+  const politica=(await C.detalle(juez)).politicaDocumentos;
+  assert.deepEqual(politica,{visibles:['fotoPerfil'],obligatorios:['fotoPerfil']});
+  const tes=await U.create({nombre:'Tes',edad:30,dni:'33334444',email:'tes@example.org',rol:'tesoreria',rolId:5,estado:'pendiente'});
+  const f=new FormData();f.append('datos',JSON.stringify({nombre:tes.nombre,edad:30,revision:0}));
+  const envio=await fetch(base+'/cuenta/mia/enviar',{method:'POST',headers:{Authorization:'Bearer '+token(tes)},body:f});
+  assert.equal(envio.status,200);assert.equal((await envio.json()).solicitudEnviada,true);
+  assert.equal(tes.fotoPerfil,undefined);
+  const P=require('../services/cuenta-documentos');
+  assert.throws(()=>P.validarArchivos(tes,{dniFrente:[{}]}),e=>e.status===400);
+  assert.deepEqual(P.politica({rol:'tecnico'}).visibles,['fotoPerfil']);
+ });
+ await t.test('club: cuenta actual prevalece sobre padrón antiguo y no abre otros clubes',async()=>{
+  const {filtrar}=require('../services/alcance-evaluaciones');
+  const padron=[{id:1,documentoN:'12.345.678',club:'A'},{id:2,documentoN:'22222222',club:'A'},{id:3,documentoN:'33333333',club:'B'}];
+  const cuentas=[{dni:'12345678',rol:'deportista',estado:'aprobado',club:'B'}];
+  assert.deepEqual(filtrar(padron,cuentas,'A').map(p=>p.id),[2]);
+  assert.deepEqual(filtrar(padron,cuentas,'B').map(p=>p.id),[1,3]);
+ });
  await t.test('sesión pendiente válida, datos propios y sin password',async()=>{
   const r=await call('POST','/auth/login',null,{email:user.email,password:'Mi contraseña de prueba'});assert.equal(r.status,200);assert.ok(r.data.token);assert.equal(r.data.usuario.estado,'pendiente');assert.equal(r.data.usuario.password,undefined);
   assert.equal((await call('GET','/cuenta/mia',user)).status,200);

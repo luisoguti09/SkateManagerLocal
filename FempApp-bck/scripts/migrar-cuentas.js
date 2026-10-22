@@ -17,6 +17,7 @@ async function main(){
   for(const [table,fields,name] of [['CuentaHistorial',['usuarioId','id'],'cuenta_historial_usuario'],['CuentaCorreo',['estado','disponibleAt'],'cuenta_correo_pendientes'],['CuentaReset',['usuarioId','createdAt'],'cuenta_reset_usuario']]){
     const indexes=await qi.showIndex(table);if(!indexes.some(i=>i.name===name))await qi.addIndex(table,fields,{name});
   }
-  console.log('Migración de cuentas completa. No se cambiaron estados, roles, pagos ni usuarios existentes.');
+  await require('./migrar-roles').migrar(sequelize);
+  console.log('Migración completa. Estados, pagos y evaluaciones conservados.');
 }
 main().catch(e=>{console.error('Migración fallida:',e.name,e.message);process.exitCode=1;}).finally(()=>sequelize.close());

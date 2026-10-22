@@ -30,10 +30,10 @@ export class RevisionCuentasComponent implements OnInit,OnDestroy{
      // Solo se crean URL locales para imágenes y PDF recibidos por la API autenticada.
      const bytes=new Uint8Array(await blob.slice(0,5).arrayBuffer());
      if(version!==this.versionArchivo)return;
-     const pdf=blob.type==='application/pdf' && String.fromCharCode(...bytes)==='%PDF-';
-     const jpg=blob.type==='image/jpeg' && bytes[0]===255 && bytes[1]===216 && bytes[2]===255;
+     const pdf=String.fromCharCode(...bytes)==='%PDF-';
+     const jpg=bytes[0]===255 && bytes[1]===216 && bytes[2]===255;
      if(!pdf && !jpg)throw new Error('unsupported');
-     const url=URL.createObjectURL(blob);
+     const url=URL.createObjectURL(new Blob([blob],{type:pdf?'application/pdf':'image/jpeg'}));
      this.vistaArchivo={key,label,url,pdf:pdf?this.sanitizer.bypassSecurityTrustResourceUrl(url):null};
      this.cargandoArchivo='';this.enfocar('[data-visor]');
     } catch {
@@ -45,7 +45,9 @@ export class RevisionCuentasComponent implements OnInit,OnDestroy{
  }
  private vista=inject(ChangeDetectorRef);private host=inject(ElementRef);
  private api=inject(CuentaService);private router=inject(Router);
- estados=estados;campos=camposCuenta.filter(c=>c.key!=='categoria');estado=this.router.url.includes('/todos')?'':'pendiente';q='';page=1;total=0;usuarios:any[]=[];u:any=null;busy=false;error='';ok='';motivo='';nuevoEstado='aprobado';seleccion:Record<string,boolean>={};
+ estados=estados;get campos(){return camposCuenta.filter(c=>c.key!=='categoria' && (!['fotoPerfil','dniFrente','dniDorso','fichaMedica'].includes(c.key) || this.u?.politicaDocumentos?.visibles?.includes(c.key) || this.u?.documentos?.[c.key]));}
+ get camposCorregibles(){return this.campos.filter(c=>!['fotoPerfil','dniFrente','dniDorso','fichaMedica'].includes(c.key) || this.u?.politicaDocumentos?.visibles?.includes(c.key));}
+ estado=this.router.url.includes('/todos')?'':'pendiente';q='';page=1;total=0;usuarios:any[]=[];u:any=null;busy=false;error='';ok='';motivo='';nuevoEstado='aprobado';seleccion:Record<string,boolean>={};
  private enfocar(selector:string){
   this.vista.detectChanges();
   const elemento=this.host.nativeElement.querySelector(selector) as HTMLElement | null;
@@ -82,4 +84,3 @@ export class RevisionCuentasComponent implements OnInit,OnDestroy{
  descargar(key:string){this.api.descargar(this.u.id,key).subscribe({next:b=>guardarArchivo(b,key),error:()=>this.error='No se pudo descargar el archivo.'});}
  reintentar(id:number){if(this.busy)return;this.busy=true;this.api.reintentar(id).pipe(finalize(()=>this.busy=false)).subscribe({next:()=>{this.ok='Correo programado para reintento. Actualizá el detalle para consultar el resultado.';},error:e=>this.error=e.error?.error || 'No se pudo reintentar.'});}
 }
-

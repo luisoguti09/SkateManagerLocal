@@ -566,7 +566,8 @@ export class MyProfileComponent implements OnInit {
 
     const destino =
       rol === 'administrador' ? '/admin/usuarios/pendientes' :
-        rol === 'tecnico' ? '/dashboard-tecnico' :
+        rol === 'tecnico' ? '/dashboard-prof' :
+        rol === 'juez' ? '/dashboard-juez' :
           '/dashboard-deport';         // default deportista
 
     this.router.navigateByUrl(destino);
@@ -574,4 +575,3 @@ export class MyProfileComponent implements OnInit {
 
 
 }
-

@@ -117,10 +117,11 @@ app.use('/uploads', (_req,res)=>res.status(404).end());
 
 // Rutas
 const {verifyToken,requireRole}=require('./middleware/auth.middleware');
-app.use('/patinadores',verifyToken,requireRole('administrador','tecnico'));
+app.use('/patinadores',verifyToken,requireRole('administrador','juez'));
 app.use('/padron-import',verifyToken,requireRole('administrador'));
 app.use(['/roles','/clubes'],(req,res,next)=>['GET','HEAD','OPTIONS'].includes(req.method)?next():verifyToken(req,res,()=>requireRole('administrador')(req,res,next)));
 app.use(['/asistencias','/perfiles-deportivos','/evaluaciones','/elementos','/componentes'],verifyToken);
+app.use(['/elementos','/componentes'],(req,res,next)=>['GET','HEAD'].includes(req.method)?next():requireRole('administrador','juez')(req,res,next));
 app.use('/pagos', pagosRouter);
 app.use('/eventos', eventosRouter);
 app.use('/precios-participacion', preciosParticipacionRouter);

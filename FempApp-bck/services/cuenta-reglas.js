@@ -16,6 +16,8 @@ function decision(u, body, actor) {
   if (motivo.length > 2000) fail(400, 'El motivo no debe superar 2000 caracteres.');
   if (['requiere_correcciones','bloqueado'].includes(body.estado) && motivo.length < 5) fail(400, 'Explicá el motivo (al menos 5 caracteres).');
   const campos = [...new Set(Array.isArray(body.campos) ? body.campos : [])];
+  const docs=['fotoPerfil','dniFrente','dniDorso','fichaMedica'];
+  if(campos.some(k=>docs.includes(k) && !require('./cuenta-documentos').politica(u).visibles.includes(k)))fail(400,'El documento seleccionado no corresponde al rol.');
   if (campos.some(c => !CAMPOS.includes(c))) fail(400, 'Campo de corrección inválido.');
   if (body.estado === 'requiere_correcciones' && !campos.length) fail(400, 'Seleccioná qué campos debe corregir.');
   return { estado: body.estado, aprobado: body.estado === 'aprobado', correcciones: motivo || null,

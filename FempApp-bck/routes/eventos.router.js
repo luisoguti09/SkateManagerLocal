@@ -233,7 +233,7 @@ router.get('/usuarios/:usuarioId/eventos', verifyToken, (req,res,next)=>Number(r
 router.get(
   '/:eventoId/usuarios',
   verifyToken,
-  requireRole('administrador', 'tecnico'),
+  requireRole('administrador', 'juez'),
   async (req, res) => {
     try {
       const { eventoId } = req.params;
@@ -250,7 +250,7 @@ router.get(
 );
 
 // GET /eventos/:eventId/qr.png
-router.get('/:eventId/qr.png', verifyToken, requireRole('administrador','tecnico'), async (req, res) => {
+router.get('/:eventId/qr.png', verifyToken, requireRole('administrador','juez'), async (req, res) => {
   const id = Number(req.params.eventId);
   const ev = await Evento.findByPk(id);
   if (!ev) return res.status(404).send('Evento no encontrado');

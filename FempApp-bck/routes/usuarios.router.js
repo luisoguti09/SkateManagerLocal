@@ -115,7 +115,7 @@ router.get(
 router.get(
   '/',
   verifyToken,
-  requireRole('administrador', 'tecnico'),
+  requireRole('administrador', 'juez'),
   async (req, res) => {
     try {
       const { aprobado } = req.query;
@@ -205,6 +205,7 @@ router.put('/:dni/perfil', verifyToken, async (req, res) => {
 
     if (Number(usuario.id) !== Number(req.auth.id))
       return res.status(403).json({ error: 'Solo podés editar tu perfil.' });
+    if('club' in datos && datos.club!==usuario.club)return res.status(403).json({error:'El cambio de club debe gestionarlo la Federación.'});
     const validados=C.R.perfil(datos);
     await Usuario.sequelize.transaction(async t=>{
       const locked=await Usuario.findByPk(usuario.id,{transaction:t,lock:t.LOCK.UPDATE});
@@ -284,7 +285,7 @@ router.get('/:dni/eventos', verifyToken, propia, async (req, res) => {
 router.post(
   '/:id/qr',
   verifyToken,
-  requireRole('administrador', 'tecnico', 'deportista'),
+  requireRole('administrador', 'juez', 'deportista'),
   async (req, res) => {
     const { id } = req.params;
     if (+id !== req.user.id && req.user.rol !== 'administrador')
@@ -307,7 +308,7 @@ router.post(
 router.get(
   '/:id/qr.png',
   verifyToken,
-  requireRole('administrador', 'tecnico', 'deportista'),
+  requireRole('administrador', 'juez', 'deportista'),
   async (req, res) => {
     const { id } = req.params;
     const transparent = req.query.transparent === '1';
@@ -342,7 +343,7 @@ router.get(
 router.post('/:id/solicitar-rol', verifyToken, async (req, res) => {
   const { id } = req.params;
   const { rol } = req.body;
-  if(!['tecnico','deportista','tesoreria'].includes(rol))return res.status(400).json({error:'Rol inválido.'});
+  if(!['tecnico','juez','deportista','tesoreria'].includes(rol))return res.status(400).json({error:'Rol inválido.'});
   if (+id !== req.user.id)
     return res.status(403).json({ error: 'No autorizado' });
   const u = await Usuario.findByPk(id);

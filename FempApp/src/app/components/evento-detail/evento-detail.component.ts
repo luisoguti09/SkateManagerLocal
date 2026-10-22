@@ -406,7 +406,7 @@ export class EventoDetailComponent implements OnInit {
   }
 
   get puedeVerInscriptos(): boolean {
-    return this.auth.hasAnyRole(['administrador', 'tecnico']);
+    return this.auth.hasAnyRole(['administrador', 'juez']);
   }
 
   mostrarEventoById(id: number) {
@@ -450,4 +450,3 @@ export class EventoDetailComponent implements OnInit {
     });
   }
 }
-

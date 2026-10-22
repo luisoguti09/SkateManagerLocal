@@ -63,6 +63,9 @@ type ModuloTecnico =
   styleUrls: ['./dashboard-tecnico.component.scss']
 })
 export class DashboardTecnicoComponent implements OnInit {
+  private cuentaAuth=inject(AuthService);
+  get esProfesora(){return this.cuentaAuth.getUsuario()?.rol==='tecnico';}
+
 
   public mostrarModulo = signal<ModuloTecnico>(null);
 
@@ -385,6 +388,7 @@ export class DashboardTecnicoComponent implements OnInit {
   }
 
   abrirNuevaEvaluacion(): void {
+    if(this.esProfesora)return;
     this.mostrarModulo.set('evaluacion');
     this.resetearEvaluacion();
   }
@@ -516,6 +520,7 @@ export class DashboardTecnicoComponent implements OnInit {
   }
 
   seleccionarDeportista(deportista: any): void {
+    if(this.esProfesora){this.filtrosHistorial.buscar=String(deportista.documentoN || '');this.abrirModulo('historial-tecnico');return;}
     this.deportistaSeleccionado = deportista;
 
     this.evaluacionForm.patchValue({

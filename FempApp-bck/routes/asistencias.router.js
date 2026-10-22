@@ -7,7 +7,7 @@ const Usuario = require('../models/usuario.model');
 const Evento = require('../models/evento.model');
 const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 
-router.post('/check-in', verifyToken, requireRole('tecnico', 'administrador'), async (req, res) => {
+router.post('/check-in', verifyToken, requireRole('juez', 'administrador'), async (req, res) => {
   try {
     const { eventoId, token } = req.body;
     if (!eventoId || !token) return res.status(400).json({ error: 'Datos incompletos' });
@@ -34,7 +34,7 @@ router.post('/check-in', verifyToken, requireRole('tecnico', 'administrador'), a
   }
 });
 
-router.get('/', verifyToken, requireRole('administrador', 'tecnico'), async (req, res) => {
+router.get('/', verifyToken, requireRole('administrador', 'juez'), async (req, res) => {
   try {
     const { eventoId } = req.query;
 

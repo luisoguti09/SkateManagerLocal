@@ -1,6 +1,7 @@
 import { Component, inject, OnDestroy } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 import { RegistroService } from '../../services/registro.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -14,7 +15,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { Observable, Subject, finalize, map, startWith, takeUntil } from 'rxjs';
+import { Observable, Subject, finalize, map, startWith, takeUntil, switchMap, from, tap } from 'rxjs';
 import { PadronRegistro } from '../../interfaces/padron-registro.interface';
 import { ClubOption } from '../../interfaces/club-option.interface';
 
@@ -34,7 +35,9 @@ export class RegistroComponent implements OnDestroy {
   private fb = inject(FormBuilder);
   private regServ = inject(RegistroService);
   private destroy$ = new Subject<void>();
-  private redirectTimer?: ReturnType<typeof setTimeout>;
+  private auth = inject(AuthService);
+  public cuentaCreada = false;
+  private accesoCreado: {email: string; password: string} | null = null;
   private dniVerificado: string | null = null;
 
   public empadronada = '';
@@ -97,7 +100,7 @@ export class RegistroComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    if (this.redirectTimer) clearTimeout(this.redirectTimer);
+    this.accesoCreado = null;
   }
 
   cargarRoles(): void {
@@ -200,7 +203,7 @@ export class RegistroComponent implements OnDestroy {
   }
 
   buscar(): void {
-    if (this.cargandoBuscar || this.cargando || this.successMsg) return;
+    if (this.cargandoBuscar || this.cargando || this.successMsg || this.cuentaCreada) return;
     const dni = this.normalizarDni(this.form.get('dni')?.value);
     this.errorMsg = '';
     if (!dni) {
@@ -230,7 +233,7 @@ export class RegistroComponent implements OnDestroy {
   }
 
   guardar(): void {
-    if (this.cargando || this.cargandoBuscar || this.successMsg) return;
+    if (this.cargando || this.cargandoBuscar || this.successMsg || this.cuentaCreada) return;
     this.errorMsg = '';
     const dni = this.normalizarDni(this.form.get('dni')?.value);
     if (!this.dniVerificado || dni !== this.dniVerificado || !this.empadronada) {
@@ -270,14 +273,45 @@ export class RegistroComponent implements OnDestroy {
       ...(rolId === 3 ? { nivel: raw.nivel } : {})
     };
     this.cargando = true;
-    this.regServ.guardar(payload).pipe(takeUntil(this.destroy$),
-      finalize(() => this.cargando = false)).subscribe({
-        next: () => {
-          this.successMsg = 'Cuenta creada. Ingresá para completar tus datos, cargar los documentos y enviar tu solicitud a la Federación.';
-          this.redirectTimer = setTimeout(() => this.router.navigate(['/login'], { queryParams: { estado: 'pendiente' } }), 2500);
-        },
-        error: e => this.errorMsg = e?.error?.message || e?.error?.error || 'Ocurrió un error al registrar. Podés reintentar.'
-      });
+    this.regServ.guardar(payload).pipe(
+      switchMap(() => {
+        this.cuentaCreada = true;
+        this.accesoCreado = {email: payload.email, password: payload.password};
+        this.successMsg = 'Cuenta creada. Continuamos con tus datos y documentos…';
+        return this.accederSolicitud();
+      }),
+      takeUntil(this.destroy$),
+      finalize(() => this.cargando = false)
+    ).subscribe({
+      error: e => {
+        this.errorMsg = this.cuentaCreada
+          ? 'Tu cuenta ya está creada, pero no pudimos abrir el siguiente paso. Pulsá Continuar solicitud. Todavía no se envió a revisión.'
+          : e?.error?.message || e?.error?.error || 'Ocurrió un error al registrar. Podés reintentar.';
+        if (this.cuentaCreada) this.successMsg = '';
+      }
+    });
+  }
+
+  private accederSolicitud() {
+    const acceso = this.accesoCreado!;
+    return this.auth.login(acceso.email, acceso.password).pipe(
+      switchMap(() => from(this.router.navigate(['/mi-solicitud'], {replaceUrl: true}))),
+      tap(abierto => {
+        if (!abierto) throw new Error('No se pudo abrir la solicitud');
+        this.accesoCreado = null;
+        this.form.get('password')?.reset();
+        this.form.get('confirmPass')?.reset();
+      })
+    );
+  }
+
+  continuarSolicitud(): void {
+    if (this.cargando || !this.cuentaCreada || !this.accesoCreado) return;
+    this.cargando = true;
+    this.errorMsg = '';
+    this.accederSolicitud().pipe(takeUntil(this.destroy$), finalize(() => this.cargando = false)).subscribe({
+      error: () => this.errorMsg = 'No pudimos abrir tu solicitud. Reintentá o ingresá con la cuenta que acabás de crear para continuar.'
+    });
   }
 
   volver(): void {

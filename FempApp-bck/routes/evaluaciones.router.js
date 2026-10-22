@@ -2,6 +2,19 @@ const express = require('express');
 const router = express.Router();
 const db = require('../models');
 const { Op } = require('sequelize');
+const {verifyToken,requireRole}=require('../middleware/auth.middleware');
+router.use(verifyToken,requireRole('administrador','juez','tecnico'));
+router.use(async(req,res,next)=>{
+ try {
+  if(req.auth.rol!=='tecnico')return next();
+  if(!['GET','HEAD'].includes(req.method))return res.status(403).json({error:'La carga de evaluaciones corresponde a jueces.'});
+  const deportistas=await require('../services/alcance-evaluaciones').deportistas(req.cuenta);
+  req.deportistasPermitidos=deportistas.map(p=>Number(p.id));
+  const id=req.query.deportistaId || (req.path.startsWith('/deportista/')?req.path.split('/')[2]:null);
+  if(id && !req.deportistasPermitidos.includes(Number(id)))return res.status(403).json({error:'Solo podés consultar deportistas de tu club.'});
+  next();
+ } catch(e){console.error('[ALCANCE_EVALUACIONES]',e.name);res.status(503).json({error:'No se pudo verificar el acceso.'});}
+});
 
 const {
     Evaluacion,
@@ -300,6 +313,7 @@ router.get('/', async (req, res) => {
         } = req.query;
 
         const where = {};
+        if(req.deportistasPermitidos)where.deportistaId={[Op.in]:req.deportistasPermitidos};
 
         if (tipoEvaluacion) {
             where.tipoEvaluacion = tipoEvaluacion;

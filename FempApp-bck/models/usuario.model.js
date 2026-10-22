@@ -37,7 +37,7 @@ const Usuario = sequelize.define('Usuario', {
   },
   rol: {
     type: DataTypes.ENUM,
-    values: ['administrador', 'tecnico', 'deportista', 'tesoreria'],
+    values: ['administrador', 'tecnico', 'juez', 'deportista', 'tesoreria'],
     allowNull: false
   },
   rolId: {
@@ -118,7 +118,7 @@ estado: {
   defaultValue: 'pendiente'
 },
 rolSolicitado: {
-  type: DataTypes.ENUM('administrador','tecnico','deportista','tesoreria'),
+  type: DataTypes.ENUM('administrador','tecnico','juez','deportista','tesoreria'),
   allowNull: true
 },
 

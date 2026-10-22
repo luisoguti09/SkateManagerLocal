@@ -22,6 +22,7 @@ router.patch('/mia',C.wrap(async(req,res)=>{
     const u=await C.Usuario.findByPk(req.auth.id,{transaction:t,lock:t.LOCK.UPDATE});
     if(u.estado==='bloqueado')C.R.fail(403,'Cuenta bloqueada.');
     await C.editable(u,t);
+    if(u.estado==='aprobado' && 'club' in data && data.club!==u.club)C.R.fail(403,'El cambio de club debe gestionarlo la Federación.');
     if(Number(req.body.revision)!==u.revision)C.R.fail(409,'Tu solicitud cambió. Actualizá la pantalla.');
     await u.update({...data,revision:u.revision+1},{transaction:t});
     await C.historial(u,u.id,'datos_actualizados',null,t);

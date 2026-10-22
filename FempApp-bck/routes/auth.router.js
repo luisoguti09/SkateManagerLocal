@@ -13,7 +13,7 @@ const ROL_CANON = {
   administrador: 'administrador',
   auditor: 'tecnico',
   tecnico: 'tecnico',
-  juez: 'tecnico',
+  juez: 'juez',
   deportista: 'deportista',
   tesoreria: 'tesoreria',
   tesorero: 'tesoreria'
@@ -100,7 +100,7 @@ router.post('/register', async (req, res) => {
       estado: 'pendiente',
       aprobado: false,
       club: typeof club === 'string' ? club.trim().slice(0, 255) : null,
-      solicitaLicenciaProvincial: isDep || isTec,
+      solicitaLicenciaProvincial: isDep,
       rolSolicitado: rolCanon
     },{transaction:t});
     await C.historial(u,u.id,'registro',null,t);
