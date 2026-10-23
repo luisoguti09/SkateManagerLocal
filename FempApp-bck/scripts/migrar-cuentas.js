@@ -9,7 +9,7 @@ async function main(){
   await sequelize.authenticate();
   const qi=sequelize.getQueryInterface(),table=Usuario.getTableName();
   const columns=await qi.describeTable(table);
-  const additions={sessionVersion:{type:D.INTEGER,allowNull:false,defaultValue:0},revision:{type:D.INTEGER,allowNull:false,defaultValue:0},correcciones:{type:D.TEXT,allowNull:true},camposCorregir:{type:D.JSON,allowNull:true},solicitaLicenciaProvincial:{type:D.BOOLEAN,allowNull:false,defaultValue:false}};
+  const additions={certificadoAntecedentes:{type:D.STRING,allowNull:true},sessionVersion:{type:D.INTEGER,allowNull:false,defaultValue:0},revision:{type:D.INTEGER,allowNull:false,defaultValue:0},correcciones:{type:D.TEXT,allowNull:true},camposCorregir:{type:D.JSON,allowNull:true},solicitaLicenciaProvincial:{type:D.BOOLEAN,allowNull:false,defaultValue:false}};
   for(const [name,def] of Object.entries(additions))if(!columns[name])await qi.addColumn(table,name,def);
   if(!String(columns.estado.type).includes('requiere_correcciones'))await qi.changeColumn(table,'estado',{type:D.ENUM('pendiente','requiere_correcciones','aprobado','bloqueado'),defaultValue:'pendiente'});
   // sync sin alter/force SOLO crea estas tablas nuevas; jamás recrea Usuarios.

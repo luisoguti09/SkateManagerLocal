@@ -52,7 +52,7 @@ export class SolicitudComponent implements OnInit,OnDestroy {
  get archivos(){return camposCuenta.filter(c=>this.u?.politicaDocumentos?.visibles?.includes(c.key));}
  get deportiva(){return ['deportista','tecnico'].includes(this.u?.rol);}
  get editable(){return this.u && (this.u.estado==='requiere_correcciones' || (this.u.estado==='pendiente' && !this.u.solicitudEnviada));}
- get campos(){return camposCuenta.filter(c=>!['fotoPerfil','dniFrente','dniDorso','fichaMedica','categoria','club'].includes(c.key) && (c.key!=='nivel' || this.u?.rol==='tecnico'));}
+ get campos(){return camposCuenta.filter(c=>!['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','categoria','club'].includes(c.key) && (c.key!=='nivel' || this.u?.rol==='tecnico'));}
  get observacionesCampos(){return camposCuenta.filter(c=>c.key!=='categoria' && this.u?.camposCorregir?.includes(c.key));}
  get destino(){return ({administrador:'/admin',deportista:'/dashboard-deport',tecnico:'/dashboard-prof',juez:'/dashboard-juez',tesoreria:'/dashboard-tesoreria'} as Record<string,string>)[this.u?.rol] || '/login';}
  get tituloEstado(){return this.u?.etapaSolicitud || this.estados[this.u?.estado] || 'Mi solicitud';}
@@ -61,7 +61,7 @@ export class SolicitudComponent implements OnInit,OnDestroy {
  set(data:any){this.u=data;this.form={};for(const c of this.campos)this.form[c.key]=data[c.key]??'';this.form.club=data.club??'';this.auth.setUsuario(data);}
  cargar(){if(this.busy)return;this.cerrarArchivo();this.busy=true;this.error='';this.api.mia().pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.set(u);this.files={};},error:e=>{this.error=e.error?.error || 'No se pudo consultar la solicitud.';}});}
  cargarClubes(){if(this.cargandoClubes)return;this.cargandoClubes=true;this.errorClubes='';this.api.clubes().pipe(finalize(()=>this.cargandoClubes=false)).subscribe({next:r=>{this.clubes=Array.isArray(r)?r:[];if(!this.clubes.length)this.errorClubes='No hay clubes disponibles. Consultá a la Federación antes de enviar.';},error:()=>this.errorClubes='No se pudo cargar el listado de clubes. Reintentá.'});}
- seleccionar(event:Event,key:string){const input=event.target as HTMLInputElement;const file=input.files?.[0];delete this.files[key];this.error='';if(!file)return;const pdf=key==='fichaMedica' && file.type==='application/pdf';if(!['image/jpeg','image/png','image/webp',...(key==='fichaMedica'?['application/pdf']:[])].includes(file.type)){this.error='Seleccioná JPG, PNG o WebP; la ficha médica también admite PDF.';input.value='';return;}if(file.size>(pdf?2:6)*1024*1024){this.error=pdf?'El PDF debe pesar hasta 2 MB.':'La imagen debe pesar hasta 6 MB.';input.value='';return;}this.files[key]=file;}
+ seleccionar(event:Event,key:string){const input=event.target as HTMLInputElement;const file=input.files?.[0];delete this.files[key];this.error='';if(!file)return;const pdf=['fichaMedica','certificadoAntecedentes'].includes(key) && file.type==='application/pdf';if(!['image/jpeg','image/png','image/webp',...(['fichaMedica','certificadoAntecedentes'].includes(key)?['application/pdf']:[])].includes(file.type)){this.error='Seleccioná JPG, PNG o WebP; la ficha médica y el certificado también admiten PDF.';input.value='';return;}if(file.size>(pdf?2:6)*1024*1024){this.error=pdf?'El PDF debe pesar hasta 2 MB.':'La imagen debe pesar hasta 6 MB.';input.value='';return;}this.files[key]=file;}
  enviar(){
   if(this.busy || !this.editable)return;
   this.cerrarArchivo();this.error='';this.ok='';
@@ -75,6 +75,17 @@ export class SolicitudComponent implements OnInit,OnDestroy {
   this.api.enviar(f).pipe(finalize(()=>this.busy=false)).subscribe({
    next:u=>{this.set(u);this.files={};this.ok='Solicitud enviada. La Federación revisará tus datos y documentos.';this.enfocar('[data-estado]');},
    error:e=>{this.error=e.error?.error || 'No pudimos confirmar el envío. Tus datos siguen en pantalla. Podés reintentar; si ya se recibió, no se duplicará.';this.enfocar('.error');}
+  });
+ }
+ renovarCertificado(){
+  if(this.busy || this.u?.rol!=='tecnico' || this.u?.estado!=='aprobado')return;
+  const archivo=this.files['certificadoAntecedentes'];
+  if(!archivo){this.error='Seleccioná el certificado antes de enviarlo.';return;}
+  const f=new FormData();f.append('revision',String(this.u.revision));f.append('certificadoAntecedentes',archivo);
+  this.busy=true;this.error='';this.ok='';this.cerrarArchivo();
+  this.api.renovarCertificado(f).pipe(finalize(()=>this.busy=false)).subscribe({
+   next:u=>{this.set(u);this.files={};this.ok='Certificado recibido. Queda pendiente de revisión documental por Administración; tu cuenta continúa aprobada.';this.enfocar('[data-estado]');},
+   error:e=>this.error=e.error?.error || 'No se pudo guardar el certificado. Actualizá el estado antes de reintentar.'
   });
  }
  salir(){if(this.busy)return;this.cerrarArchivo();this.auth.logout();}

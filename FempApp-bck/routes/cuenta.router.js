@@ -15,6 +15,9 @@ router.post('/mia/enviar',limite('enviar-solicitud',20,3600000,req=>req.auth.id)
   if(!data || typeof data!=='object' || Array.isArray(data))C.R.fail(400,'Datos de solicitud inválidos.');
   res.json(await require('../services/solicitud').enviar(req.auth.id,data,req.files));
 }));
+router.post('/mia/certificado-antecedentes',limite('certificado',10,3600000,req=>req.auth.id),F.recibir,C.wrap(async(req,res)=>{
+  res.json(await require('../services/certificado-tecnica').renovar(req.auth.id,Number(req.body.revision),req.files));
+}));
 router.get('/mia',C.wrap(async(req,res)=>res.json(await C.detalle(req.cuenta))));
 router.patch('/mia',C.wrap(async(req,res)=>{
   const data=C.R.perfil(req.body);
@@ -42,6 +45,7 @@ router.get('/:id/archivo/:campo',C.wrap(async(req,res)=>{
   if(!F.campos.includes(req.params.campo))C.R.fail(404,'Archivo no encontrado.');
   const u=await C.Usuario.findByPk(req.params.id),field=req.params.campo;
   if(!u || !await F.existe(u[field],field))C.R.fail(404,'Archivo no encontrado. Volvé a cargarlo.');
+  if(field==='certificadoAntecedentes')await C.historial(u,req.auth.id,'certificado_antecedentes_consultado',null);
   res.set({'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; sandbox"});
   const p=F.fullpath(u[field],field);
   res.download(p,`${field}.${p.endsWith('.pdf')?'pdf':'jpg'}`,e=>{if(e&&!res.headersSent)res.status(404).end();});

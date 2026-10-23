@@ -64,6 +64,7 @@ const Usuario = sequelize.define('Usuario', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  certificadoAntecedentes: { type: DataTypes.STRING, allowNull: true },
   fichaMedica: {
     type: DataTypes.STRING,
     allowNull: true

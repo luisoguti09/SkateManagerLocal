@@ -36,7 +36,7 @@ router.get('/panel',C.wrap(async(req,res)=>{
 }));
 router.get('/deportistas/:id/documentos',C.wrap(async(req,res)=>{
  const u=await miembro(req),documentos=[];
- for(const campo of F.campos)if(await F.existe(u[campo],campo))documentos.push(campo);
+ for(const campo of ['fotoPerfil','dniFrente','dniDorso','fichaMedica'])if(await F.existe(u[campo],campo))documentos.push(campo);
  res.json({id:u.id,nombre:u.nombre,documentacionAprobada:!!u.documentacionAprobada,documentos});
 }));
 router.get('/deportistas/:id/archivo/:campo',C.wrap(async(req,res)=>{

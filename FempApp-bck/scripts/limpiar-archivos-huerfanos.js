@@ -5,7 +5,7 @@ const fs=require('node:fs/promises'),path=require('node:path');
 const Usuario=require('../models/usuario.model');
 const {privateDir,publicDir}=require('../config/archivos');
 async function main(){
- const rows=await Usuario.findAll({attributes:['fotoPerfil','dniFrente','dniDorso','fichaMedica'],raw:true});
+ const rows=await Usuario.findAll({attributes:require('../services/cuenta-archivos').campos,raw:true});
  const used=new Set(rows.flatMap(u=>Object.values(u).filter(Boolean).map(v=>path.basename(v))));
  let count=0,bytes=0;
  for(const dir of [privateDir,publicDir])for(const name of await fs.readdir(dir)){

@@ -6,7 +6,7 @@ const sharp=require('sharp');
 const {privateDir,publicDir}=require('../config/archivos');
 const {fail}=require('./cuenta-reglas');
 sharp.cache(false); sharp.concurrency(1);
-const campos=['fotoPerfil','dniFrente','dniDorso','fichaMedica'];
+const campos=['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes'];
 const incoming=multer({storage:multer.memoryStorage(),limits:{fileSize:6*1024*1024,files:4,fields:5,parts:9}}).fields(campos.map(name=>({name,maxCount:1})));
 let active=0;
 function recibir(req,res,next) {
@@ -29,9 +29,9 @@ async function preparar(files) {
     for(const field of campos) {
       const file=files?.[field]?.[0];if(!file)continue;
       let buffer,ext='jpg';
-      // PDF solo para ficha médica; los DNI siempre se decodifican y reescriben.
-      if(field==='fichaMedica' && file.buffer.subarray(0,5).toString()==='%PDF-') {
-        if(file.size>2*1024*1024)fail(400,'La ficha PDF no debe superar 2 MB.');
+      // PDF privado para certificados y ficha médica; DNI e imágenes se reescriben.
+      if(['fichaMedica','certificadoAntecedentes'].includes(field) && file.buffer.subarray(0,5).toString()==='%PDF-') {
+        if(file.size>2*1024*1024)fail(400,'El documento PDF no debe superar 2 MB.');
         buffer=file.buffer;ext='pdf';
       } else {
         try {
