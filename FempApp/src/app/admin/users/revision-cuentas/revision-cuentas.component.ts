@@ -47,6 +47,7 @@ export class RevisionCuentasComponent implements OnInit,OnDestroy{
  private api=inject(CuentaService);private router=inject(Router);
  estados=estados;get campos(){return camposCuenta.filter(c=>c.key!=='categoria' && (!['fotoPerfil','dniFrente','dniDorso','fichaMedica'].includes(c.key) || this.u?.politicaDocumentos?.visibles?.includes(c.key) || this.u?.documentos?.[c.key]));}
  get camposCorregibles(){return this.campos.filter(c=>!['fotoPerfil','dniFrente','dniDorso','fichaMedica'].includes(c.key) || this.u?.politicaDocumentos?.visibles?.includes(c.key));}
+ club='';clubes:{id:number;nombre:string}[]=[];errorClubes='';
  estado=this.router.url.includes('/todos')?'':'pendiente';q='';page=1;total=0;usuarios:any[]=[];u:any=null;busy=false;error='';ok='';motivo='';nuevoEstado='aprobado';seleccion:Record<string,boolean>={};
  private enfocar(selector:string){
   this.vista.detectChanges();
@@ -55,8 +56,8 @@ export class RevisionCuentasComponent implements OnInit,OnDestroy{
   elemento?.scrollIntoView({block:'start',behavior:'auto'});
  }
  volver(){if(this.busy)return;this.cerrarArchivo();this.u=null;this.motivo='';this.seleccion={};this.error='';this.ok='';this.enfocar('header');}
- ngOnInit(){this.cargar();}
- cargar(){if(this.busy)return;this.busy=true;this.error='';this.api.listar(this.estado,this.q,this.page).pipe(finalize(()=>this.busy=false)).subscribe({next:r=>{this.usuarios=r.usuarios;this.total=r.total;},error:e=>this.error=e.error?.error || 'No se pudo cargar el listado.'});}
+ ngOnInit(){this.cargar();this.api.clubes().subscribe({next:r=>this.clubes=r,error:()=>this.errorClubes='No se pudo cargar el selector de clubes. Podés seguir consultando todas las cuentas.'});}
+ cargar(){if(this.busy)return;this.busy=true;this.error='';this.api.listar(this.estado,this.q,this.page,this.club).pipe(finalize(()=>this.busy=false)).subscribe({next:r=>{this.usuarios=r.usuarios;this.total=r.total;},error:e=>this.error=e.error?.error || 'No se pudo cargar el listado.'});}
  filtrar(){this.page=1;this.cargar();}
  pagina(delta:number){this.page+=delta;this.cargar();}
  abrir(id:number){if(this.busy)return;this.cerrarArchivo();this.busy=true;this.error='';this.ok='';this.api.detalle(id).pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.u=u;this.motivo='';this.seleccion={};this.nuevoEstado=u.estado==='bloqueado'?'pendiente':'aprobado';this.enfocar('[data-solicitud]');},error:e=>this.error=e.error?.error || 'No se pudo cargar la solicitud.'});}
@@ -69,7 +70,7 @@ export class RevisionCuentasComponent implements OnInit,OnDestroy{
     this.cerrarArchivo();this.u=null;this.motivo='';this.seleccion={};this.page=1;this.usuarios=[];this.total=0;
     this.ok='Decisión guardada. La notificación quedó en la cola de correo.';
     this.enfocar('header');
-    return this.api.listar(this.estado,this.q,this.page).pipe(catchError(()=>{
+    return this.api.listar(this.estado,this.q,this.page,this.club).pipe(catchError(()=>{
      this.error='La decisión se guardó, pero no se pudo actualizar el listado. Pulsá Buscar para reintentarlo.';
      this.enfocar('.error');return EMPTY;
     }));

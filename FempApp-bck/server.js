@@ -134,6 +134,7 @@ app.use('/documentacion', require('./routes/documentacion.router'));
 app.use('/usuarios', require('./routes/usuarios.router'));
 app.use('/auth', require('./routes/auth.router'));
 app.use('/cuenta', require('./routes/cuenta.router'));
+app.use('/tecnica', require('./routes/tecnica.router'));
 app.use('/asistencias', require('./routes/asistencias.router'));
 app.use('/perfiles-deportivos', perfilesDeportivosRouter);
 app.use('/evaluaciones', evaluacionesRouter);

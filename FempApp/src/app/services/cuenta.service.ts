@@ -19,7 +19,7 @@ export class CuentaService {
  guardar(data:any){return this.http.patch<any>(this.base+'/mia',data,this.opts);}
  subir(files:FormData){return this.http.post<any>(this.base+'/mia/archivos',files,this.opts);}
  reenviar(revision:number){return this.http.post<any>(this.base+'/mia/reenviar',{revision},this.opts);}
- listar(estado:string,q:string,page:number){return this.http.get<any>(this.base+'/admin/usuarios',{...this.opts,params:{...(estado?{estado}:{}),q,page}});}
+ listar(estado:string,q:string,page:number,club:string=""){return this.http.get<any>(this.base+'/admin/usuarios',{...this.opts,params:{...(estado?{estado}:{}),q,page,...(club?{club}:{})}});}
  detalle(id:number){return this.http.get<any>(this.base+'/admin/usuarios/'+id,this.opts);}
  decidir(id:number,data:any){return this.http.patch<any>(this.base+'/admin/usuarios/'+id+'/estado',data,this.opts);}
  documentos(id:number,data:any){return this.http.patch<any>(this.base+'/admin/usuarios/'+id+'/documentacion',data,this.opts);}

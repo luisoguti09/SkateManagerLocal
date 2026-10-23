@@ -80,9 +80,9 @@ export const routes: Routes = [
   { path: 'dashboard-juez', component: DashboardTecnicoComponent, canActivate: [authGuard], data: { roles: ['juez', 'administrador'] } }, // canActivate: [authGuard] },
   {
     path: 'dashboard-prof',
-    component: DashboardTecnicoComponent,
+    loadComponent: () => import('./components/panel-tecnica/panel-tecnica.component').then(m => m.PanelTecnicaComponent),
     canActivate: [authGuard],
-    data: { roles: ['tecnico', 'administrador'] },
+    data: { roles: ['tecnico'] },
   }, // canActivate: [authGuard] },
   // Ruta por defecto redirige a login
   { path: '', redirectTo: 'login', pathMatch: 'full' },

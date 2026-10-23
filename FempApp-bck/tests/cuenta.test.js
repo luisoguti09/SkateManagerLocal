@@ -56,6 +56,13 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
    const text=await response.text();let data;try{data=JSON.parse(text);}catch{data=text;}return{status:response.status,data};
  };
  try{
+ await t.test('administración filtra por club en el servidor',async()=>{
+  const r=await call('GET','/cuenta/admin/usuarios?club=Giol&estado=pendiente',admin);
+  assert.equal(r.status,200);assert.deepEqual(r.data.usuarios.map(x=>x.id),[user.id]);
+  assert.equal(r.data.total,1);assert.equal(r.data.usuarios[0].club,'Giol');
+  assert.equal((await call('GET','/cuenta/admin/usuarios?club=Inexistente',admin)).data.total,0);
+  assert.equal((await call('GET','/cuenta/admin/usuarios?club=Giol',user)).status,403);
+ });
  await t.test('roles separados: juez registra y accede como juez, tesorería envía sin foto',async()=>{
   await Rol.create({id:3,nombre:'tecnico'});await Rol.create({id:4,nombre:'juez'});
   const r=await call('POST','/auth/register',null,{nombre:'Juez nuevo',edad:35,email:'juez@example.org',dni:'22223333',password:'Contraseña123',rolId:4});
