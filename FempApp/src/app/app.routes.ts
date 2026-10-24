@@ -136,6 +136,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        data: { roles: ['administrador','juez','tecnico'] },
         loadComponent: () =>
           import(
             './components/asistencias-list/asistencias-list.component'
@@ -143,6 +144,7 @@ export const routes: Routes = [
       },
       {
         path: 'scanner',
+        data: { roles: ['deportista'] },
         // canActivate: [authGuard],   deportista debe estar logueado
         loadComponent: () =>
           import(

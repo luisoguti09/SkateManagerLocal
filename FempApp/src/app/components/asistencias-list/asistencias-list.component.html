@@ -1,80 +1,20 @@
-<div class="header-bar">
-    <button mat-icon-button (click)="volver()">
-        <mat-icon>arrow_back</mat-icon>
-    </button>
-</div>
-
-<div class="asistencias-page">
-
-    <mat-card class="asistencias-card">
-        <h1>Control de Asistencias</h1>
-        <p>Registro de deportistas presentes por evento.</p>
-
-        <div class="filtros">
-            <mat-form-field appearance="outline">
-                <mat-label>ID Evento</mat-label>
-                <input matInput type="number" [(ngModel)]="eventoIdFiltro">
-            </mat-form-field>
-
-            <button mat-raised-button color="primary" type="button" (click)="cargarAsistencias()">
-                Buscar
-            </button>
-
-            <button mat-stroked-button type="button" (click)="limpiarFiltro()">
-                Limpiar
-            </button>
-        </div>
-
-        <table mat-table [dataSource]="asistenciasData" class="asistencias-table">
-
-            <ng-container matColumnDef="deportista">
-                <th mat-header-cell *matHeaderCellDef>Deportista</th>
-                <td mat-cell *matCellDef="let a">
-                    {{ a.Usuario?.nombre || 'Sin nombre' }}
-                </td>
-            </ng-container>
-
-            <ng-container matColumnDef="dni">
-                <th mat-header-cell *matHeaderCellDef>DNI</th>
-                <td mat-cell *matCellDef="let a">
-                    {{ a.Usuario?.dni || '-' }}
-                </td>
-            </ng-container>
-
-            <ng-container matColumnDef="evento">
-                <th mat-header-cell *matHeaderCellDef>Evento</th>
-                <td mat-cell *matCellDef="let a">
-                    {{ a.Evento?.titulo || 'Evento sin título' }}
-                </td>
-            </ng-container>
-
-            <ng-container matColumnDef="lugar">
-                <th mat-header-cell *matHeaderCellDef>Lugar</th>
-                <td mat-cell *matCellDef="let a">
-                    {{ a.Evento?.lugar || '-' }}
-                </td>
-            </ng-container>
-
-            <ng-container matColumnDef="fecha">
-                <th mat-header-cell *matHeaderCellDef>Fecha</th>
-                <td mat-cell *matCellDef="let a">
-                    {{ a.checkedAt | date:'dd/MM/yyyy' }}
-                </td>
-            </ng-container>
-
-            <ng-container matColumnDef="hora">
-                <th mat-header-cell *matHeaderCellDef>Hora</th>
-                <td mat-cell *matCellDef="let a">
-                    {{ a.checkedAt | date:'HH:mm' }}
-                </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
-
-        <p *ngIf="asistenciasData.length === 0" class="empty-msg">
-            No hay asistencias registradas.
-        </p>
-    </mat-card>
-</div>
+<main class="workspace">
+ <header><a class="back" [routerLink]="volver">← Volver a mi panel</a><button (click)="cargar()" [disabled]="cargando">Actualizar</button></header>
+ <section class="hero"><span class="eyebrow">FEMPA · ENCUENTROS QUE QUEDAN REGISTRADOS</span><h1>Asistencias.</h1><p>{{tecnica?'El recorrido de tu club, evento por evento.':'Cada evento, con sus deportistas presentes.'}}</p><span class="badge" *ngIf="club">{{club}}</span></section>
+ <p class="notice">Una asistencia por deportista y evento. No representa asistencia a cada jornada, evaluación aprobada ni cumplimiento de requisitos deportivos.</p>
+ <p class="notice" *ngIf="tecnica">Mostramos las asistencias de cuentas aprobadas de deportistas de tu club actual. No incluye información de otros clubes.</p>
+ <p role="status" *ngIf="cargando">Consultando asistencias…</p><p role="alert" class="error" *ngIf="error">{{error}}</p>
+ <ng-container *ngIf="!cargando && !error">
+ <section *ngIf="!seleccionado;else detalle">
+  <div class="filters"><label>Buscar evento o lugar<input [(ngModel)]="buscarEvento" placeholder="Escribí el nombre del evento"></label><label>Temporada<select [(ngModel)]="temporada"><option value="">Todas</option><option *ngFor="let t of temporadas" [value]="t">{{t}}</option></select></label></div>
+  <p class="notice" *ngIf="limitado">Se muestran los 500 eventos más recientes con asistencias.</p>
+  <div class="cards"><article class="event-card" *ngFor="let e of filtrados"><span class="eyebrow">{{e.fechaInicio | date:'dd/MM/yyyy':'-0300'}}</span><h2>{{e.titulo || 'Evento sin título'}}</h2><p>{{e.lugar || 'Lugar sin informar'}}</p><div class="metric"><strong>{{e.presentes}}</strong><span>{{tecnica?'deportistas de tu club con asistencia':'deportistas con asistencia'}}</span></div><button class="primary" (click)="abrir(e)">Ver asistencias →</button></article></div>
+  <p class="empty" *ngIf="!filtrados.length">No hay eventos con asistencias para esta consulta. Los eventos aparecen al registrar su primera asistencia{{tecnica?' de tu club':''}}.</p>
+ </section>
+ <ng-template #detalle><section class="detail" *ngIf="seleccionado as e" [attr.aria-busy]="cargandoDetalle"><button (click)="cerrar()">← Todos los eventos</button><h2>{{e.titulo || 'Evento sin título'}}</h2><p>{{e.fechaInicio | date:'dd/MM/yyyy':'-0300'}} · {{e.lugar || 'Lugar sin informar'}}</p>
+ <form class="filters" (ngSubmit)="filtrar()"><label>{{tecnica?'Nombre o DNI':'Nombre, DNI o club'}}<input name="buscar" maxlength="100" [(ngModel)]="buscar" placeholder="Buscar deportista"></label><button class="primary" type="submit" [disabled]="cargandoDetalle">Buscar</button></form>
+ <p *ngIf="cargandoDetalle" role="status">Consultando deportistas…</p><p class="error" *ngIf="errorDetalle" role="alert">{{errorDetalle}} <button (click)="consultar(pagina)">Reintentar</button></p>
+ <ng-container *ngIf="!cargandoDetalle && !errorDetalle"><p>{{total}} registros{{busquedaAplicada?' encontrados':''}} · Horario de Argentina</p><div class="table-wrap"><table><thead><tr><th>Deportista</th><th>Club actual</th><th>Fecha</th><th>Hora</th></tr></thead><tbody><tr *ngFor="let a of filas"><td><strong>{{a.Usuario.nombre}}</strong><small>DNI {{a.Usuario.dni}}</small></td><td>{{a.Usuario.club || 'Sin informar'}}</td><td>{{a.checkedAt | date:'dd/MM/yyyy':'-0300'}}</td><td>{{a.checkedAt | date:'HH:mm':'-0300'}}</td></tr></tbody></table></div><p class="empty" *ngIf="!filas.length">No hay asistencias para esta consulta.</p><nav class="pagination" aria-label="Páginas de asistencias"><button [disabled]="pagina<=1" (click)="consultar(pagina-1)">Anterior</button><span>Página {{pagina}}</span><button [disabled]="pagina*limite>=total" (click)="consultar(pagina+1)">Siguiente</button></nav></ng-container>
+ </section></ng-template>
+ </ng-container>
+</main>

@@ -34,6 +34,15 @@ router.post('/check-in', verifyToken, requireRole('juez', 'administrador'), asyn
   }
 });
 
+// Consultas agrupadas: el club se obtiene de la cuenta autenticada, nunca del navegador.
+const consulta=require('../services/asistencias-consulta');
+const consultaSegura=fn=>async(req,res)=>{
+  try{res.set('Cache-Control','private, no-store');res.json(await fn(req));}
+  catch(e){console.error('[ASISTENCIAS_CONSULTA]',e.name);res.status(e.status||500).json({error:e.status?e.message:'No se pudieron consultar las asistencias.'});}
+};
+router.get('/resumen',verifyToken,requireRole('administrador','juez','tecnico'),consultaSegura(req=>consulta.resumen(req.cuenta)));
+router.get('/eventos/:id',verifyToken,requireRole('administrador','juez','tecnico'),consultaSegura(req=>consulta.detalle(req.cuenta,req.params.id,req.query)));
+
 router.get('/', verifyToken, requireRole('administrador', 'juez'), async (req, res) => {
   try {
     const { eventoId } = req.query;
@@ -46,6 +55,7 @@ router.get('/', verifyToken, requireRole('administrador', 'juez'), async (req, r
       include: [
         {
           model: Usuario,
+          as: 'Usuario',
           attributes: ['id', 'nombre', 'dni', 'email']
         },
         {

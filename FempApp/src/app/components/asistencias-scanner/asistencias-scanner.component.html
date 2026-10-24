@@ -1,11 +1,14 @@
 <mat-card>
-  <mat-card-title>Control de asistencias</mat-card-title>
+  <mat-card-title>Registrar mi asistencia</mat-card-title>
   <mat-card-content>
+    <p>Escaneá el QR del evento con tu cuenta. Registramos una asistencia por evento, aunque tengas varias inscripciones.</p>
+    <section *ngIf="completado" role="status"><h2>¡Listo!</h2><p>{{confirmacion}}</p><button mat-raised-button color="primary" (click)="volver()">Volver a mi panel</button></section>
+    <ng-container *ngIf="!completado">
 
     <div class="row">
       <mat-form-field appearance="outline" class="w-full">
         <mat-label>Evento</mat-label>
-        <mat-select [(value)]="eventoId">
+        <mat-select [(value)]="eventoId" [disabled]="busy">
           <mat-option *ngFor="let ev of eventos" [value]="ev.id">
             {{ ev.titulo || ev.nombre || ('Evento #' + ev.id) }}
           </mat-option>
@@ -20,6 +23,7 @@
     <div class="scanner">
       <zxing-scanner
         [autostart]="true"
+        [enable]="!busy && !completado"
         [tryHarder]="true"
         [formats]="allowedFormats"
         [device]="currentDevice"
@@ -28,9 +32,10 @@
       </zxing-scanner>
     </div>
 
+    <p *ngIf="busy" role="status">Verificando y guardando tu asistencia…</p>
     <div class="row actions">
       <button mat-stroked-button type="button"
-              (click)="switchCamera()" [disabled]="devices.length === 0">
+              (click)="switchCamera()" [disabled]="devices.length < 2 || busy">
         Cambiar cámara
       </button>
     </div>
@@ -43,5 +48,6 @@
       </div>
     </div>
 
+    </ng-container>
   </mat-card-content>
 </mat-card>

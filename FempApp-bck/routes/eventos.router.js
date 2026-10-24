@@ -301,7 +301,8 @@ function inWindow(ev) {
 }
 
 // POST /eventos/:eventId/checkin
-router.post('/:eventId/checkin', verifyToken, async (req, res) => {
+router.post('/:eventId/checkin', verifyToken, requireRole('deportista'), async (req, res) => {
+ try {
   const id = Number(req.params.eventId);
   const token = String(req.body?.token || '');
   const userId = req.auth.id;
@@ -351,17 +352,12 @@ router.post('/:eventId/checkin', verifyToken, async (req, res) => {
   });
   if (!ue) return res.status(400).json({ error: 'No inscripto' });
 
-  // Asistencia
-  try {
-    await Asistencia.create({
-      eventoId: id,
-      usuarioId: userId,
-      checkedAt: new Date(),
-    });
-    res.json({ created: true });
-  } catch {
-    res.json({ created: false }); // duplicado
-  }
+  const created=await require('../services/asistencia-registro').registrar(Asistencia,id,userId);
+  res.json({created});
+ }catch(e){
+  console.error('[ASISTENCIA_GUARDADO]',e.name);
+  res.status(503).json({error:'No se pudo guardar la asistencia. Volvé a intentar o acercate a mesa de control.'});
+ }
 });
 
 module.exports = router;

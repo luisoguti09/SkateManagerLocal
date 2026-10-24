@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Subject, finalize, takeUntil } from 'rxjs';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -34,7 +35,11 @@ import { ActivatedRoute, Router } from '@angular/router';
   templateUrl: './asistencias-scanner.component.html',
   styleUrls: ['./asistencias-scanner.component.scss']
 })
-export class AsistenciasScannerComponent implements OnInit {
+export class AsistenciasScannerComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  private disposed = false;
+  completado = false;
+  confirmacion = "";
 
   private ev = inject(EventosService);
   private snack = inject(MatSnackBar);
@@ -64,14 +69,14 @@ export class AsistenciasScannerComponent implements OnInit {
 
   ngOnInit(): void {
     // tomar eventoId desde la URL (nuevo nombre o el viejo eventold)
-    this.route.queryParamMap.subscribe(q => {
+    this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe(q => {
       const fromUrl = Number(q.get('eventoId') || q.get('eventold'));
       if (fromUrl) {
         this.eventoId = fromUrl;
       }
     });
 
-    this.ev.getEventos().subscribe({
+    this.ev.getEventos().pipe(takeUntil(this.destroy$)).subscribe({
       next: (list) => {
         this.eventos = (list ?? []).map(e => ({
           id: e.id!,
@@ -95,9 +100,8 @@ export class AsistenciasScannerComponent implements OnInit {
 
   onCamerasFound(devs: MediaDeviceInfo[]) {
     this.devices = devs;
-    console.log('Cámaras encontradas:', devs);
     if (!this.currentDevice && devs.length) {
-      this.currentDevice = devs[0];
+      this.currentDevice = devs.find(d => /back|rear|trasera|environment/i.test(d.label)) || devs[0];
     }
   }
 
@@ -109,65 +113,42 @@ export class AsistenciasScannerComponent implements OnInit {
   }
 
   onScanSuccess(raw: string) {
+    if(this.disposed || this.busy || this.completado || (raw===this.lastRaw && Date.now()-this.lastAt<2500))return;
+    this.lastRaw=raw;this.lastAt=Date.now();
     try {
-      let token = raw;
-      let eid = this.eventoId!;
-
-      // payload tipo FEMPAPP://checkin?e=<id>&t=<qrEventCode>
-      if (/^fempapp:\/\/checkin/i.test(raw)) {
-        const u = new URL(raw.replace('FEMPAPP://', 'https://'));
-        eid = Number(u.searchParams.get('e'));
-        token = u.searchParams.get('t') || '';
+      const url=new URL(raw);
+      const eid=Number(url.searchParams.get('e'));
+      const token=url.searchParams.get('t') || '';
+      if(url.protocol.toLowerCase()!=='fempapp:' || url.hostname.toLowerCase()!=='checkin' || !Number.isSafeInteger(eid) || eid<=0 || !token){
+        throw new Error('Escaneá el QR del evento. El QR personal no registra tu asistencia en esta pantalla.');
       }
-
-       console.log('SCAN → eventoId:', eid, 'token:', token);
-
-      if (!eid || !token) {
-        this.pushHistory({ ok: false, msg: 'QR inválido o evento no seleccionado', raw });
-        this.playErr();
-        return;
-      }
-
-      this.busy = true;
-      this.lastRaw = raw;
-      this.lastAt = Date.now();
-
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          const { latitude, longitude, accuracy } = pos.coords;
-          this.ev.scanAsistencia(token, eid, { lat: latitude, lng: longitude, acc: accuracy })
-            .subscribe({
-              next: () => this.okSnack(),
-              error: e => this.errSnack(e),
-              complete: () => this.busy = false
-            });
-        },
-        _err => {
-          this.ev.scanAsistencia(token, eid)
-            .subscribe({
-              next: () => this.okSnack(),
-              error: e => this.errSnack(e),
-              complete: () => this.busy = false
-            });
-        },
-        { enableHighAccuracy: true, timeout: 8000 }
-      );
-    } catch (e) {
-      console.error(e);
+      if(this.eventoId && this.eventoId!==eid)throw new Error('Este QR corresponde a otro evento. Revisá el evento seleccionado.');
+      this.eventoId=eid;this.busy=true;
+      const enviar=(geo?:{lat:number;lng:number;acc?:number})=>{
+        if(this.disposed)return;
+        this.ev.scanAsistencia(token,eid,geo).pipe(takeUntil(this.destroy$),finalize(()=>this.busy=false)).subscribe({
+          next:r=>this.okSnack(r.created),error:e=>this.errSnack(e)
+        });
+      };
+      if(!navigator.geolocation){enviar();return;}
+      navigator.geolocation.getCurrentPosition(pos=>enviar({lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy}),()=>enviar(),{enableHighAccuracy:true,timeout:8000});
+    } catch(e) {
+      this.busy=false;
+      this.openSnack(e instanceof TypeError?'No reconocimos el QR. Escaneá el código del evento.':(e as Error).message,false);
       this.playErr();
-      this.pushHistory({ ok: false, msg: 'Error leyendo el QR', raw });
     }
   }
 
-  private okSnack() {
-    this.openSnack('¡Asistencia registrada!', true);
-    this.playOk();
-    this.pushHistory({ ok: true, msg: 'Asistencia registrada' });
-
-     setTimeout(() => {
-    this.router.navigate(['/dashboard-deport'], { replaceUrl: true });
-  }, 600);
+  private okSnack(created:boolean) {
+    this.completado=true;
+    const nombre=this.eventos.find(e=>e.id===this.eventoId);
+    const titulo=nombre?.titulo || nombre?.nombre || 'este evento';
+    this.confirmacion=created?`Tu asistencia a ${titulo} quedó registrada.`:`Tu asistencia a ${titulo} ya estaba registrada. No se agregó otra.`;
+    this.openSnack(this.confirmacion,true);this.playOk();
+    this.pushHistory({ok:true,msg:this.confirmacion});
   }
+  volver(){void this.router.navigate(['/dashboard-deport']);}
+  ngOnDestroy(){this.disposed=true;this.destroy$.next();this.destroy$.complete();[this.scanAudio,this.okAudio,this.errAudio].forEach(a=>a.pause());}
 
   private errSnack(e: any) {
     const s = e?.error?.error || e?.error?.message || e?.message || '';

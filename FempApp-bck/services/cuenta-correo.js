@@ -45,8 +45,10 @@ async function send(row) {
 async function tick() {
   if(running || process.env.MAIL_ENABLED!=='true') return;
   running=true;
+  let etapa='reservar';
   try {
     for(let n=0;n<10;n++) {
+      etapa='reservar';
       const leaseId=crypto.randomUUID();
       const row=await Correo.sequelize.transaction(async t=>{
         const r=await Correo.findOne({where:{[Op.or]:[{estado:'pendiente',disponibleAt:{[Op.lte]:new Date()}},{estado:'enviando',leaseAt:{[Op.lt]:new Date(Date.now()-120000)}}]},order:[['id','ASC']],transaction:t,lock:t.LOCK.UPDATE,skipLocked:true});
@@ -55,14 +57,18 @@ async function tick() {
       });
       if(!row) break;
       try {
+        etapa='enviar';
         const estado=await send(row);
+        etapa='confirmar';
         await Correo.update({estado,enviadoAt:estado==='enviado'?new Date():null,payload:null,error:null,leaseId:null},{where:{id:row.id,leaseId}});
       } catch(e) {
+        if(etapa==='confirmar')console.error('[MAIL_QUEUE]',require('./correo-diagnostico').diagnostico(e,etapa));
+        etapa='reintentar';
         const error=/^(OAUTH|GMAIL)_\d+$/.test(e.message)?e.message:'ENVIO_FALLIDO';
         await Correo.update({estado:row.intentos>=8?'fallido':'pendiente',error,leaseId:null,disponibleAt:new Date(Date.now()+Math.min(3600000,30000*2**row.intentos))},{where:{id:row.id,leaseId}});
       }
     }
-  } catch(e) { console.error('[MAIL_QUEUE]',e.name); } finally { running=false; }
+  } catch(e) { console.error('[MAIL_QUEUE]',require('./correo-diagnostico').diagnostico(e,etapa)); } finally { running=false; }
 }
 function start() { key();frontUrl();const timer=setInterval(tick,15000);timer.unref();return timer; }
 module.exports={encolar,start,tick,seal,unseal};

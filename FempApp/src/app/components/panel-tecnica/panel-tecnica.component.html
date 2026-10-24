@@ -1,7 +1,7 @@
 <div class="workspace">
  <aside class="sidebar"><a class="brand" routerLink="/dashboard-prof"><span class="brand-mark">F</span><span>FEMPA<small>ESPACIO TÉCNICO</small></span></a><p class="nav-label">TU CLUB, EN UN LUGAR</p>
  <nav aria-label="Panel técnico"><button *ngFor="let n of [{id:'resumen',icon:'◈',text:'Mi panorama'},{id:'padron',icon:'◎',text:'Deportistas'},{id:'eventos',icon:'▦',text:'Inscripciones'},{id:'evolucion',icon:'↗',text:'Evaluaciones'}]" [class.active]="tab===n.id" (click)="cambiar(n.id)"><span aria-hidden="true">{{n.icon}}</span>{{n.text}}</button></nav>
- <div class="sidebar-bottom"><a routerLink="/mi-solicitud">Mi cuenta y documentación ↗</a><button (click)="auth.logout()">Cerrar sesión</button><small>Federación Mendocina de Patín</small></div></aside>
+ <a routerLink="/asistencias" style="display:block;padding:16px;color:inherit">Asistencias por evento ↗</a><div class="sidebar-bottom"><a routerLink="/mi-solicitud">Mi cuenta y documentación ↗</a><button (click)="auth.logout()">Cerrar sesión</button><small>Federación Mendocina de Patín</small></div></aside>
  <main [attr.aria-busy]="busy"><header class="topbar"><span>Mi espacio <span class="slash">/</span> {{panel?.club || 'Club'}}</span><button class="outline" (click)="cargar()" [disabled]="busy">{{busy?'Actualizando…':'Actualizar'}}</button></header>
  <p *ngIf="error" class="alert" role="alert">{{error}}</p><p *ngIf="busy" role="status" class="loading">Estamos preparando la información de tu club…</p>
  <ng-container *ngIf="panel as p">

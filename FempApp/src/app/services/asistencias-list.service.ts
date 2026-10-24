@@ -4,6 +4,8 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 
+export interface EventoAsistencias {id:number;titulo:string;lugar:string|null;fechaInicio:string|null;fechaFin:string|null;presentes:number;}
+export interface FilaAsistencia {id:number;usuarioId:number;eventoId:number;checkedAt:string;Usuario:{id:number;nombre:string;dni:string;club:string|null};}
 @Injectable({
   providedIn: 'root'
 })
@@ -15,6 +17,8 @@ export class AsistenciasListService {
   private base = `${this.apiURL}/asistencias`;
 
   constructor() { }
+  resumen(){return this.http.get<{club:string|null;limitado:boolean;eventos:EventoAsistencias[]}>(`${this.base}/resumen`);}
+  detalle(id:number,pagina:number,buscar:string){return this.http.get<{filas:FilaAsistencia[];total:number;pagina:number;limite:number}>(`${this.base}/eventos/${id}`,{params:{pagina:String(pagina),buscar}});}
 
 
   registrar(eventoId: number, token: string): Observable<{ ok: boolean, created: boolean }> {
