@@ -36,12 +36,13 @@ router.get('/panel',C.wrap(async(req,res)=>{
 }));
 router.get('/deportistas/:id/documentos',C.wrap(async(req,res)=>{
  const u=await miembro(req),documentos=[];
- for(const campo of ['fotoPerfil','dniFrente','dniDorso','fichaMedica'])if(await F.existe(u[campo],campo))documentos.push(campo);
- res.json({id:u.id,nombre:u.nombre,documentacionAprobada:!!u.documentacionAprobada,documentos});
+ for(const campo of ['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoWada'])if(await F.existe(u[campo],campo))documentos.push(campo);
+ const vigencias=require('../services/documentos-vigencia').resumen({fichaMedica:documentos.includes('fichaMedica'),certificadoWada:documentos.includes('certificadoWada'),fichaMedicaFecha:u.fichaMedicaFecha,wadaFecha:u.wadaFecha});
+ res.json({id:u.id,nombre:u.nombre,documentacionAprobada:!!u.documentacionAprobada,documentos,vigencias});
 }));
 router.get('/deportistas/:id/archivo/:campo',C.wrap(async(req,res)=>{
  const u=await miembro(req),campo=req.params.campo;
- if(!['fotoPerfil','dniFrente','dniDorso','fichaMedica'].includes(campo) || !await F.existe(u[campo],campo))C.R.fail(404,'Documento no disponible.');
+ if(!['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoWada'].includes(campo) || !await F.existe(u[campo],campo))C.R.fail(404,'Documento no disponible.');
  await C.historial(u,req.auth.id,'documento_consultado_por_tecnica',campo);
  const p=F.fullpath(u[campo],campo);
  res.set({'X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; sandbox"});

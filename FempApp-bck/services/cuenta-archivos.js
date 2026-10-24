@@ -6,14 +6,14 @@ const sharp=require('sharp');
 const {privateDir,publicDir}=require('../config/archivos');
 const {fail}=require('./cuenta-reglas');
 sharp.cache(false); sharp.concurrency(1);
-const campos=['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes'];
-const incoming=multer({storage:multer.memoryStorage(),limits:{fileSize:6*1024*1024,files:4,fields:5,parts:9}}).fields(campos.map(name=>({name,maxCount:1})));
+const campos=['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','certificadoWada'];
+const incoming=multer({storage:multer.memoryStorage(),limits:{fileSize:6*1024*1024,files:5,fields:5,parts:10}}).fields(campos.map(name=>({name,maxCount:1})));
 let active=0;
 function recibir(req,res,next) {
   if(active>=3) return res.status(429).json({error:'Hay varias cargas en curso. Reintentá en unos segundos.'});
   active++; let freed=false;const free=()=>{if(!freed){freed=true;active--;}};
   res.once('finish',free);res.once('close',free);
-  incoming(req,res,e=>e?res.status(400).json({error:'Subí hasta cuatro archivos de hasta 6 MB cada uno.'}):next());
+  incoming(req,res,e=>e?res.status(400).json({error:'Subí hasta cinco archivos de hasta 6 MB cada uno.'}):next());
 }
 function filename(value,field) {
   if(typeof value!=='string') return null;
@@ -30,7 +30,7 @@ async function preparar(files) {
       const file=files?.[field]?.[0];if(!file)continue;
       let buffer,ext='jpg';
       // PDF privado para certificados y ficha médica; DNI e imágenes se reescriben.
-      if(['fichaMedica','certificadoAntecedentes'].includes(field) && file.buffer.subarray(0,5).toString()==='%PDF-') {
+      if(['fichaMedica','certificadoAntecedentes','certificadoWada'].includes(field) && file.buffer.subarray(0,5).toString()==='%PDF-') {
         if(file.size>2*1024*1024)fail(400,'El documento PDF no debe superar 2 MB.');
         buffer=file.buffer;ext='pdf';
       } else {
@@ -53,6 +53,7 @@ async function preparar(files) {
 async function guardar(usuarioId,files,actorId) {
   const Usuario=require('../models/usuario.model');
   const {historial,editable}=require('./cuenta');
+  if(Object.keys(files||{}).some(k=>['fichaMedica','certificadoWada'].includes(k)))fail(400,'Cargá este documento con su fecha desde Mi solicitud.');
   const prepared=await preparar(files);let old={};
   try {
     await Usuario.sequelize.transaction(async t=>{

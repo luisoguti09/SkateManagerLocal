@@ -20,7 +20,7 @@ export class SolicitudComponent implements OnInit,OnDestroy {
   if(this.vistaArchivo)URL.revokeObjectURL(this.vistaArchivo.url);
   this.vistaArchivo=null;this.cargandoArchivo='';this.errorArchivo='';
  }
- ngOnDestroy(){this.cerrarArchivo();}
+ ngOnDestroy(){this.cerrarArchivo();this.wadaPeticion?.unsubscribe();}
  verArchivo(key:string,label:string){
   if(!this.u || this.busy)return;
   this.cerrarArchivo();this.cargandoArchivo=key;
@@ -48,20 +48,32 @@ export class SolicitudComponent implements OnInit,OnDestroy {
  private api=inject(CuentaService);private vista=inject(ChangeDetectorRef);private host=inject(ElementRef);
  auth=inject(AuthService);u:any;form:any={};busy=false;error='';ok='';estados=estados;
  clubes:{id:number;nombre:string}[]=[];cargandoClubes=false;errorClubes='';
- files:Record<string,File>={};
+ files:Partial<Record<string,File>>={};
+ temporada=new Date().getFullYear();requisitoWada:any;errorWada='';
+ fechas:Record<string,string>={fichaMedica:'fichaMedicaFecha',certificadoWada:'wadaFecha'};
+ private wadaPeticion?:Subscription;
+ consultarWada(){this.wadaPeticion?.unsubscribe();this.errorWada='';this.requisitoWada=null;this.wadaPeticion=this.api.requisitoWada(this.temporada).subscribe({next:r=>this.requisitoWada=r,error:()=>this.errorWada='No se pudo consultar el requisito para esa temporada.'});}
+ renovarDocumento(campo:string){
+  if(this.busy||!this.fechas[campo])return;
+  const fecha=this.form[this.fechas[campo]];if(!fecha){this.error='Ingresá la fecha de expedición.';return;}
+  const f=new FormData();f.append('datos',JSON.stringify({revision:this.u.revision,[this.fechas[campo]]:fecha}));
+  const file=this.files[campo];if(file)f.append(campo,file);
+  this.busy=true;this.error='';this.ok='';this.cerrarArchivo();
+  this.api.renovarDocumentos(f).pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.set(u);this.files={};this.ok='Documento actualizado. La revisión documental queda pendiente; tu cuenta continúa aprobada.';},error:e=>this.error=e.error?.error||'No se pudo guardar. Actualizá y reintentá.'});
+ }
  get archivos(){return camposCuenta.filter(c=>this.u?.politicaDocumentos?.visibles?.includes(c.key));}
  get deportiva(){return ['deportista','tecnico'].includes(this.u?.rol);}
  get editable(){return this.u && (this.u.estado==='requiere_correcciones' || (this.u.estado==='pendiente' && !this.u.solicitudEnviada));}
- get campos(){return camposCuenta.filter(c=>!['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','categoria','club'].includes(c.key) && (c.key!=='nivel' || this.u?.rol==='tecnico'));}
+ get campos(){return camposCuenta.filter(c=>!['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','certificadoWada','categoria','club'].includes(c.key) && (c.key!=='nivel' || this.u?.rol==='tecnico'));}
  get observacionesCampos(){return camposCuenta.filter(c=>c.key!=='categoria' && this.u?.camposCorregir?.includes(c.key));}
  get destino(){return ({administrador:'/admin',deportista:'/dashboard-deport',tecnico:'/dashboard-prof',juez:'/dashboard-juez',tesoreria:'/dashboard-tesoreria'} as Record<string,string>)[this.u?.rol] || '/login';}
  get tituloEstado(){return this.u?.etapaSolicitud || this.estados[this.u?.estado] || 'Mi solicitud';}
  ngOnInit(){this.cargar();this.cargarClubes();}
  private enfocar(selector:string){this.vista.detectChanges();const el=this.host.nativeElement.querySelector(selector) as HTMLElement|null;el?.focus({preventScroll:true});el?.scrollIntoView({block:'start',behavior:'auto'});}
- set(data:any){this.u=data;this.form={};for(const c of this.campos)this.form[c.key]=data[c.key]??'';this.form.club=data.club??'';this.auth.setUsuario(data);}
+ set(data:any){this.u=data;this.form={};for(const c of this.campos)this.form[c.key]=data[c.key]??'';this.form.club=data.club??'';for(const k of Object.values(this.fechas))this.form[k]=data[k]??'';this.auth.setUsuario(data);}
  cargar(){if(this.busy)return;this.cerrarArchivo();this.busy=true;this.error='';this.api.mia().pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.set(u);this.files={};},error:e=>{this.error=e.error?.error || 'No se pudo consultar la solicitud.';}});}
  cargarClubes(){if(this.cargandoClubes)return;this.cargandoClubes=true;this.errorClubes='';this.api.clubes().pipe(finalize(()=>this.cargandoClubes=false)).subscribe({next:r=>{this.clubes=Array.isArray(r)?r:[];if(!this.clubes.length)this.errorClubes='No hay clubes disponibles. Consultá a la Federación antes de enviar.';},error:()=>this.errorClubes='No se pudo cargar el listado de clubes. Reintentá.'});}
- seleccionar(event:Event,key:string){const input=event.target as HTMLInputElement;const file=input.files?.[0];delete this.files[key];this.error='';if(!file)return;const pdf=['fichaMedica','certificadoAntecedentes'].includes(key) && file.type==='application/pdf';if(!['image/jpeg','image/png','image/webp',...(['fichaMedica','certificadoAntecedentes'].includes(key)?['application/pdf']:[])].includes(file.type)){this.error='Seleccioná JPG, PNG o WebP; la ficha médica y el certificado también admiten PDF.';input.value='';return;}if(file.size>(pdf?2:6)*1024*1024){this.error=pdf?'El PDF debe pesar hasta 2 MB.':'La imagen debe pesar hasta 6 MB.';input.value='';return;}this.files[key]=file;}
+ seleccionar(event:Event,key:string){const input=event.target as HTMLInputElement;const file=input.files?.[0];delete this.files[key];this.error='';if(!file)return;const pdf=['fichaMedica','certificadoAntecedentes','certificadoWada'].includes(key) && file.type==='application/pdf';if(!['image/jpeg','image/png','image/webp',...(['fichaMedica','certificadoAntecedentes','certificadoWada'].includes(key)?['application/pdf']:[])].includes(file.type)){this.error='Seleccioná JPG, PNG o WebP; la ficha médica y el certificado también admiten PDF.';input.value='';return;}if(file.size>(pdf?2:6)*1024*1024){this.error=pdf?'El PDF debe pesar hasta 2 MB.':'La imagen debe pesar hasta 6 MB.';input.value='';return;}this.files[key]=file;}
  enviar(){
   if(this.busy || !this.editable)return;
   this.cerrarArchivo();this.error='';this.ok='';
@@ -69,8 +81,9 @@ export class SolicitudComponent implements OnInit,OnDestroy {
   const faltantes=(this.u.politicaDocumentos.obligatorios as string[]).filter(k=>!this.files[k] && !this.u.documentos?.[k]);
   if(faltantes.length){this.error='Completá: '+this.archivos.filter(c=>faltantes.includes(c.key)).map(c=>c.label).join(', ')+'.';this.enfocar('.error');return;}
   if(this.deportiva && !this.clubes.some(c=>c.nombre===this.form.club)){this.error='Seleccioná un club del listado.';this.enfocar('.error');return;}
-  const f=new FormData();f.append('datos',JSON.stringify({...this.form,revision:this.u.revision}));
-  for(const [key,file] of Object.entries(this.files))f.append(key,file);
+  const datos={...this.form,revision:this.u.revision};for(const k of Object.values(this.fechas))if(!datos[k])delete datos[k];
+  const f=new FormData();f.append('datos',JSON.stringify(datos));
+  for(const [key,file] of Object.entries(this.files))if(file)f.append(key,file);
   this.busy=true;
   this.api.enviar(f).pipe(finalize(()=>this.busy=false)).subscribe({
    next:u=>{this.set(u);this.files={};this.ok='Solicitud enviada. La Federación revisará tus datos y documentos.';this.enfocar('[data-estado]');},

@@ -6,10 +6,10 @@ function edadCumplida(fecha,hoy=new Date().toISOString().slice(0,10)){
  return Number(hoy.slice(0,4))-Number(fecha.slice(0,4))-(hoy.slice(5)<fecha.slice(5)?1:0);
 }
 function politica(u){
- const visibles=u.rol==='deportista'?['fotoPerfil','dniFrente','dniDorso','fichaMedica']:['fotoPerfil'];
+ const visibles=u.rol==='deportista'?['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoWada']:['fotoPerfil'];
  const obligatorios=u.rol==='tesoreria'?[]:['fotoPerfil'];
  if(u.rol==='deportista' && dniRequerido())obligatorios.push('dniFrente','dniDorso');
- if(u.rol==='tecnico'){visibles.push('certificadoAntecedentes');if(edadCumplida(u.fechaNacimiento)>=16)obligatorios.push('certificadoAntecedentes');}
+ if(u.rol==='tecnico'){visibles.push('certificadoAntecedentes');obligatorios.push('certificadoAntecedentes');}
  return {visibles,obligatorios};
 }
 function validarArchivos(u,files){

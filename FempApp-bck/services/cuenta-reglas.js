@@ -1,6 +1,6 @@
 const crypto = require('node:crypto');
 const ESTADOS = ['pendiente', 'requiere_correcciones', 'aprobado', 'bloqueado'];
-const CAMPOS = ['nombre', 'edad', 'club', 'categoria', 'nivel', 'domicilio', 'telefono', 'fechaNacimiento', 'fotoPerfil', 'dniFrente', 'dniDorso', 'fichaMedica', 'certificadoAntecedentes'];
+const CAMPOS = ['nombre', 'edad', 'club', 'categoria', 'nivel', 'domicilio', 'telefono', 'fechaNacimiento', 'fotoPerfil', 'dniFrente', 'dniDorso', 'fichaMedica', 'certificadoAntecedentes', 'certificadoWada', 'fichaMedicaFecha', 'wadaFecha'];
 const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
 function passwordValida(p) { return typeof p === 'string' && p.length >= 8 && /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(p) && /[0-9]/.test(p) && Buffer.byteLength(p) <= 72; }
 function hashToken(token) { return crypto.createHash('sha256').update(token).digest('hex'); }
@@ -16,7 +16,7 @@ function decision(u, body, actor) {
   if (motivo.length > 2000) fail(400, 'El motivo no debe superar 2000 caracteres.');
   if (['requiere_correcciones','bloqueado'].includes(body.estado) && motivo.length < 5) fail(400, 'Explicá el motivo (al menos 5 caracteres).');
   const campos = [...new Set(Array.isArray(body.campos) ? body.campos : [])];
-  const docs=['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes'];
+  const docs=['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','certificadoWada'];
   if(campos.some(k=>docs.includes(k) && !require('./cuenta-documentos').politica(u).visibles.includes(k)))fail(400,'El documento seleccionado no corresponde al rol.');
   if (campos.some(c => !CAMPOS.includes(c))) fail(400, 'Campo de corrección inválido.');
   if (body.estado === 'requiere_correcciones' && !campos.length) fail(400, 'Seleccioná qué campos debe corregir.');
@@ -24,7 +24,7 @@ function decision(u, body, actor) {
     camposCorregir: body.estado === 'requiere_correcciones' ? campos : [], revision: u.revision + 1 };
 }
 function perfil(body) {
-  const allowed = [...CAMPOS, 'instagram','facebook','tiktok'].filter(c => !['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes'].includes(c));
+  const allowed = [...CAMPOS, 'instagram','facebook','tiktok'].filter(c => !['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','certificadoWada'].includes(c));
   const data = {};
   for (const k of allowed) if (k in body) {
     if (body[k] === null && !['nombre','edad'].includes(k)) { data[k]=null; continue; }
@@ -45,5 +45,5 @@ function perfil(body) {
   }
   return data;
 }
-const safe = u => Object.fromEntries(['id','dni','nombre','edad','email','rol','rolId','club','categoria','nivel','estado','aprobado','domicilio','telefono','fechaNacimiento','fotoPerfil','documentacionAprobada','solicitaLicenciaProvincial','revision','correcciones','camposCorregir','rolSolicitado','qrJti','instagram','facebook','tiktok'].map(k=>[k,u[k]]));
+const safe = u => Object.fromEntries(['id','dni','nombre','edad','email','rol','rolId','club','categoria','nivel','estado','aprobado','domicilio','telefono','fechaNacimiento','fotoPerfil','documentacionAprobada','solicitaLicenciaProvincial','revision','correcciones','camposCorregir','rolSolicitado','qrJti','fichaMedicaFecha','wadaFecha','instagram','facebook','tiktok'].map(k=>[k,u[k]]));
 module.exports = { ESTADOS, CAMPOS, fail, passwordValida, hashToken, decision, perfil, safe };

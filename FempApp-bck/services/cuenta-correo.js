@@ -26,13 +26,18 @@ async function encolar(u,tipo,transaction,extra={}) {
   return Correo.create({usuarioId:u.id,tipo,estado:'pendiente',intentos:0,disponibleAt:new Date(),
     payload:seal({email:u.email,...extra})},{transaction});
 }
-const labels={pendiente:'Solicitud recibida',requiere_correcciones:'Tu solicitud requiere correcciones',aprobado:'Tu cuenta fue aprobada',bloqueado:'Tu cuenta fue bloqueada',reenviado:'Recibimos tus correcciones',documentacion:'Se actualizó la revisión de tus documentos'};
+const labels={vencimiento_documental:'Revisá la vigencia de tu documentación',pendiente:'Solicitud recibida',requiere_correcciones:'Tu solicitud requiere correcciones',aprobado:'Tu cuenta fue aprobada',bloqueado:'Tu cuenta fue bloqueada',reenviado:'Recibimos tus correcciones',documentacion:'Se actualizó la revisión de tus documentos'};
 async function send(row) {
   const payload=unseal(row.payload), from=process.env.MAIL_FROM || '';
   if(!/^[^\s@<>\r\n]+@[^\s@<>\r\n]+$/.test(from) || !/^[^\s@<>\r\n]+@[^\s@<>\r\n]+$/.test(payload.email)) throw new Error('EMAIL_CONFIG');
+  if(row.tipo==='vencimiento_documental'){
+    const u=await require('../models/usuario.model').findByPk(row.usuarioId);
+    const d=u&&require('./documentos-vigencia').resumen(u).find(v=>v.campo===payload.documento);
+    if(!u||u.estado!=='aprobado'||u.rol!=='deportista'||u.email!==payload.email||!d||d.expedicion!==payload.expedicion||d.vence!==payload.vence||require('./documentos-avisos').hito(d.dias)!==payload.etapa||!await require('./cuenta-archivos').existe(u[d.campo],d.campo))return 'vencido';
+  }
   if(payload.expires && Date.now()>payload.expires) return 'vencido';
   const subject=row.tipo==='reset' ? 'Recuperá tu acceso a FEMPA' : labels[row.tipo] || 'Novedades de tu cuenta FEMPA';
-  const text=row.tipo==='reset' ? `Solicitaste cambiar tu contraseña. El enlace es válido durante 30 minutos y una sola vez.\n\n${frontUrl()}/recuperar-cuenta#token=${payload.token}\n\nSi no lo solicitaste, ignorá este correo.` : `${subject}.\n\nIngresá para consultar el estado y los próximos pasos:\n${frontUrl()}/login\n\nLas observaciones y documentos se consultan únicamente dentro de la aplicación.\nFederación Mendocina de Patín`;
+  const text=row.tipo==='vencimiento_documental' ? `Tu documentación deportiva tiene un vencimiento próximo o pendiente de renovación (${payload.vence}). Ingresá a Mi solicitud para consultar el detalle y actualizarla.\n\n${frontUrl()}/mi-solicitud\n\nEste aviso no cambia el estado de tu cuenta.` : row.tipo==='reset' ? `Solicitaste cambiar tu contraseña. El enlace es válido durante 30 minutos y una sola vez.\n\n${frontUrl()}/recuperar-cuenta#token=${payload.token}\n\nSi no lo solicitaste, ignorá este correo.` : `${subject}.\n\nIngresá para consultar el estado y los próximos pasos:\n${frontUrl()}/login\n\nLas observaciones y documentos se consultan únicamente dentro de la aplicación.\nFederación Mendocina de Patín`;
   const auth=await fetch('https://oauth2.googleapis.com/token',{method:'POST',signal:AbortSignal.timeout(15000),headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:process.env.GMAIL_CLIENT_ID || '',client_secret:process.env.GMAIL_CLIENT_SECRET || '',refresh_token:process.env.GMAIL_REFRESH_TOKEN || '',grant_type:'refresh_token'})});
   if(!auth.ok) throw new Error('OAUTH_'+auth.status);
   const {access_token}=await auth.json();

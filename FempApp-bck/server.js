@@ -155,6 +155,7 @@ async function start() {
   await db.Usuario.findOne({attributes:['id','sessionVersion','revision','camposCorregir','solicitaLicenciaProvincial']});
   await db.CuentaCorreo.count();await db.CuentaHistorial.count();await db.CuentaReset.count();
   require('./services/cuenta-correo').start();
+  require('./services/documentos-avisos').start();
   app.listen(port,'0.0.0.0',()=>console.log('FEMPA API lista. Archivos persistentes configurados.'));
 }
 start().catch(e=>{console.error('No se pudo iniciar. Revisá migración y variables:',e.name,e.message);process.exitCode=1;});

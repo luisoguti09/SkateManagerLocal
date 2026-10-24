@@ -118,6 +118,9 @@ estado: {
   type: DataTypes.ENUM('pendiente','requiere_correcciones','aprobado','bloqueado'),
   defaultValue: 'pendiente'
 },
+certificadoWada: {type: DataTypes.STRING, allowNull: true},
+fichaMedicaFecha: {type: DataTypes.DATEONLY, allowNull: true},
+wadaFecha: {type: DataTypes.DATEONLY, allowNull: true},
 rolSolicitado: {
   type: DataTypes.ENUM('administrador','tecnico','juez','deportista','tesoreria'),
   allowNull: true

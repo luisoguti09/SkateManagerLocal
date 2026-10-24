@@ -24,6 +24,7 @@ async function editable(u,t) {
   if(await presentada(u,t) && u.estado==='pendiente')R.fail(409,'La solicitud ya está en revisión. Esperá la respuesta de la Federación.');
 }
 async function completa(u) {
+  for(const d of require('./documentos-vigencia').resumen(u)){if(d.expedicion && d.vence && d.dias<0)R.fail(400,'Renová el documento vencido: '+d.label);}
   if(!u.nombre || !u.email || !u.dni) R.fail(400,'Completá los datos de la cuenta.');
   for(const k of u.camposCorregir || []) {
     if(k==='categoria' || (k==='nivel' && u.rol!=='tecnico'))continue;
@@ -33,7 +34,8 @@ async function completa(u) {
   if(u.rol==='tecnico'){
     const edad=require('./cuenta-documentos').edadCumplida(u.fechaNacimiento);
     if(edad===null)R.fail(400,'Completá una fecha de nacimiento válida para determinar la documentación requerida.');
-    if(edad>=16 && !await F.existe(u.certificadoAntecedentes,'certificadoAntecedentes'))R.fail(400,'Cargá el certificado de antecedentes penales solicitado por la Federación.');
+    if(edad<18)R.fail(400,'Para solicitar una cuenta de técnica debés tener 18 años cumplidos.');
+    if(!await F.existe(u.certificadoAntecedentes,'certificadoAntecedentes'))R.fail(400,'Cargá el certificado de antecedentes penales solicitado por la Federación.');
   }
   if(politica(u).obligatorios.includes('fotoPerfil') && !await F.existe(u.fotoPerfil,'fotoPerfil')) R.fail(400,'Cargá tu foto de perfil.');
   if(deportiva(u) && dniRequerido() && (!await F.existe(u.dniFrente,'dniFrente') || !await F.existe(u.dniDorso,'dniDorso'))) R.fail(400,'La licencia provincial requiere frente y dorso del DNI.');
@@ -44,6 +46,7 @@ async function detalle(u,admin=false) {
   data.solicitudEnviada=await presentada(u);
   data.etapaSolicitud=u.estado==='pendiente'?(data.solicitudEnviada?'En revisión':'Por completar'):null;
   for(const k of F.campos) data.documentos[k]=await F.existe(u[k],k);
+  data.vigencias=deportiva(u)?require('./documentos-vigencia').resumen({...data,...data.documentos}):[];
   data.requiereDni=deportiva(u) && dniRequerido();
   data.historial=await Historial.findAll({where:{usuarioId:u.id},attributes:['id','accion','estado','motivo','createdAt','revision'],order:[['id','DESC']],limit:50});
   if(admin) data.correos=await Correo.findAll({where:{usuarioId:u.id},attributes:['id','tipo','estado','intentos','error','createdAt','enviadoAt'],order:[['id','DESC']],limit:30});

@@ -45,8 +45,8 @@ export class RevisionCuentasComponent implements OnInit,OnDestroy{
  }
  private vista=inject(ChangeDetectorRef);private host=inject(ElementRef);
  private api=inject(CuentaService);private router=inject(Router);
- estados=estados;get campos(){return camposCuenta.filter(c=>c.key!=='categoria' && (!['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes'].includes(c.key) || this.u?.politicaDocumentos?.visibles?.includes(c.key) || this.u?.documentos?.[c.key]));}
- get camposCorregibles(){return this.campos.filter(c=>!['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes'].includes(c.key) || this.u?.politicaDocumentos?.visibles?.includes(c.key));}
+ estados=estados;get campos(){return camposCuenta.filter(c=>c.key!=='categoria' && (!['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','certificadoWada'].includes(c.key) || this.u?.politicaDocumentos?.visibles?.includes(c.key) || this.u?.documentos?.[c.key]));}
+ get camposCorregibles(){return this.campos.filter(c=>!['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','certificadoWada'].includes(c.key) || this.u?.politicaDocumentos?.visibles?.includes(c.key));}
  club='';clubes:{id:number;nombre:string}[]=[];errorClubes='';
  estado=this.router.url.includes('/todos')?'':'pendiente';q='';page=1;total=0;usuarios:any[]=[];u:any=null;busy=false;error='';ok='';motivo='';nuevoEstado='aprobado';seleccion:Record<string,boolean>={};
  private enfocar(selector:string){

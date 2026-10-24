@@ -192,6 +192,7 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
   assert.equal(P.edadCumplida('2010-10-23','2026-10-23'),16);
   assert.equal(P.edadCumplida('2010-02-30'),null);
   const tec=await U.create({nombre:'Técnica',email:'tec@example.org',dni:'44556677',rol:'tecnico',club:'Giol',fechaNacimiento:'2000-01-01',estado:'aprobado',aprobado:true});
+  await assert.rejects(()=>C.completa({...tec,fechaNacimiento:new Date().getUTCFullYear()-17+'-01-01'}),/18 años cumplidos/);
   const segunda=await U.create({rol:'tecnico',club:'Giol',estado:'aprobado',aprobado:true});
   const tes=await U.create({rol:'tesoreria',estado:'aprobado',aprobado:true});
   const juez=await U.create({rol:'juez',estado:'aprobado',aprobado:true});
@@ -220,6 +221,40 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
   const image=await sharp({create:{width:10,height:10,channels:3,background:'#fff'}}).png().toBuffer();
   const submit=async(cert)=>{const f=new FormData();f.append('datos',JSON.stringify({nombre:nueva.nombre,club:'Giol',revision:0,fechaNacimiento:'2000-01-01'}));f.append('fotoPerfil',new Blob([image],{type:'image/png'}),'foto.png');if(cert)f.append('certificadoAntecedentes',new Blob([Buffer.from('%PDF-1.4\n%%EOF')],{type:'application/pdf'}),'cert.pdf');return fetch(base+'/cuenta/mia/enviar',{method:'POST',headers:{Authorization:'Bearer '+token(nueva)},body:f});};
   assert.equal((await submit(false)).status,400);assert.equal((await submit(true)).status,200);
+ });
+
+ await t.test('vigencias: renovación atómica, permisos, fechas y cuenta aprobada conservada',async()=>{
+  const V=require('../services/documentos-vigencia'),fecha=V.hoyArgentina();
+  const a=await U.create({nombre:'Vigencias',email:'vigencias@example.org',dni:'88881111',rol:'deportista',estado:'aprobado',aprobado:true,documentacionAprobada:true,club:'Giol'});
+  const pdf=Buffer.from('%PDF-1.4\n%%EOF');
+  const renovar=async(actor,datos,field='fichaMedica',file=pdf)=>{
+   const f=new FormData();f.append('datos',JSON.stringify(datos));if(file)f.append(field,new Blob([file],{type:'application/pdf'}),'prueba.pdf');
+   const response=await fetch(base+'/cuenta/mia/documentos-vigencia',{method:'POST',headers:actor?{Authorization:'Bearer '+token(actor)}:{},body:f});return {status:response.status,data:await response.json()};
+  };
+  assert.equal((await renovar(null,{revision:0,fichaMedicaFecha:fecha})).status,401);
+  assert.equal((await renovar(admin,{revision:admin.revision,fichaMedicaFecha:fecha})).status,403);
+  assert.equal((await renovar(a,{revision:0})).status,400);
+  assert.equal((await renovar(a,{revision:0,fichaMedicaFecha:'2099-01-01'})).status,400);
+  assert.equal((await renovar(a,{revision:0,fichaMedicaFecha:'2026-02-30'})).status,400);
+  const ok=await renovar(a,{revision:0,fichaMedicaFecha:fecha});assert.equal(ok.status,200);
+  assert.equal(a.estado,'aprobado');assert.equal(a.aprobado,true);assert.equal(a.documentacionAprobada,false);assert.equal(a.revision,1);
+  assert.equal(ok.data.vigencias[0].vence,V.vencer(fecha,12));assert.equal(ok.data.vigencias[0].estado,'Vigente');
+  const old=a.fichaMedica,before=await fs.readdir(path.join(temp,'privado'));
+  assert.equal((await renovar(a,{revision:0,fichaMedicaFecha:fecha})).status,409);
+  assert.deepEqual(await fs.readdir(path.join(temp,'privado')),before);assert.equal(a.fichaMedica,old);
+  assert.equal((await renovar(a,{revision:1,fichaMedicaFecha:fecha},'fichaMedica',Buffer.from('<html>bad</html>'))).status,400);
+  assert.equal((await renovar(a,{revision:1,fichaMedicaFecha:fecha})).status,200);assert.equal(await F.existe(old,'fichaMedica'),false);
+  assert.equal((await renovar(a,{revision:2,wadaFecha:fecha},'certificadoWada')).status,200);
+  assert.equal((await C.detalle(a)).vigencias[1].vence,V.vencer(fecha,24));
+  assert.equal((await call('GET','/cuenta/'+a.id+'/archivo/certificadoWada',other)).status,403);
+  assert.equal((await call('GET','/cuenta/'+a.id+'/archivo/certificadoWada',admin)).status,200);
+  const createH=H.create;H.create=async()=>{throw new Error('simulated history failure');};
+  const stable=a.fichaMedica,revision=a.revision,archivos=await fs.readdir(path.join(temp,'privado'));
+  try{assert.equal((await renovar(a,{revision,fichaMedicaFecha:fecha})).status,500);}finally{H.create=createH;}
+  assert.equal(a.fichaMedica,stable);assert.equal(a.revision,revision);assert.deepEqual(await fs.readdir(path.join(temp,'privado')),archivos);
+  a.fichaMedicaFecha=null;assert.equal((await C.detalle(a)).vigencias[0].estado,'Fecha pendiente');
+  assert.equal((await renovar(a,{revision:a.revision,fichaMedicaFecha:fecha},'fichaMedica',null)).status,200);
+  await F.borrar(a.fichaMedica,'fichaMedica');assert.equal((await C.detalle(a)).vigencias[0].estado,'Sin documento');
  });
  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));Module._load=load;await fs.rm(temp,{recursive:true,force:true});}
 });

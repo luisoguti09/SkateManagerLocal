@@ -20,7 +20,8 @@ test('panel técnico limita cuentas, inscripciones y documentos al club actual',
  try{
  const r=await call(1,'/panel?club=B');assert.equal(r.status,200);const d=await r.json();assert.equal(d.club,'A');assert.equal(d.deportistas[0].usuarioId,2);assert.equal(d.eventos[0].inscripciones[0].nombre,'Atleta A');assert.equal(archivos,0);
  assert.equal((await call(1,'/deportistas/3/documentos')).status,403);assert.equal((await call(1,'/deportistas/3/archivo/fotoPerfil')).status,403);assert.equal(archivos,0);
- assert.equal((await call(1,'/deportistas/2/documentos')).status,200);
+ const doc=await call(1,'/deportistas/2/documentos');assert.equal(doc.status,200);assert.equal((await doc.json()).vigencias.length,2);
+ assert.equal((await call(1,'/deportistas/2/archivo/certificadoAntecedentes')).status,404);
  rows[1].club='B';assert.equal((await call(1,'/deportistas/2/documentos')).status,403);
  assert.equal((await call(4,'/panel')).status,403);assert.equal((await call(5,'/panel')).status,403);assert.equal((await call(null,'/panel')).status,401);
  }finally{await new Promise(r=>server.close(r));}

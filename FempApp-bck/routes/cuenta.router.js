@@ -18,6 +18,16 @@ router.post('/mia/enviar',limite('enviar-solicitud',20,3600000,req=>req.auth.id)
 router.post('/mia/certificado-antecedentes',limite('certificado',10,3600000,req=>req.auth.id),F.recibir,C.wrap(async(req,res)=>{
   res.json(await require('../services/certificado-tecnica').renovar(req.auth.id,Number(req.body.revision),req.files));
 }));
+router.post('/mia/documentos-vigencia',limite('renovacion-documental',10,3600000,req=>req.auth.id),F.recibir,C.wrap(async(req,res)=>{
+ let data;try{data=JSON.parse(req.body.datos);}catch{C.R.fail(400,'Datos inválidos.');}
+ res.json(await require('../services/documentos-renovacion').renovar(req.auth.id,data,req.files));
+}));
+router.get('/mia/requisito-wada',C.wrap(async(req,res)=>{
+ const V=require('../services/edad-deportiva');let temporada;try{temporada=V.temporadaValida(req.query.temporada);}catch{C.R.fail(400,'Seleccioná una temporada válida.');}
+ const P=require('../models/perfildeportivo.model');
+ const perfiles=await P.findAll({where:{usuarioId:req.auth.id,temporada,activa:true}});
+ res.json(V.requisitoWada(req.cuenta,perfiles,temporada));
+}));
 router.get('/mia',C.wrap(async(req,res)=>res.json(await C.detalle(req.cuenta))));
 router.patch('/mia',C.wrap(async(req,res)=>{
   const data=C.R.perfil(req.body);
@@ -27,6 +37,7 @@ router.patch('/mia',C.wrap(async(req,res)=>{
     await C.editable(u,t);
     if(u.estado==='aprobado' && 'club' in data && data.club!==u.club)C.R.fail(403,'El cambio de club debe gestionarlo la Federación.');
     if(Number(req.body.revision)!==u.revision)C.R.fail(409,'Tu solicitud cambió. Actualizá la pantalla.');
+    if('fichaMedicaFecha' in data || 'wadaFecha' in data)C.R.fail(400,'Actualizá las fechas junto con la documentación desde Mi solicitud.');
     await u.update({...data,revision:u.revision+1},{transaction:t});
     await C.historial(u,u.id,'datos_actualizados',null,t);
   });
@@ -37,7 +48,7 @@ router.post('/mia/archivos',limite('archivos',30,3600000,req=>req.auth.id),F.rec
 }));
 router.post('/mia/reenviar',C.wrap(async(req,res)=>{
   const u=await C.Usuario.findByPk(req.auth.id);
-  res.json(await require('../services/solicitud').enviar(req.auth.id,{...Object.fromEntries(Object.entries(C.R.safe(u)).filter(([,v])=>v!==undefined)),revision:req.body.revision},{}));
+  res.json(await require('../services/solicitud').enviar(req.auth.id,{...Object.fromEntries(Object.entries(C.R.safe(u)).filter(([k,v])=>v!==undefined && (!['fichaMedicaFecha','wadaFecha'].includes(k)||v!==null))),revision:req.body.revision},{}));
 }));
 router.get('/:id/archivo/:campo',C.wrap(async(req,res)=>{
   const admin=req.auth.rol==='administrador' && req.cuenta.estado==='aprobado';
@@ -83,7 +94,7 @@ router.patch('/admin/usuarios/:id/documentacion',C.wrap(async(req,res)=>{
     const u=await C.Usuario.findByPk(req.params.id,{transaction:t,lock:t.LOCK.UPDATE});if(!u)C.R.fail(404,'Cuenta no encontrada.');
     if(Number(u.id)===req.auth.id)C.R.fail(400,'No podés revisar tus documentos.');
     if(Number(req.body.revision)!==u.revision)C.R.fail(409,'La solicitud cambió.');
-    if(req.body.aprobada){if(u.estado==='pendiente' && !await C.presentada(u,t))C.R.fail(409,'La persona todavía no envió la solicitud.');await C.completa(u);}
+    if(req.body.aprobada){if(u.estado==='pendiente' && !await C.presentada(u,t))C.R.fail(409,'La persona todavía no envió la solicitud.');await C.completa(u);for(const d of require('../services/documentos-vigencia').resumen(u)){if(u[d.campo]&&!d.vence)C.R.fail(400,'Falta la fecha de expedición: '+d.label);}}
     await u.update({documentacionAprobada:req.body.aprobada,revision:u.revision+1},{transaction:t});
     await C.historial(u,req.auth.id,req.body.aprobada?'documentacion_aprobada':'documentacion_observada',motivo,t);
     await C.encolar(u,'documentacion',t);

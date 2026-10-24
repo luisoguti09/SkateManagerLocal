@@ -7,7 +7,7 @@ export const camposCuenta = [
  {key:'nombre',label:'Nombre completo'}, {key:'edad',label:'Edad'}, {key:'club',label:'Club'},
  {key:'categoria',label:'Categoría'}, {key:'nivel',label:'Nivel'}, {key:'domicilio',label:'Domicilio'},
  {key:'telefono',label:'Teléfono'}, {key:'fechaNacimiento',label:'Fecha de nacimiento'},
- {key:'fotoPerfil',label:'Foto de perfil'}, {key:'dniFrente',label:'DNI · frente'}, {key:'dniDorso',label:'DNI · dorso'}, {key:'fichaMedica',label:'Ficha médica'}, {key:'certificadoAntecedentes',label:'Certificado de antecedentes penales'}
+ {key:'fotoPerfil',label:'Foto de perfil'}, {key:'dniFrente',label:'DNI · frente'}, {key:'dniDorso',label:'DNI · dorso'}, {key:'fichaMedica',label:'Ficha médica'}, {key:'certificadoWada',label:'Certificado WADA'}, {key:'certificadoAntecedentes',label:'Certificado de antecedentes penales'}
 ];
 @Injectable({providedIn:'root'})
 export class CuentaService {
@@ -16,6 +16,8 @@ export class CuentaService {
  clubes(){return this.http.get<{id:number;nombre:string}[]>(this.base+'/clubes',this.opts);}
  enviar(files:FormData){return this.http.post<any>(this.base+'/mia/enviar',files,this.opts);}
  renovarCertificado(files:FormData){return this.http.post<any>(this.base+'/mia/certificado-antecedentes',files,this.opts);}
+ renovarDocumentos(files:FormData){return this.http.post<any>(this.base+'/mia/documentos-vigencia',files,this.opts);}
+ requisitoWada(temporada:number){return this.http.get<any>(this.base+'/mia/requisito-wada',{...this.opts,params:{temporada}});}
  mia(){return this.http.get<any>(this.base+'/mia',this.opts);}
  guardar(data:any){return this.http.patch<any>(this.base+'/mia',data,this.opts);}
  subir(files:FormData){return this.http.post<any>(this.base+'/mia/archivos',files,this.opts);}
