@@ -24,15 +24,20 @@ router.get('/panel',C.wrap(async(req,res)=>{
   C.Usuario.findAll({where:{club:req.cuenta.club,rol:'deportista',estado:'aprobado'},attributes:['id','nombre','dni','documentacionAprobada']})
  ]);
  const norm=v=>String(v||'').replace(/\D/g,'');
- const porDni=new Map();
- for(const u of cuentas){const k=norm(u.dni);porDni.set(k,porDni.has(k)?null:u);}
- const deportistas=padron.map(p=>{const u=porDni.get(norm(p.documentoN));return {padronId:p.id,usuarioId:u?.id||null,nombre:p.apellidoYNombre,dni:p.documentoN,categoria:p.categoria||null,documentacionAprobada:u?!!u.documentacionAprobada:null};});
+ // La lista nace de las cuentas aprobadas, nunca de todo el padrón importado.
+ const porDni=new Map(),cuentasPorDni=new Map();
+ for(const p of padron){const k=norm(p.documentoN);if(k)porDni.set(k,porDni.has(k)?null:p);}
+ for(const u of cuentas){const k=norm(u.dni);cuentasPorDni.set(k,(cuentasPorDni.get(k)||0)+1);}
+ const deportistas=cuentas.map(u=>{
+  const k=norm(u.dni),p=cuentasPorDni.get(k)===1?porDni.get(k):null;
+  return {padronId:p?.id??null,usuarioId:u.id,nombre:u.nombre,dni:u.dni,categoria:p?.categoria||null,documentacionAprobada:!!u.documentacionAprobada};
+ });
  const ids=cuentas.map(u=>u.id);
  const inscripciones=ids.length?await Inscripcion.findAll({where:{UsuarioId:{[Op.in]:ids}},attributes:['id','UsuarioId','EventoId','estadoInscripcion','disciplina','categoria'],order:[['id','DESC']]}):[];
  const eventoIds=[...new Set(inscripciones.map(i=>i.EventoId))];
  const eventos=eventoIds.length?await Evento.findAll({where:{id:{[Op.in]:eventoIds}},attributes:['id','nombre','fechaInicio','lugar','estado']}):[];
  const nombres=new Map(cuentas.map(u=>[u.id,u.nombre]));
- res.json({club:req.cuenta.club,deportistas,cuentasSinPadron:cuentas.filter(u=>!deportistas.some(p=>p.usuarioId===u.id)).map(u=>({usuarioId:u.id,nombre:u.nombre})),eventos:eventos.map(e=>({...e.toJSON(),inscripciones:inscripciones.filter(i=>i.EventoId===e.id).map(i=>({...i.toJSON(),nombre:nombres.get(i.UsuarioId)}))}))});
+ res.json({club:req.cuenta.club,deportistas,cuentasSinPadron:cuentas.filter(u=>deportistas.some(p=>p.usuarioId===u.id && p.padronId===null)).map(u=>({usuarioId:u.id,nombre:u.nombre})),eventos:eventos.map(e=>({...e.toJSON(),inscripciones:inscripciones.filter(i=>i.EventoId===e.id).map(i=>({...i.toJSON(),nombre:nombres.get(i.UsuarioId)}))}))});
 }));
 router.get('/deportistas/:id/documentos',C.wrap(async(req,res)=>{
  const u=await miembro(req),documentos=[];

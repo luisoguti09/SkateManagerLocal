@@ -7,7 +7,7 @@ import {DomSanitizer,SafeResourceUrl} from '@angular/platform-browser';
 import {Subscription,finalize} from 'rxjs';
 import {environment} from '../../../environments/environment';
 import {AuthService} from '../../services/auth.service';
-interface Deportista {padronId:number;usuarioId:number|null;nombre:string;dni:string;categoria:string|null;documentacionAprobada:boolean|null;}
+interface Deportista {padronId:number|null;usuarioId:number;nombre:string;dni:string;categoria:string|null;documentacionAprobada:boolean|null;}
 interface Panel {club:string;deportistas:Deportista[];cuentasSinPadron:{usuarioId:number;nombre:string}[];eventos:any[];}
 @Component({selector:'app-panel-tecnica',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./panel-tecnica.component.html',styleUrls:['./panel-tecnica.component.scss']})
 export class PanelTecnicaComponent implements OnInit,OnDestroy {

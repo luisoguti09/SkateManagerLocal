@@ -87,8 +87,8 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
   const {filtrar}=require('../services/alcance-evaluaciones');
   const padron=[{id:1,documentoN:'12.345.678',club:'A'},{id:2,documentoN:'22222222',club:'A'},{id:3,documentoN:'33333333',club:'B'}];
   const cuentas=[{dni:'12345678',rol:'deportista',estado:'aprobado',club:'B'}];
-  assert.deepEqual(filtrar(padron,cuentas,'A').map(p=>p.id),[2]);
-  assert.deepEqual(filtrar(padron,cuentas,'B').map(p=>p.id),[1,3]);
+  assert.deepEqual(filtrar(padron,cuentas,'A').map(p=>p.id),[]);
+  assert.deepEqual(filtrar(padron,cuentas,'B').map(p=>p.id),[1]);
  });
  await t.test('sesión pendiente válida, datos propios y sin password',async()=>{
   const r=await call('POST','/auth/login',null,{email:user.email,password:'Mi contraseña de prueba'});assert.equal(r.status,200);assert.ok(r.data.token);assert.equal(r.data.usuario.estado,'pendiente');assert.equal(r.data.usuario.password,undefined);

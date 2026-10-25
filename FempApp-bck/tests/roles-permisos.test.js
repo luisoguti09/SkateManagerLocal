@@ -5,7 +5,7 @@ process.env.JWT_SECRET='roles-test-key-12345678901234567890';
 const users=[{id:1,dni:'1',rol:'tecnico',club:'A',estado:'aprobado',aprobado:true,sessionVersion:0},{id:2,dni:'2',rol:'juez',estado:'aprobado',aprobado:true,sessionVersion:0},{id:3,dni:'3',rol:'deportista',estado:'aprobado',aprobado:true,sessionVersion:0}];
 const padron=[{id:10,documentoN:'10101010',club:'A'},{id:20,documentoN:'20202020',club:'B'}].map(p=>({...p,toJSON:()=>p}));
 const evals=[{id:100,deportistaId:10},{id:200,deportistaId:20}];
-const Usuario={findByPk:async id=>users.find(u=>u.id===Number(id)),findAll:async()=>[]};
+const Usuario={findByPk:async id=>users.find(u=>u.id===Number(id)),findAll:async()=>[{dni:'10101010',rol:'deportista',club:'A',estado:'aprobado'}]};
 const Evaluacion={findAll:async({where={}})=>evals.filter(e=>!where.deportistaId || (typeof where.deportistaId==='object'?where.deportistaId[Op.in].includes(e.deportistaId):e.deportistaId===Number(where.deportistaId)))};
 const original=Module._load;
 Module._load=function(req,parent,isMain){
