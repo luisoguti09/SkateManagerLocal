@@ -12,6 +12,7 @@ export class AsistenciasListComponent implements OnInit,OnDestroy {
  private auth=inject(AuthService);
  private resumenPeticion?:Subscription;
  private detallePeticion?:Subscription;
+ animacion=true;
  eventos:EventoAsistencias[]=[];
  filas:FilaAsistencia[]=[];
  seleccionado:EventoAsistencias|null=null;

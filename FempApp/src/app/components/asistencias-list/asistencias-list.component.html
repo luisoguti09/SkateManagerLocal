@@ -1,8 +1,6 @@
 <main class="workspace">
  <header><a class="back" [routerLink]="volver">← Volver a mi panel</a><button (click)="cargar()" [disabled]="cargando">Actualizar</button></header>
- <section class="hero"><span class="eyebrow">FEMPA · ENCUENTROS QUE QUEDAN REGISTRADOS</span><h1>Asistencias.</h1><p>{{tecnica?'El recorrido de tu club, evento por evento.':'Cada evento, con sus deportistas presentes.'}}</p><span class="badge" *ngIf="club">{{club}}</span></section>
- <p class="notice">Una asistencia por deportista y evento. No representa asistencia a cada jornada, evaluación aprobada ni cumplimiento de requisitos deportivos.</p>
- <p class="notice" *ngIf="tecnica">Mostramos las asistencias de cuentas aprobadas de deportistas de tu club actual. No incluye información de otros clubes.</p>
+ <section class="hero"><img class="attendance-wheel" src="assets/icons/MARCAFEMPA3.png" alt="" aria-hidden="true" [class.paused]="!animacion"><span class="eyebrow">FEMPA</span><h1>Asistencias.</h1><p>{{tecnica?'El recorrido de tu club, evento por evento.':'Cada evento, con sus deportistas presentes.'}}</p><span class="badge" *ngIf="club">{{club}}</span><button class="motion-control" (click)="animacion=!animacion" [attr.aria-pressed]="!animacion">{{animacion?'Pausar animación':'Activar animación'}}</button></section>
  <p role="status" *ngIf="cargando">Consultando asistencias…</p><p role="alert" class="error" *ngIf="error">{{error}}</p>
  <ng-container *ngIf="!cargando && !error">
  <section *ngIf="!seleccionado;else detalle">
