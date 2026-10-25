@@ -30,7 +30,13 @@ export class PanelTecnicaComponent implements OnInit,OnDestroy {
  get meses(){const now=new Date();const rows=Array.from({length:6},(_,i)=>{const d=new Date(now.getFullYear(),now.getMonth()-5+i,1);return {key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,label:d.toLocaleDateString('es-AR',{month:'short'}),cantidad:0,alto:0};});for(const e of this.evaluaciones){const d=new Date(e.fechaEvaluacion||e.createdAt);if(!Number.isNaN(d.getTime())){const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;const r=rows.find(x=>x.key===k);if(r)r.cantidad++;}}const max=Math.max(1,...rows.map(r=>r.cantidad));return rows.map(r=>({...r,alto:r.cantidad/max*100}));}
  cargar(){if(this.busy)return;this.cerrar();this.busy=true;this.error='';this.subscriptions.add(this.http.get<Panel>(this.base+'/tecnica/panel',this.opts).pipe(finalize(()=>this.busy=false)).subscribe({next:r=>{this.panel=r;this.cargarEvaluaciones();},error:e=>{this.panel=null;this.evaluaciones=[];this.error=e.error?.error||'No pudimos cargar tu club. Reintentá.';}}));}
  cargarEvaluaciones(){this.errorEvaluaciones='';this.cargandoEvaluaciones=true;this.subscriptions.add(this.http.get<any[]>(this.base+'/evaluaciones',this.opts).pipe(finalize(()=>this.cargandoEvaluaciones=false)).subscribe({next:r=>this.evaluaciones=r,error:()=>{this.evaluaciones=[];this.errorEvaluaciones='No se pudieron consultar las evaluaciones.';}}));}
- cambiar(tab:string){this.cerrar();this.tab=tab;}
+ cambiar(tab:string){
+  if(!['resumen','padron','eventos','evolucion'].includes(tab))return;
+  this.cerrar();this.tab=tab;this.view.detectChanges();
+  const section=this.host.nativeElement.querySelector('[data-section="'+tab+'"]') as HTMLElement|null;
+  section?.focus({preventScroll:true});section?.scrollIntoView({block:'start',behavior:'auto'});
+ }
+ animacion=true;
  abrir(p:Deportista){this.cerrar();this.seleccion=p;this.tab='padron';this.view.detectChanges();const detail=this.host.nativeElement.querySelector('.detail') as HTMLElement|null;detail?.focus({preventScroll:true});detail?.scrollIntoView({block:'start'});if(!p.usuarioId)return;this.cargandoDocumentos=true;this.docPeticion=this.http.get<any>(`${this.base}/tecnica/deportistas/${p.usuarioId}/documentos`,this.opts).pipe(finalize(()=>this.cargandoDocumentos=false)).subscribe({next:r=>{this.documentos=r.documentos;this.vigencias=r.vigencias||[];},error:e=>this.errorDocumentos=e.error?.error||'No se pudieron cargar los documentos.'});}
  cerrarArchivo(){this.version++;this.archivoPeticion?.unsubscribe();if(this.archivo)URL.revokeObjectURL(this.archivo.url);this.archivo=null;this.cargandoArchivo=false;}
  cerrar(){this.docPeticion?.unsubscribe();this.cerrarArchivo();this.seleccion=null;this.documentos=[];this.vigencias=[];this.errorDocumentos='';this.cargandoDocumentos=false;}

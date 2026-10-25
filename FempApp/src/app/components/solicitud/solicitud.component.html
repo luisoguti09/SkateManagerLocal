@@ -1,5 +1,5 @@
 <main class="cuenta" [attr.aria-busy]="busy">
- <header class="cabecera"><div><span class="eyebrow">FEMPA · Tu cuenta</span><h1>{{editable ? "Completá tu solicitud" : "Mi solicitud"}}</h1><p>Completá tus datos y seguí la revisión de la Federación.</p></div><img class="marca" src="assets/icons/fempa-blanco-negro.png" alt="FEMPA"></header>
+ <header class="cabecera"><div><span class="eyebrow">FEMPA · Tu cuenta</span><h1>{{editable ? "Completá tu solicitud" : "Mi solicitud"}}</h1><p>Completá tus datos y seguí la revisión de la Federación.</p></div><img class="marca" src="assets/icons/MARCAFEMPA1.png" alt="FEMPA"></header>
  <div class="acciones barra"><button type="button" class="secundario" (click)="cargar()" [disabled]="busy">Actualizar estado</button><button type="button" class="secundario" (click)="salir()" [disabled]="busy">Cerrar sesión</button></div>
  <p *ngIf="error" class="error" role="alert" tabindex="-1">{{error}}</p>
  <p *ngIf="busy" class="procesando" role="status">Procesando… Esperá la confirmación antes de cerrar.</p>
