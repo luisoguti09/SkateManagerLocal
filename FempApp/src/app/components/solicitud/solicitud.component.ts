@@ -1,13 +1,14 @@
 import {Component,OnInit,OnDestroy,inject,ChangeDetectorRef,ElementRef} from '@angular/core';
 import {DomSanitizer,SafeResourceUrl} from '@angular/platform-browser';
 import {Subscription} from 'rxjs';
+import {CargaFempaComponent} from '../../shared/carga-fempa/carga-fempa.component';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {RouterLink} from '@angular/router';
 import {finalize} from 'rxjs';
 import {CuentaService,estados,camposCuenta,guardarArchivo} from '../../services/cuenta.service';
 import {AuthService} from '../../services/auth.service';
-@Component({selector:'app-solicitud',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./solicitud.component.html',styleUrls:['./solicitud.component.scss']})
+@Component({selector:'app-solicitud',standalone:true,imports:[CommonModule,FormsModule,RouterLink,CargaFempaComponent],templateUrl:'./solicitud.component.html',styleUrls:['./solicitud.component.scss']})
 export class SolicitudComponent implements OnInit,OnDestroy {
  private sanitizer=inject(DomSanitizer);
  vistaArchivo: {key:string;label:string;url:string;pdf:SafeResourceUrl|null}|null=null;

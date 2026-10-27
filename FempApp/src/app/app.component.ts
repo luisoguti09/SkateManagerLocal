@@ -1,16 +1,26 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
+import { Router, RouterOutlet, NavigationStart, NavigationEnd, NavigationCancel, NavigationError, NavigationSkipped } from '@angular/router';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {CargaFempaComponent} from './shared/carga-fempa/carga-fempa.component';
 import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, CargaFempaComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss', '../styles.scss']
 })
 export class AppComponent implements OnInit {
   title = 'FempApp';
+  navegando=false;
+  private destroyRef=inject(DestroyRef);
+  constructor(){
+    this.router.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(event=>{
+      if(event instanceof NavigationStart)this.navegando=true;
+      else if(event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError || event instanceof NavigationSkipped)this.navegando=false;
+    });
+  }
   private router = inject(Router);
   private authService = inject(AuthService);
 

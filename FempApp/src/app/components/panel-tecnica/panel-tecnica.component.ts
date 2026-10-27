@@ -1,4 +1,5 @@
 import {Component,OnInit,OnDestroy,inject,ElementRef,ChangeDetectorRef} from '@angular/core';
+import {CargaFempaComponent} from '../../shared/carga-fempa/carga-fempa.component';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {RouterLink} from '@angular/router';
@@ -9,7 +10,7 @@ import {environment} from '../../../environments/environment';
 import {AuthService} from '../../services/auth.service';
 interface Deportista {padronId:number|null;usuarioId:number;nombre:string;dni:string;categoria:string|null;documentacionAprobada:boolean|null;}
 interface Panel {club:string;deportistas:Deportista[];cuentasSinPadron:{usuarioId:number;nombre:string}[];eventos:any[];}
-@Component({selector:'app-panel-tecnica',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./panel-tecnica.component.html',styleUrls:['./panel-tecnica.component.scss']})
+@Component({selector:'app-panel-tecnica',standalone:true,imports:[CommonModule,FormsModule,RouterLink,CargaFempaComponent],templateUrl:'./panel-tecnica.component.html',styleUrls:['./panel-tecnica.component.scss']})
 export class PanelTecnicaComponent implements OnInit,OnDestroy {
  private host=inject(ElementRef);private view=inject(ChangeDetectorRef);
  auth=inject(AuthService);private http=inject(HttpClient);private sanitizer=inject(DomSanitizer);

@@ -15,10 +15,10 @@
   <p *ngIf="u.camposCorregir?.includes('categoria')" class="mini">La categoría se gestiona en los perfiles deportivos. No se pide nuevamente en esta solicitud.</p>
   <p *ngIf="u.estado==='aprobado'">Tu cuenta está aprobada.</p><p *ngIf="u.estado==='aprobado' && u.rol==='deportista'">Las categorías y disciplinas se completan en tus perfiles deportivos.</p>
   <a *ngIf="u.estado==='aprobado'" class="boton" [routerLink]="destino">Entrar a la aplicación</a>
-  <p *ngIf="u.solicitudEnviada || u.estado!=='pendiente'" class="mini">Consultá el resultado acá. Las notificaciones por correo dependen del servicio de correo de la Federación.</p>
+
  </section>
  <section class="panel" *ngIf="u.rol==='tecnico' && u.estado==='aprobado'">
- <h2>Certificado de antecedentes penales</h2><p>Documento privado: solo vos y Administración pueden consultarlo. Al reemplazarlo, la documentación vuelve a revisión; tu cuenta continúa aprobada.</p>
+ <h2>Certificado de antecedentes penales</h2><p>Al reemplazarlo, la documentación vuelve a revisión; tu cuenta continúa aprobada.</p>
  <p>Revisión documental: <strong>{{u.documentacionAprobada?'Aprobada':'Pendiente'}}</strong>.</p>
  <p>Fecha registrada: <strong>{{u.certificadoAntecedentesFecha ? (u.certificadoAntecedentesFecha | date:'dd/MM/yyyy':'UTC') : 'Pendiente'}}</strong></p><label>Fecha de expedición<input type="date" [(ngModel)]="form.certificadoAntecedentesFecha" [disabled]="busy"></label>
  <label>Cargar o renovar certificado<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" (change)="seleccionar($event,'certificadoAntecedentes')" [disabled]="busy"></label>
@@ -71,3 +71,5 @@
  <details class="panel"><summary>Historial de la solicitud</summary><p *ngIf="!u.historial?.length">Todavía no hay movimientos.</p><ul class="lista"><li *ngFor="let h of u.historial"><strong>{{h.accion.replaceAll('_',' ')}}</strong> · {{h.createdAt | date:'dd/MM/yyyy HH:mm'}}<p *ngIf="h.motivo">{{h.motivo}}</p></li></ul></details>
  </ng-container>
 </main>
+
+<app-carga-fempa [activa]="busy || !!cargandoArchivo" texto="Procesando…"></app-carga-fempa>
