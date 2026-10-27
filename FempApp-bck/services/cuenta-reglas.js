@@ -1,6 +1,6 @@
 const crypto = require('node:crypto');
 const ESTADOS = ['pendiente', 'requiere_correcciones', 'aprobado', 'bloqueado'];
-const CAMPOS = ['nombre', 'edad', 'club', 'categoria', 'nivel', 'domicilio', 'telefono', 'fechaNacimiento', 'fotoPerfil', 'dniFrente', 'dniDorso', 'fichaMedica', 'certificadoAntecedentes', 'certificadoWada', 'fichaMedicaFecha', 'wadaFecha'];
+const CAMPOS = ['nombre', 'edad', 'club', 'categoria', 'nivel', 'domicilio', 'telefono', 'fechaNacimiento', 'fotoPerfil', 'dniFrente', 'dniDorso', 'fichaMedica', 'certificadoAntecedentes', 'certificadoWada', 'certificadoAntecedentesFecha', 'fichaMedicaFecha', 'wadaFecha'];
 const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
 function passwordValida(p) { return typeof p === 'string' && p.length >= 8 && /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(p) && /[0-9]/.test(p) && Buffer.byteLength(p) <= 72; }
 function hashToken(token) { return crypto.createHash('sha256').update(token).digest('hex'); }
@@ -45,5 +45,5 @@ function perfil(body) {
   }
   return data;
 }
-const safe = u => Object.fromEntries(['id','dni','nombre','edad','email','rol','rolId','club','categoria','nivel','estado','aprobado','domicilio','telefono','fechaNacimiento','fotoPerfil','documentacionAprobada','solicitaLicenciaProvincial','revision','correcciones','camposCorregir','rolSolicitado','qrJti','fichaMedicaFecha','wadaFecha','instagram','facebook','tiktok'].map(k=>[k,u[k]]));
+const safe = u => Object.fromEntries(['id','dni','nombre','edad','email','rol','rolId','club','categoria','nivel','estado','aprobado','domicilio','telefono','fechaNacimiento','fotoPerfil','documentacionAprobada','solicitaLicenciaProvincial','revision','correcciones','camposCorregir','rolSolicitado','qrJti','certificadoAntecedentesFecha','fichaMedicaFecha','wadaFecha','instagram','facebook','tiktok'].map(k=>[k,u[k]]));
 module.exports = { ESTADOS, CAMPOS, fail, passwordValida, hashToken, decision, perfil, safe };

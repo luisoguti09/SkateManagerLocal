@@ -9,6 +9,6 @@ const original=Module._load;
 Module._load=function(req,parent,isMain){const key=path.basename(req).replace(/\.js$/,'');if(req==='dotenv')return {config:()=>{}};if(key==='database')return db;if(key==='usuario.model')return {getTableName:()=> 'Usuarios'};if(key==='migrar-roles')return {migrar:async()=>{}};if(['documentoaviso.model','cuentahistorial.model','cuentacorreo.model','cuentareset.model'].includes(key))return {sync:async opts=>{assert.equal(opts,undefined);synced.add(key);}};return original.call(this,req,parent,isMain);};
 test('migración documental agrega nullable una sola vez y no recrea Usuarios',async()=>{
  try{for(let i=0;i<2;i++){const done=new Promise(r=>finished=r);delete require.cache[require.resolve('../scripts/migrar-cuentas')];require('../scripts/migrar-cuentas');await done;}
- assert.deepEqual(added.sort(),['certificadoWada','fichaMedicaFecha','wadaFecha']);assert.ok(synced.has('documentoaviso.model'));
+ assert.deepEqual(added.sort(),['certificadoAntecedentesFecha','certificadoWada','fichaMedicaFecha','wadaFecha']);assert.ok(synced.has('documentoaviso.model'));
  }finally{Module._load=original;}
 });

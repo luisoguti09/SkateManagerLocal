@@ -197,12 +197,14 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
   const tes=await U.create({rol:'tesoreria',estado:'aprobado',aprobado:true});
   const juez=await U.create({rol:'juez',estado:'aprobado',aprobado:true});
   const renovar=async(u,revision,bytes=Buffer.from('%PDF-1.4\n%%EOF'))=>{
-   const f=new FormData();f.append('revision',String(revision));f.append('certificadoAntecedentes',new Blob([bytes],{type:'application/pdf'}),'certificado.pdf');
+   const f=new FormData();f.append('revision',String(revision));f.append('certificadoAntecedentesFecha','2026-01-01');f.append('certificadoAntecedentes',new Blob([bytes],{type:'application/pdf'}),'certificado.pdf');
    return fetch(base+'/cuenta/mia/certificado-antecedentes',{method:'POST',headers:{Authorization:'Bearer '+token(u)},body:f});
   };
   await assert.rejects(()=>C.completa(tec),/certificado de antecedentes/);
   assert.equal((await renovar(tec,0)).status,200);
-  assert.equal(tec.estado,'aprobado');assert.equal(tec.documentacionAprobada,false);
+  assert.equal(tec.certificadoAntecedentesFecha,'2026-01-01');assert.equal(tec.estado,'aprobado');assert.equal(tec.documentacionAprobada,false);
+  const invalid=new FormData();invalid.append('revision',String(tec.revision));invalid.append('certificadoAntecedentesFecha','2099-01-01');invalid.append('certificadoAntecedentes',new Blob([Buffer.from('%PDF-1.4\n%%EOF')],{type:'application/pdf'}),'cert.pdf');
+  const beforeInvalid=tec.certificadoAntecedentes;assert.equal((await fetch(base+'/cuenta/mia/certificado-antecedentes',{method:'POST',headers:{Authorization:'Bearer '+token(tec)},body:invalid})).status,400);assert.equal(tec.certificadoAntecedentes,beforeInvalid);assert.equal(tec.certificadoAntecedentesFecha,'2026-01-01');
   assert.equal((await C.detalle(tec)).documentos.certificadoAntecedentes,true);
   assert.equal(R.perfil({certificadoAntecedentes:'forged.pdf'}).certificadoAntecedentes,undefined);
   assert.equal(R.safe(tec).certificadoAntecedentes,undefined);
@@ -219,7 +221,7 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
   // New technical application must include the certificate and a valid date.
   const nueva=await U.create({nombre:'Nueva técnica',email:'newtec@example.org',dni:'55667788',rol:'tecnico',club:'Giol',estado:'pendiente',fechaNacimiento:'2000-01-01'});
   const image=await sharp({create:{width:10,height:10,channels:3,background:'#fff'}}).png().toBuffer();
-  const submit=async(cert)=>{const f=new FormData();f.append('datos',JSON.stringify({nombre:nueva.nombre,club:'Giol',revision:0,fechaNacimiento:'2000-01-01'}));f.append('fotoPerfil',new Blob([image],{type:'image/png'}),'foto.png');if(cert)f.append('certificadoAntecedentes',new Blob([Buffer.from('%PDF-1.4\n%%EOF')],{type:'application/pdf'}),'cert.pdf');return fetch(base+'/cuenta/mia/enviar',{method:'POST',headers:{Authorization:'Bearer '+token(nueva)},body:f});};
+  const submit=async(cert)=>{const f=new FormData();f.append('datos',JSON.stringify({nombre:nueva.nombre,club:'Giol',revision:0,certificadoAntecedentesFecha:'2026-01-01',fechaNacimiento:'2000-01-01'}));f.append('fotoPerfil',new Blob([image],{type:'image/png'}),'foto.png');if(cert)f.append('certificadoAntecedentes',new Blob([Buffer.from('%PDF-1.4\n%%EOF')],{type:'application/pdf'}),'cert.pdf');return fetch(base+'/cuenta/mia/enviar',{method:'POST',headers:{Authorization:'Bearer '+token(nueva)},body:f});};
   assert.equal((await submit(false)).status,400);assert.equal((await submit(true)).status,200);
  });
 

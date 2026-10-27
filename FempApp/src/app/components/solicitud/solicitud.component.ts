@@ -50,7 +50,7 @@ export class SolicitudComponent implements OnInit,OnDestroy {
  clubes:{id:number;nombre:string}[]=[];cargandoClubes=false;errorClubes='';
  files:Partial<Record<string,File>>={};
  temporada=new Date().getFullYear();requisitoWada:any;errorWada='';
- fechas:Record<string,string>={fichaMedica:'fichaMedicaFecha',certificadoWada:'wadaFecha'};
+ fechas:Record<string,string>={certificadoAntecedentes:'certificadoAntecedentesFecha',fichaMedica:'fichaMedicaFecha',certificadoWada:'wadaFecha'};
  private wadaPeticion?:Subscription;
  consultarWada(){this.wadaPeticion?.unsubscribe();this.errorWada='';this.requisitoWada=null;this.wadaPeticion=this.api.requisitoWada(this.temporada).subscribe({next:r=>this.requisitoWada=r,error:()=>this.errorWada='No se pudo consultar el requisito para esa temporada.'});}
  renovarDocumento(campo:string){
@@ -94,7 +94,8 @@ export class SolicitudComponent implements OnInit,OnDestroy {
   if(this.busy || this.u?.rol!=='tecnico' || this.u?.estado!=='aprobado')return;
   const archivo=this.files['certificadoAntecedentes'];
   if(!archivo){this.error='Seleccioná el certificado antes de enviarlo.';return;}
-  const f=new FormData();f.append('revision',String(this.u.revision));f.append('certificadoAntecedentes',archivo);
+  if(!this.form.certificadoAntecedentesFecha){this.error='Ingresá la fecha de expedición del certificado.';return;}
+  const f=new FormData();f.append('revision',String(this.u.revision));f.append('certificadoAntecedentesFecha',this.form.certificadoAntecedentesFecha);f.append('certificadoAntecedentes',archivo);
   this.busy=true;this.error='';this.ok='';this.cerrarArchivo();
   this.api.renovarCertificado(f).pipe(finalize(()=>this.busy=false)).subscribe({
    next:u=>{this.set(u);this.files={};this.ok='Certificado recibido. Queda pendiente de revisión documental por Administración; tu cuenta continúa aprobada.';this.enfocar('[data-estado]');},

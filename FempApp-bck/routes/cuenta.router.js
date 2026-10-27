@@ -16,7 +16,7 @@ router.post('/mia/enviar',limite('enviar-solicitud',20,3600000,req=>req.auth.id)
   res.json(await require('../services/solicitud').enviar(req.auth.id,data,req.files));
 }));
 router.post('/mia/certificado-antecedentes',limite('certificado',10,3600000,req=>req.auth.id),F.recibir,C.wrap(async(req,res)=>{
-  res.json(await require('../services/certificado-tecnica').renovar(req.auth.id,Number(req.body.revision),req.files));
+  res.json(await require('../services/certificado-tecnica').renovar(req.auth.id,Number(req.body.revision),req.files,req.body.certificadoAntecedentesFecha));
 }));
 router.post('/mia/documentos-vigencia',limite('renovacion-documental',10,3600000,req=>req.auth.id),F.recibir,C.wrap(async(req,res)=>{
  let data;try{data=JSON.parse(req.body.datos);}catch{C.R.fail(400,'Datos inválidos.');}
@@ -37,7 +37,7 @@ router.patch('/mia',C.wrap(async(req,res)=>{
     await C.editable(u,t);
     if(u.estado==='aprobado' && 'club' in data && data.club!==u.club)C.R.fail(403,'El cambio de club debe gestionarlo la Federación.');
     if(Number(req.body.revision)!==u.revision)C.R.fail(409,'Tu solicitud cambió. Actualizá la pantalla.');
-    if('fichaMedicaFecha' in data || 'wadaFecha' in data)C.R.fail(400,'Actualizá las fechas junto con la documentación desde Mi solicitud.');
+    if('certificadoAntecedentesFecha' in data || 'fichaMedicaFecha' in data || 'wadaFecha' in data)C.R.fail(400,'Actualizá las fechas junto con la documentación desde Mi solicitud.');
     await u.update({...data,revision:u.revision+1},{transaction:t});
     await C.historial(u,u.id,'datos_actualizados',null,t);
   });

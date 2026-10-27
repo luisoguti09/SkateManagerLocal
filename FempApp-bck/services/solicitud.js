@@ -29,10 +29,11 @@ async function enviar(id,body,files) {
       if(u.rol!=='tecnico')delete data.nivel;
       const propuesta={...C.R.safe(u),...Object.fromEntries(F.campos.map(k=>[k,u[k]])),...data,...prepared};
       require('./documentos-vigencia').validar(u,data,prepared);
+      require('./antecedentes-fecha').validar(u,data,prepared);
       await C.completa(propuesta);
       for(const field of Object.keys(prepared))anteriores[field]=u[field];
       const correccion=u.estado==='requiere_correcciones';
-      await u.update({...data,...prepared,...((hayArchivos || 'fichaMedicaFecha' in data || 'wadaFecha' in data)?{documentacionAprobada:false}:{}),estado:'pendiente',aprobado:false,revision:u.revision+1,correcciones:null,camposCorregir:[]},{transaction:t});
+      await u.update({...data,...prepared,...((hayArchivos || 'fichaMedicaFecha' in data || 'wadaFecha' in data || 'certificadoAntecedentesFecha' in data)?{documentacionAprobada:false}:{}),estado:'pendiente',aprobado:false,revision:u.revision+1,correcciones:null,camposCorregir:[]},{transaction:t});
       await C.historial(u,id,correccion?'reenviado':'enviado',null,t);
       await C.encolar(u,correccion?'reenviado':'pendiente',t);
       aplicado=true;

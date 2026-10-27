@@ -1,6 +1,6 @@
 <main class="cuenta" [attr.aria-busy]="busy">
  <header class="cabecera"><div><span class="eyebrow">FEMPA · Tu cuenta</span><h1>{{editable ? "Completá tu solicitud" : "Mi solicitud"}}</h1><p>Completá tus datos y seguí la revisión de la Federación.</p></div><img class="marca" src="assets/icons/MARCAFEMPA1.png" alt="FEMPA"></header>
- <div class="acciones barra"><button type="button" class="secundario" (click)="cargar()" [disabled]="busy">Actualizar estado</button><button type="button" class="secundario" (click)="salir()" [disabled]="busy">Cerrar sesión</button></div>
+ <div class="acciones barra"><a *ngIf="u?.estado==='aprobado'" class="boton" [routerLink]="destino">← Volver a mi panel</a><button type="button" class="secundario" (click)="cargar()" [disabled]="busy">Actualizar estado</button><button type="button" class="secundario" (click)="salir()" [disabled]="busy">Cerrar sesión</button></div>
  <p *ngIf="error" class="error" role="alert" tabindex="-1">{{error}}</p>
  <p *ngIf="busy" class="procesando" role="status">Procesando… Esperá la confirmación antes de cerrar.</p>
  <ng-container *ngIf="u">
@@ -13,13 +13,14 @@
   <div class="observaciones" *ngIf="u.correcciones">{{u.correcciones}}</div>
   <ul *ngIf="observacionesCampos.length"><li *ngFor="let c of observacionesCampos">{{c.label}}</li></ul>
   <p *ngIf="u.camposCorregir?.includes('categoria')" class="mini">La categoría se gestiona en los perfiles deportivos. No se pide nuevamente en esta solicitud.</p>
-  <p *ngIf="u.estado==='aprobado'">Tu cuenta está aprobada. Las categorías y disciplinas se completan en tus perfiles deportivos.</p>
+  <p *ngIf="u.estado==='aprobado'">Tu cuenta está aprobada.</p><p *ngIf="u.estado==='aprobado' && u.rol==='deportista'">Las categorías y disciplinas se completan en tus perfiles deportivos.</p>
   <a *ngIf="u.estado==='aprobado'" class="boton" [routerLink]="destino">Entrar a la aplicación</a>
   <p *ngIf="u.solicitudEnviada || u.estado!=='pendiente'" class="mini">Consultá el resultado acá. Las notificaciones por correo dependen del servicio de correo de la Federación.</p>
  </section>
  <section class="panel" *ngIf="u.rol==='tecnico' && u.estado==='aprobado'">
  <h2>Certificado de antecedentes penales</h2><p>Documento privado: solo vos y Administración pueden consultarlo. Al reemplazarlo, la documentación vuelve a revisión; tu cuenta continúa aprobada.</p>
  <p>Revisión documental: <strong>{{u.documentacionAprobada?'Aprobada':'Pendiente'}}</strong>.</p>
+ <p>Fecha registrada: <strong>{{u.certificadoAntecedentesFecha ? (u.certificadoAntecedentesFecha | date:'dd/MM/yyyy':'UTC') : 'Pendiente'}}</strong></p><label>Fecha de expedición<input type="date" [(ngModel)]="form.certificadoAntecedentesFecha" [disabled]="busy"></label>
  <label>Cargar o renovar certificado<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" (change)="seleccionar($event,'certificadoAntecedentes')" [disabled]="busy"></label>
  <p class="mini">PDF hasta 2 MB; imágenes hasta 6 MB, optimizadas al guardarlas. {{files['certificadoAntecedentes']?.name}}</p>
  <div class="acciones"><button type="button" (click)="renovarCertificado()" [disabled]="busy || !files['certificadoAntecedentes']">Enviar certificado a revisión</button>
