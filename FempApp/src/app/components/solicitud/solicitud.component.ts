@@ -52,15 +52,23 @@ export class SolicitudComponent implements OnInit,OnDestroy {
  files:Partial<Record<string,File>>={};
  temporada=new Date().getFullYear();requisitoWada:any;errorWada='';
  fechas:Record<string,string>={certificadoAntecedentes:'certificadoAntecedentesFecha',fichaMedica:'fichaMedicaFecha',certificadoWada:'wadaFecha'};
+ consultandoWada=false;
  private wadaPeticion?:Subscription;
- consultarWada(){this.wadaPeticion?.unsubscribe();this.errorWada='';this.requisitoWada=null;this.wadaPeticion=this.api.requisitoWada(this.temporada).subscribe({next:r=>this.requisitoWada=r,error:()=>this.errorWada='No se pudo consultar el requisito para esa temporada.'});}
+ consultarWada(){
+  this.wadaPeticion?.unsubscribe();this.errorWada='';this.requisitoWada=null;this.consultandoWada=true;
+  this.wadaPeticion=this.api.requisitoWada(this.temporada).subscribe({
+   next:r=>{this.requisitoWada=r;this.consultandoWada=false;this.vista.markForCheck();},
+   error:()=>{this.errorWada='No se pudo consultar el requisito para esa temporada.';this.consultandoWada=false;this.vista.markForCheck();}
+  });
+ }
+
  renovarDocumento(campo:string){
   if(this.busy||!this.fechas[campo])return;
   const fecha=this.form[this.fechas[campo]];if(!fecha){this.error='Ingresá la fecha de expedición.';return;}
   const f=new FormData();f.append('datos',JSON.stringify({revision:this.u.revision,[this.fechas[campo]]:fecha}));
   const file=this.files[campo];if(file)f.append(campo,file);
   this.busy=true;this.error='';this.ok='';this.cerrarArchivo();
-  this.api.renovarDocumentos(f).pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.set(u);this.files={};this.ok='Documento actualizado. La revisión documental queda pendiente; tu cuenta continúa aprobada.';},error:e=>this.error=e.error?.error||'No se pudo guardar. Actualizá y reintentá.'});
+  this.api.renovarDocumentos(f).pipe(finalize(()=>{this.busy=false;this.vista.markForCheck();})).subscribe({next:u=>{this.set(u);this.files={};this.ok='Documento actualizado. La revisión documental queda pendiente; tu cuenta continúa aprobada.';},error:e=>this.error=e.error?.error||'No se pudo guardar. Actualizá y reintentá.'});
  }
  get archivos(){return camposCuenta.filter(c=>this.u?.politicaDocumentos?.visibles?.includes(c.key));}
  get deportiva(){return ['deportista','tecnico'].includes(this.u?.rol);}
@@ -72,8 +80,8 @@ export class SolicitudComponent implements OnInit,OnDestroy {
  ngOnInit(){this.cargar();this.cargarClubes();}
  private enfocar(selector:string){this.vista.detectChanges();const el=this.host.nativeElement.querySelector(selector) as HTMLElement|null;el?.focus({preventScroll:true});el?.scrollIntoView({block:'start',behavior:'auto'});}
  set(data:any){this.u=data;this.form={};for(const c of this.campos)this.form[c.key]=data[c.key]??'';this.form.club=data.club??'';for(const k of Object.values(this.fechas))this.form[k]=data[k]??'';this.auth.setUsuario(data);}
- cargar(){if(this.busy)return;this.cerrarArchivo();this.busy=true;this.error='';this.api.mia().pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.set(u);this.files={};},error:e=>{this.error=e.error?.error || 'No se pudo consultar la solicitud.';}});}
- cargarClubes(){if(this.cargandoClubes)return;this.cargandoClubes=true;this.errorClubes='';this.api.clubes().pipe(finalize(()=>this.cargandoClubes=false)).subscribe({next:r=>{this.clubes=Array.isArray(r)?r:[];if(!this.clubes.length)this.errorClubes='No hay clubes disponibles. Consultá a la Federación antes de enviar.';},error:()=>this.errorClubes='No se pudo cargar el listado de clubes. Reintentá.'});}
+ cargar(){if(this.busy)return;this.cerrarArchivo();this.busy=true;this.error='';this.api.mia().pipe(finalize(()=>{this.busy=false;this.vista.markForCheck();})).subscribe({next:u=>{this.set(u);this.files={};},error:e=>{this.error=e.error?.error || 'No se pudo consultar la solicitud.';}});}
+ cargarClubes(){if(this.cargandoClubes)return;this.cargandoClubes=true;this.errorClubes='';this.api.clubes().pipe(finalize(()=>{this.cargandoClubes=false;this.vista.markForCheck();})).subscribe({next:r=>{this.clubes=Array.isArray(r)?r:[];if(!this.clubes.length)this.errorClubes='No hay clubes disponibles. Consultá a la Federación antes de enviar.';},error:()=>this.errorClubes='No se pudo cargar el listado de clubes. Reintentá.'});}
  seleccionar(event:Event,key:string){const input=event.target as HTMLInputElement;const file=input.files?.[0];delete this.files[key];this.error='';if(!file)return;const pdf=['fichaMedica','certificadoAntecedentes','certificadoWada'].includes(key) && file.type==='application/pdf';if(!['image/jpeg','image/png','image/webp',...(['fichaMedica','certificadoAntecedentes','certificadoWada'].includes(key)?['application/pdf']:[])].includes(file.type)){this.error='Seleccioná JPG, PNG o WebP; la ficha médica y el certificado también admiten PDF.';input.value='';return;}if(file.size>(pdf?2:6)*1024*1024){this.error=pdf?'El PDF debe pesar hasta 2 MB.':'La imagen debe pesar hasta 6 MB.';input.value='';return;}this.files[key]=file;}
  enviar(){
   if(this.busy || !this.editable)return;
@@ -86,7 +94,7 @@ export class SolicitudComponent implements OnInit,OnDestroy {
   const f=new FormData();f.append('datos',JSON.stringify(datos));
   for(const [key,file] of Object.entries(this.files))if(file)f.append(key,file);
   this.busy=true;
-  this.api.enviar(f).pipe(finalize(()=>this.busy=false)).subscribe({
+  this.api.enviar(f).pipe(finalize(()=>{this.busy=false;this.vista.markForCheck();})).subscribe({
    next:u=>{this.set(u);this.files={};this.ok='Solicitud enviada. La Federación revisará tus datos y documentos.';this.enfocar('[data-estado]');},
    error:e=>{this.error=e.error?.error || 'No pudimos confirmar el envío. Tus datos siguen en pantalla. Podés reintentar; si ya se recibió, no se duplicará.';this.enfocar('.error');}
   });
@@ -98,7 +106,7 @@ export class SolicitudComponent implements OnInit,OnDestroy {
   if(!this.form.certificadoAntecedentesFecha){this.error='Ingresá la fecha de expedición del certificado.';return;}
   const f=new FormData();f.append('revision',String(this.u.revision));f.append('certificadoAntecedentesFecha',this.form.certificadoAntecedentesFecha);f.append('certificadoAntecedentes',archivo);
   this.busy=true;this.error='';this.ok='';this.cerrarArchivo();
-  this.api.renovarCertificado(f).pipe(finalize(()=>this.busy=false)).subscribe({
+  this.api.renovarCertificado(f).pipe(finalize(()=>{this.busy=false;this.vista.markForCheck();})).subscribe({
    next:u=>{this.set(u);this.files={};this.ok='Certificado recibido. Queda pendiente de revisión documental por Administración; tu cuenta continúa aprobada.';this.enfocar('[data-estado]');},
    error:e=>this.error=e.error?.error || 'No se pudo guardar el certificado. Actualizá el estado antes de reintentar.'
   });

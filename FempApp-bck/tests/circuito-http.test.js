@@ -609,3 +609,21 @@ test('perfil deportivo: guarda la última disciplina, actualiza origen sin cambi
   assert.equal(registro.disciplina, 'Danza');
   assert.equal(registro.categoria, borrador.categoria);
 });
+
+test('circuito informa habilitación de asistencia solo con inscripción propia confirmada y pago conciliado', async()=>{
+  const uid=2200,eid=2200;
+  await db.Usuario.create({id:uid,rol:'deportista',aprobado:true,estado:'aprobado'});
+  const ev=await db.Evento.create({id:eid,inscripcionRequierePago:true,inscripcionesConfirmadasAt:'2026-10-29'});
+  const consultar=async()=>{const r=await request(`/eventos/${eid}/circuito`,'deportista',undefined,'GET',uid);assert.equal(r.status,200);return r.data.asistenciaDisponible;};
+  const ins=await db.UsuarioEventos.create({EventoId:eid,UsuarioId:uid,estadoInscripcion:'confirmada',perfilDeportivoId:2200});
+  await db.CargoInscripcion.create({eventoId:eid,usuarioId:1,estado:'pagado'});
+  assert.equal(await consultar(),false,'El pago de otra cuenta no habilita la cámara');
+  const cargo=await db.CargoInscripcion.create({eventoId:eid,usuarioId:uid,estado:'adeudado'});
+  assert.equal(await consultar(),false);
+  await cargo.update({estado:'pagado'});assert.equal(await consultar(),true);
+  await ins.update({estadoInscripcion:'baja'});assert.equal(await consultar(),false);
+  await ins.update({estadoInscripcion:'provisoria'});assert.equal(await consultar(),false);
+  await ins.update({estadoInscripcion:'confirmada'});
+  await ev.update({inscripcionesConfirmadasAt:null,inscripcionRequierePago:false});assert.equal(await consultar(),false);
+  await ev.update({inscripcionesConfirmadasAt:'2026-10-29'});assert.equal(await consultar(),true);
+});

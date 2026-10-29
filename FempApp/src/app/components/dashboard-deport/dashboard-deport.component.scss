@@ -290,3 +290,9 @@ h2 {
     color: rgba(0, 0, 0, 0.7);
   }
 }
+.menu-deportista{width:min(320px,88vw);background:#f4f8ff;color:#17395f;border-radius:0 24px 24px 0;padding:20px 12px;box-sizing:border-box}
+.menu-cabecera{display:flex;align-items:center;justify-content:space-between;padding:8px 12px}.menu-cabecera span{font-size:12px;letter-spacing:.16em;font-weight:700;color:#1558b2}.menu-cabecera h2{font-size:26px;text-align:left;margin:6px 0}.menu-cabecera button{color:#17395f}.menu-ayuda{padding:0 12px;line-height:1.6;color:#48617f}
+.menu-deportista a{border-radius:14px;margin:8px 0;--mdc-list-list-item-label-text-color:#17395f;--mdc-list-list-item-leading-icon-color:#1558b2;--mdc-list-list-item-hover-label-text-color:#17395f;--mdc-list-list-item-focus-label-text-color:#17395f}
+.menu-deportista a.active{background:#dceaff;font-weight:700}.menu-deportista a:focus-visible{outline:3px solid #1558b2;outline-offset:2px}
+.profile-strip .info a{color:#fff;border-color:#a9caff;min-height:44px;margin:4px 6px 4px 0}.profile-strip .info{min-width:0}.profile-strip .info h3{overflow-wrap:anywhere}.avatar{flex-shrink:0}
+@media(max-width:600px){.toolbar-title{font-size:16px;white-space:normal}.profile-strip{align-items:flex-start;padding:12px;gap:12px}.profile-strip .info h3{font-size:22px}.main-gradient .content{padding:16px}.eventos-grid{grid-template-columns:minmax(0,1fr)}}

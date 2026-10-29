@@ -1,53 +1,17 @@
-<mat-card>
-  <mat-card-title>Registrar mi asistencia</mat-card-title>
-  <mat-card-content>
-    <p>Escaneá el QR del evento con tu cuenta. Registramos una asistencia por evento, aunque tengas varias inscripciones.</p>
-    <section *ngIf="completado" role="status"><h2>¡Listo!</h2><p>{{confirmacion}}</p><button mat-raised-button color="primary" (click)="volver()">Volver a mi panel</button></section>
-    <ng-container *ngIf="!completado">
-
-    <div class="row">
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Evento</mat-label>
-        <mat-select [(value)]="eventoId" [disabled]="busy">
-          <mat-option *ngFor="let ev of eventos" [value]="ev.id">
-            {{ ev.titulo || ev.nombre || ('Evento #' + ev.id) }}
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
-    </div>
-
-    <div class="row" style="margin-bottom:8px">
-      <mat-slide-toggle [(ngModel)]="mute">Silenciar sonidos</mat-slide-toggle>
-    </div>
-
-    <div class="scanner">
-      <zxing-scanner
-        [autostart]="true"
-        [enable]="!busy && !completado"
-        [tryHarder]="true"
-        [formats]="allowedFormats"
-        [device]="currentDevice"
-        (camerasFound)="onCamerasFound($event)"
-        (scanSuccess)="onScanSuccess($event)">
-      </zxing-scanner>
-    </div>
-
-    <p *ngIf="busy" role="status">Verificando y guardando tu asistencia…</p>
-    <div class="row actions">
-      <button mat-stroked-button type="button"
-              (click)="switchCamera()" [disabled]="devices.length < 2 || busy">
-        Cambiar cámara
-      </button>
-    </div>
-
-    <div class="history" *ngIf="history.length">
-      <div class="msg" *ngFor="let h of history">
-        <span class="usr" [class.ok]="h.ok" [class.err]="!h.ok">{{ h.ok ? 'OK' : 'ERR' }}</span>
-        <span class="txt">{{ h.msg }}</span>
-        <span class="time">{{ h.time | date:'HH:mm:ss' }}</span>
-      </div>
-    </div>
-
-    </ng-container>
-  </mat-card-content>
+<mat-card class="asistencia-card">
+ <div class="cabecera"><mat-card-title>Registrar mi asistencia</mat-card-title><button mat-stroked-button (click)="volver()"><mat-icon>arrow_back</mat-icon> Volver</button></div>
+ <mat-card-content>
+  <h2 *ngIf="nombreEvento">{{nombreEvento}}</h2>
+  <p *ngIf="verificando" role="status">Verificando tu inscripción y el pago…</p>
+  <section *ngIf="motivo && !verificando" role="status"><p>{{motivo}}</p><button mat-stroked-button *ngIf="eventoId" (click)="verificarHabilitacion()">Volver a verificar</button></section>
+  <section *ngIf="completado" role="status"><h2>¡Listo!</h2><p>{{confirmacion}}</p></section>
+  <ng-container *ngIf="autorizado && !completado && !verificando">
+   <p>Escaneá el QR de este evento. Registramos una asistencia, aunque participes con varios perfiles.</p>
+   <mat-slide-toggle [(ngModel)]="mute">Silenciar sonidos</mat-slide-toggle>
+   <p *ngIf="errorCamara" role="alert">{{errorCamara}} <button mat-button (click)="verificarHabilitacion()">Reintentar</button></p>
+   <div class="scanner"><zxing-scanner [autostart]="true" [enable]="!busy" [tryHarder]="true" [formats]="allowedFormats" [device]="currentDevice" (camerasFound)="onCamerasFound($event)" (scanSuccess)="onScanSuccess($event)" (scanError)="falloCamara()" (permissionResponse)="$event === false && falloCamara()"></zxing-scanner></div>
+   <p *ngIf="busy" role="status">Guardando tu asistencia…</p>
+   <button mat-stroked-button (click)="switchCamera()" [disabled]="devices.length < 2 || busy">Cambiar cámara</button>
+  </ng-container>
+ </mat-card-content>
 </mat-card>

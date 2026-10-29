@@ -343,14 +343,18 @@ router.post('/:eventId/checkin', verifyToken, requireRole('deportista'), async (
   }
 
   // Inscripción
-  const ue = await UsuarioEventos.findOne({
+  const inscripciones = await UsuarioEventos.findAll({
     where: {
       EventoId: id,
       UsuarioId: userId,
       estadoInscripcion: { [db.Sequelize.Op.ne]: 'baja' },
     },
   });
-  if (!ue) return res.status(400).json({ error: 'No inscripto' });
+  if (!inscripciones.length) return res.status(400).json({ error: 'No inscripto' });
+
+  const cargo = await db.CargoInscripcion.findOne({where:{eventoId:id, usuarioId:userId}});
+  const habilitacion = require('../services/asistencia-habilitacion').habilitacionAsistencia(ev, inscripciones, cargo);
+  if (!habilitacion.disponible) return res.status(403).json({error:habilitacion.motivo});
 
   const created=await require('../services/asistencia-registro').registrar(Asistencia,id,userId);
   res.json({created});

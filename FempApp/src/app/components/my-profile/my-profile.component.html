@@ -197,10 +197,13 @@
         </button>
       </div>
 
-      <ng-container *ngIf="perfilesDeportivos && perfilesDeportivos.length > 0; else sinPerfiles">
+      <p *ngIf="cargandoPerfiles" role="status">Cargando tus perfiles…</p>
+    <div *ngIf="errorPerfiles" role="alert"><p>{{errorPerfiles}}</p><button type="button" mat-stroked-button class="accion-perfil" (click)="cargarPerfilesDeportivos()">Reintentar</button></div>
+    <ng-container *ngIf="!cargandoPerfiles && !errorPerfiles">
+    <ng-container *ngIf="perfilesDeportivos && perfilesDeportivos.length > 0; else sinPerfiles">
         <div class="perfiles-list">
           <div *ngFor="let perfil of perfilesDeportivos; trackBy: trackByPerfilId" class="perfil-item">
-            <button type="button" mat-button (click)="editarPerfil(perfil)" [disabled]="guardandoPerfil">Editar perfil deportivo</button>
+            <button type="button" mat-button class="accion-perfil" (click)="editarPerfil(perfil)" [disabled]="guardandoPerfil">Editar perfil deportivo</button>
             <p><strong>Disciplina:</strong> {{ perfil.disciplina }}</p>
             <p><strong>Origen de la categoría:</strong> {{ etiquetaOrigen(perfil.origenCategoria) }}</p>
             <p><strong>Licencia:</strong> {{ perfil.licencia }}</p>
@@ -215,7 +218,7 @@
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Origen de la categoría</mat-label>
                 <mat-select [(ngModel)]="origenCategoriaEditado" [name]="'origen-' + perfil.id"
-                  [disabled]="guardandoOrigen" required>
+                  [disabled]="guardandoOrigen || eliminandoPerfil" required>
                   <mat-option *ngIf="origenCategoriaEditado && origenCategoriaEditado !== 'CAP' && origenCategoriaEditado !== 'PROMOS_FEMPA' && origenCategoriaEditado !== 'ESPECIAL_FEMPA'"
                     [value]="origenCategoriaEditado" disabled>
                     {{ origenCategoriaEditado }} (valor existente)
@@ -230,16 +233,16 @@
                 [disabled]="guardandoOrigen || !origenHabilitado(origenCategoriaEditado) || origenCategoriaEditado === perfil.origenCategoria">
                 {{ guardandoOrigen ? 'Guardando…' : 'Guardar origen' }}
               </button>
-              <button type="button" mat-button (click)="cancelarEdicionOrigen()" [disabled]="guardandoOrigen">
+              <button type="button" mat-button (click)="cancelarEdicionOrigen()" [disabled]="guardandoOrigen || eliminandoPerfil">
                 Cancelar
               </button>
             </div>
             <button *ngIf="perfilEditandoOrigenId !== perfil.id" type="button" mat-button
-              color="primary" (click)="editarOrigen(perfil)" [disabled]="guardandoOrigen">
+              color="primary" class="accion-perfil" (click)="editarOrigen(perfil)" [disabled]="guardandoOrigen || eliminandoPerfil">
               Editar origen
             </button>
 
-            <button type="button" mat-button color="warn" (click)="eliminarPerfil(perfil.id)" [disabled]="guardandoOrigen">
+            <button type="button" mat-button color="warn" class="accion-eliminar" (click)="eliminarPerfil(perfil.id)" [disabled]="guardandoOrigen || eliminandoPerfil">
               Eliminar Perfil
             </button>
           </div>
@@ -249,6 +252,7 @@
       <ng-template #sinPerfiles>
         <p>No hay perfiles deportivos cargados.</p>
       </ng-template>
+    </ng-container>
     </mat-card>
 
   </div>

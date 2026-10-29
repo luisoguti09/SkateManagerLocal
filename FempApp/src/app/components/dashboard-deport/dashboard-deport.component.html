@@ -1,15 +1,17 @@
 <ng-container *ngIf="canUseApp; else pendingTpl">
   <mat-sidenav-container class="sidenav-container">
 
-    <mat-sidenav #sidenav mode="over" (backdropClick)="sidenav.close()">
-      <mat-nav-list>
+    <mat-sidenav #sidenav class="menu-deportista" mode="over" (backdropClick)="sidenav.close()">
+      <div class="menu-cabecera"><div><span>FEMPA</span><h2>Tu espacio</h2></div><button mat-icon-button (click)="sidenav.close()" aria-label="Cerrar menú"><mat-icon>close</mat-icon></button></div>
+      <p class="menu-ayuda">Tus datos, tus perfiles y tus próximos eventos.</p>
+      <mat-nav-list aria-label="Menú deportista">
         <a mat-list-item routerLink="mis-datos" routerLinkActive="active" (click)="sidenav.close()">
-          <mat-icon>account_circle</mat-icon>
-          <span>Mis Datos</span>
+          <mat-icon matListItemIcon>account_circle</mat-icon>
+          <span matListItemTitle>Mis datos</span>
         </a>
         <a mat-list-item routerLink="mis-eventos" routerLinkActive="active" (click)="sidenav.close()">
-          <mat-icon>event</mat-icon>
-          <span>Mis Eventos</span>
+          <mat-icon matListItemIcon>event</mat-icon>
+          <span matListItemTitle>Mis eventos</span>
         </a>
       </mat-nav-list>
     </mat-sidenav>

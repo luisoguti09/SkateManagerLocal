@@ -1,20 +1,5 @@
-<mat-card class="qr-card">
-  <mat-card-content>
-    <div class="qr-box" *ngIf="qrUrl && !loading; else loader">
-      <img [src]="qrUrl" alt="QR de credencial" />
-    </div>
-    <ng-template #loader>
-      <div class="loader">
-        <mat-progress-spinner diameter="36" mode="indeterminate"></mat-progress-spinner>
-      </div>
-    </ng-template>
-    <div class="error" *ngIf="error">{{ error }}</div>
-  </mat-card-content>
-
-  <div class="actions">
-   
-    <button mat-stroked-button (click)="descargar()" [disabled]="!qrUrl">
-      <mat-icon>download</mat-icon>&nbsp;Descargar
-    </button>
-  </div>
-</mat-card>
+<mat-card class="qr-card"><mat-card-content>
+ <div class="qr-box" *ngIf="qrUrl && !loading"><img [src]="qrUrl" alt="QR de credencial" /></div>
+ <div class="loader" *ngIf="loading" role="status" aria-label="Cargando tu QR"><mat-progress-spinner diameter="36" mode="indeterminate"></mat-progress-spinner></div>
+ <div class="error" *ngIf="error" role="alert"><p>{{error}}</p><button mat-stroked-button (click)="reintentar()">Reintentar</button></div>
+ </mat-card-content><div class="actions"><button mat-stroked-button (click)="descargar()" [disabled]="!qrUrl || loading"><mat-icon>download</mat-icon> Descargar</button></div></mat-card>

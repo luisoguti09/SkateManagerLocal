@@ -101,13 +101,14 @@
             mat-stroked-button
             class="btn-secundario"
             *ngIf="inscripto"
-            (click)="irAScanner()"
+            (click)="irAScanner()" [disabled]="!asistenciaDisponible"
           >
             <mat-icon>qr_code_scanner</mat-icon>
             Escanear QR de asistencia
           </button>
         </div>
 
+        <p class="hint-certificado" *ngIf="inscripto && motivoAsistencia">{{motivoAsistencia}}</p>
         <p class="hint-certificado" *ngIf="!certificadoDisponible">
           Para descargar necesitás estar fehacientemente inscripto.
         </p>

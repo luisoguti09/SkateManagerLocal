@@ -1,5 +1,7 @@
-import { Subject, finalize, takeUntil } from 'rxjs';
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { Subject, Subscription, finalize, takeUntil } from 'rxjs';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -42,6 +44,15 @@ export class AsistenciasScannerComponent implements OnInit, OnDestroy {
   confirmacion = "";
 
   private ev = inject(EventosService);
+  private http = inject(HttpClient);
+  private cd = inject(ChangeDetectorRef);
+  private consulta?: Subscription;
+  autorizado = false;
+  verificando = false;
+  motivo = '';
+  nombreEvento = '';
+  errorCamara = '';
+
   private snack = inject(MatSnackBar);
   private audioSrvc = inject(AudioService);
   private asistSrv = inject(AsistenciasListService);
@@ -68,34 +79,54 @@ export class AsistenciasScannerComponent implements OnInit, OnDestroy {
   history: { ok: boolean; msg: string; raw?: string; time: Date }[] = [];
 
   ngOnInit(): void {
-    // tomar eventoId desde la URL (nuevo nombre o el viejo eventold)
     this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe(q => {
-      const fromUrl = Number(q.get('eventoId') || q.get('eventold'));
-      if (fromUrl) {
-        this.eventoId = fromUrl;
-      }
-    });
-
-    this.ev.getEventos().pipe(takeUntil(this.destroy$)).subscribe({
-      next: (list) => {
-        this.eventos = (list ?? []).map(e => ({
-          id: e.id!,
-          nombre: e.nombre,
-          titulo: e.titulo ?? e.nombre ?? `Evento #${e.id}`,
-          qrEventCode: e.qrEventCode
-        }));
-        // si vino eventoId en la URL pero no existe en la lista, lo dejamos en null
-        if (this.eventoId && !this.eventos.some(ev => ev.id === this.eventoId)) {
-          this.eventoId = null;
-        }
-      },
-      error: () => this.eventos = []
+      this.consulta?.unsubscribe();
+      const id = Number(q.get('eventoId'));
+      this.eventoId = Number.isSafeInteger(id) && id > 0 ? id : null;
+      this.verificarHabilitacion();
     });
 
     [this.scanAudio, this.okAudio, this.errAudio].forEach(a => {
       a.volume = 0.6;
       a.load();
     });
+  }
+
+  verificarHabilitacion(): void {
+    this.consulta?.unsubscribe();
+    this.autorizado = false;
+    this.completado = false;
+    this.nombreEvento = '';
+    this.errorCamara = '';
+    this.devices = [];
+    this.currentDevice = undefined;
+    this.motivo = '';
+    if (!this.eventoId) {
+      this.verificando = false;
+      this.motivo = 'Abrí el registro de asistencia desde el evento en el que vas a participar.';
+      this.cd.markForCheck();
+      return;
+    }
+    this.verificando = true;
+    this.consulta = this.http.get<any>(`${environment.SERVER_API}/eventos/${this.eventoId}/circuito`).pipe(takeUntil(this.destroy$)).subscribe({
+      next: data => {
+        this.nombreEvento = data.evento?.titulo || data.evento?.nombre || 'Evento';
+        this.autorizado = data.asistenciaDisponible === true;
+        this.motivo = this.autorizado ? '' : (data.motivoAsistencia || 'Tu asistencia todavía no está habilitada. Revisá tu inscripción y el pago.');
+        this.verificando = false;
+        this.cd.markForCheck();
+      },
+      error: () => {
+        this.verificando = false;
+        this.motivo = 'No pudimos verificar tu inscripción. Volvé a intentar.';
+        this.cd.markForCheck();
+      }
+    });
+  }
+
+  falloCamara(): void {
+    this.errorCamara = 'No pudimos abrir la cámara. Revisá el permiso del navegador y volvé a intentar.';
+    this.cd.markForCheck();
   }
 
   onCamerasFound(devs: MediaDeviceInfo[]) {
@@ -113,7 +144,7 @@ export class AsistenciasScannerComponent implements OnInit, OnDestroy {
   }
 
   onScanSuccess(raw: string) {
-    if(this.disposed || this.busy || this.completado || (raw===this.lastRaw && Date.now()-this.lastAt<2500))return;
+    if(!this.autorizado || !this.eventoId || this.disposed || this.busy || this.completado || (raw===this.lastRaw && Date.now()-this.lastAt<2500))return;
     this.lastRaw=raw;this.lastAt=Date.now();
     try {
       const url=new URL(raw);
@@ -122,11 +153,11 @@ export class AsistenciasScannerComponent implements OnInit, OnDestroy {
       if(url.protocol.toLowerCase()!=='fempapp:' || url.hostname.toLowerCase()!=='checkin' || !Number.isSafeInteger(eid) || eid<=0 || !token){
         throw new Error('Escaneá el QR del evento. El QR personal no registra tu asistencia en esta pantalla.');
       }
-      if(this.eventoId && this.eventoId!==eid)throw new Error('Este QR corresponde a otro evento. Revisá el evento seleccionado.');
-      this.eventoId=eid;this.busy=true;
+      if(this.eventoId!==eid)throw new Error('Este QR corresponde a otro evento. Revisá el evento seleccionado.');
+      this.busy=true;
       const enviar=(geo?:{lat:number;lng:number;acc?:number})=>{
-        if(this.disposed)return;
-        this.ev.scanAsistencia(token,eid,geo).pipe(takeUntil(this.destroy$),finalize(()=>this.busy=false)).subscribe({
+        if(this.disposed || this.eventoId!==eid || !this.autorizado)return;
+        this.ev.scanAsistencia(token,eid,geo).pipe(takeUntil(this.destroy$),finalize(()=>{this.busy=false;if(!this.disposed)this.cd.markForCheck();})).subscribe({
           next:r=>this.okSnack(r.created),error:e=>this.errSnack(e)
         });
       };
@@ -141,16 +172,19 @@ export class AsistenciasScannerComponent implements OnInit, OnDestroy {
 
   private okSnack(created:boolean) {
     this.completado=true;
-    const nombre=this.eventos.find(e=>e.id===this.eventoId);
-    const titulo=nombre?.titulo || nombre?.nombre || 'este evento';
+    const titulo=this.nombreEvento || 'este evento';
     this.confirmacion=created?`Tu asistencia a ${titulo} quedó registrada.`:`Tu asistencia a ${titulo} ya estaba registrada. No se agregó otra.`;
     this.openSnack(this.confirmacion,true);this.playOk();
     this.pushHistory({ok:true,msg:this.confirmacion});
   }
-  volver(){void this.router.navigate(['/dashboard-deport']);}
-  ngOnDestroy(){this.disposed=true;this.destroy$.next();this.destroy$.complete();[this.scanAudio,this.okAudio,this.errAudio].forEach(a=>a.pause());}
+  volver(){this.autorizado=false;void this.router.navigate(this.eventoId ? ['/evento-detail', this.eventoId] : ['/dashboard-deport']);}
+  ngOnDestroy(){this.disposed=true;this.consulta?.unsubscribe();this.destroy$.next();this.destroy$.complete();[this.scanAudio,this.okAudio,this.errAudio].forEach(a=>a.pause());}
 
   private errSnack(e: any) {
+    if (e?.status === 401 || e?.status === 403) {
+      this.autorizado = false;
+      this.motivo = e?.error?.error || 'Tu asistencia ya no está habilitada. Revisá tu inscripción.';
+    }
     const s = e?.error?.error || e?.error?.message || e?.message || '';
     const dup = /duplicate entry|ya registrada|ER_DUP_ENTRY/i.test(s);
     const msg = dup ? 'Asistencia ya registrada'
@@ -161,6 +195,7 @@ export class AsistenciasScannerComponent implements OnInit, OnDestroy {
   }
 
   private pushHistory(item: { ok: boolean; msg: string; raw?: string }) {
+    this.cd.markForCheck();
     this.history.unshift({ ...item, time: new Date() });
     if (this.history.length > 20) this.history.pop();
   }

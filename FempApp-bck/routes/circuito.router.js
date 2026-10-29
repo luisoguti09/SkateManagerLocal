@@ -12,6 +12,7 @@ const {
   db,
   Op,
 } = require('../services/circuito');
+const { habilitacionAsistencia } = require('../services/asistencia-habilitacion');
 const auth = [verifyToken, sesion];
 function certificadoDisponible(ev, inscripciones, cargo) {
   return inscripciones.some(i => i.estadoInscripcion !== 'baja') &&
@@ -31,6 +32,8 @@ router.get(
       perfiles: [],
       cargo: null,
       certificadoDisponible: false,
+      asistenciaDisponible: false,
+      motivoAsistencia: '',
     };
     if (req.auth.rol === 'deportista') {
       result.inscripciones = await db.UsuarioEventos.findAll({
@@ -47,6 +50,9 @@ router.get(
         where: { eventoId: ev.id, usuarioId: req.auth.id },
       });
       result.certificadoDisponible = certificadoDisponible(ev, result.inscripciones, cargo);
+      const asistencia = habilitacionAsistencia(ev, result.inscripciones, cargo);
+      result.asistenciaDisponible = asistencia.disponible;
+      result.motivoAsistencia = asistencia.motivo;
       result.cargo = cargo ? datoCargo(cargo, ev) : null;
       if (result.cargo?.liquidacionSnapshot) {
         const { gestion, gestionFempaReferencia, gestionACargoDe, ...detalle } = result.cargo.liquidacionSnapshot;

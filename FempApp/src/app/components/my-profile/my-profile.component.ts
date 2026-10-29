@@ -1,4 +1,8 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { EliminarPerfilComponent } from './eliminar-perfil.component';
 import { FormGroup, FormBuilder, FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { DeportistService } from '../../services/deportist.service';
@@ -117,6 +121,12 @@ export class MyProfileComponent implements OnInit {
   private ngLocation = inject(NgLocation);
   private perfilesService = inject(PerfilesDeportivosService);
   private cd = inject(ChangeDetectorRef);
+  private destroyRef = inject(DestroyRef);
+  private dialog = inject(MatDialog);
+  private perfilesPeticion?: Subscription;
+  cargandoPerfiles = true;
+  errorPerfiles = '';
+  eliminandoPerfil = false;
   private registroService = inject(RegistroService);
 
   constructor() { }
@@ -160,26 +170,28 @@ export class MyProfileComponent implements OnInit {
   }
 
   eliminarPerfil(id: number): void {
-    if (!confirm('¿Eliminar este perfil deportivo?')) return;
-
-    this.perfilesService.delete(id).subscribe({
-      next: () => {
-        // eliminar del estado LOCAL (clave)
-        this.perfilesDeportivos = this.perfilesDeportivos.filter(p => p.id !== id);
-        if (this.perfilEditandoOrigenId === id) this.cancelarEdicionOrigen();
-        this.cd.detectChanges();
-
-        this.snackBar.open('Perfil eliminado correctamente', 'Cerrar', {
-          duration: 2000
-        });
-      },
-      error: (err) => {
-        console.error('Error eliminando perfil:', err);
-
-        this.snackBar.open('No se pudo eliminar el perfil', 'Cerrar', {
-          duration: 2500
-        });
-      }
+    if (this.eliminandoPerfil) return;
+    const perfil = this.perfilesDeportivos.find(p => p.id === id);
+    this.dialog.open(EliminarPerfilComponent, {
+      data: perfil, width: '460px', maxWidth: '94vw', autoFocus: 'first-tabbable',
+      ariaLabel: 'Eliminar perfil deportivo'
+    }).afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(confirmado => {
+      if (confirmado !== true || this.eliminandoPerfil) return;
+      this.eliminandoPerfil = true;
+      this.perfilesService.delete(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => {
+          this.perfilesDeportivos = this.perfilesDeportivos.filter(p => p.id !== id);
+          if (this.perfilEditandoOrigenId === id) this.cancelarEdicionOrigen();
+          this.eliminandoPerfil = false;
+          this.cd.markForCheck();
+          this.snackBar.open('Perfil eliminado', 'Cerrar', { duration: 3000 });
+        },
+        error: err => {
+          this.eliminandoPerfil = false;
+          this.cd.markForCheck();
+          this.snackBar.open(err?.error?.error || err?.error?.message || 'No pudimos eliminar el perfil. Volvé a intentar.', 'Cerrar', { duration: 6000 });
+        }
+      });
     });
   }
 
@@ -440,16 +452,26 @@ export class MyProfileComponent implements OnInit {
   }
 
   cargarPerfilesDeportivos(): void {
-    const usuario = this.authService.getUsuario();
-    if (!usuario?.id) return;
-
-    this.perfilesService.getByUsuario(usuario.id).subscribe({
-      next: (data) => {
-        this.perfilesDeportivos = [...data]; // 👈 CLAVE (nueva referencia)
-        console.log('Perfiles deportivos:', data);
+    this.perfilesPeticion?.unsubscribe();
+    this.cargandoPerfiles = true;
+    this.errorPerfiles = '';
+    const id = this.authService.getUsuario()?.id;
+    if (!id) {
+      this.cargandoPerfiles = false;
+      this.errorPerfiles = 'No pudimos identificar tu cuenta. Volvé a ingresar.';
+      this.cd.markForCheck();
+      return;
+    }
+    this.perfilesPeticion = this.perfilesService.getByUsuario(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: data => {
+        this.perfilesDeportivos = [...data];
+        this.cargandoPerfiles = false;
+        this.cd.markForCheck();
       },
-      error: (err) => {
-        console.error('Error cargando perfiles:', err);
+      error: () => {
+        this.errorPerfiles = 'No pudimos cargar tus perfiles. Probá nuevamente.';
+        this.cargandoPerfiles = false;
+        this.cd.markForCheck();
       }
     });
   }

@@ -273,8 +273,12 @@ export class EventoDetailComponent implements OnInit {
     });
   }
 
+  asistenciaDisponible = false;
+  motivoAsistencia = '';
   certificadoDisponible = false;
   actualizarEstadoCircuito(data: any): void {
+    this.asistenciaDisponible = data?.asistenciaDisponible === true;
+    this.motivoAsistencia = data?.motivoAsistencia || '';
     this.certificadoDisponible = data?.certificadoDisponible === true;
     this.inscripto = !!data?.inscripciones?.length;
     this.errorCertificado = '';
@@ -362,7 +366,7 @@ export class EventoDetailComponent implements OnInit {
   }
 
   irAScanner() {
-    if (!this.evento || !this.inscripto) return;
+    if (!this.evento || !this.asistenciaDisponible) return;
 
     this.router.navigate(['/asistencias/scanner'], {
       queryParams: { eventoId: this.evento.id },
