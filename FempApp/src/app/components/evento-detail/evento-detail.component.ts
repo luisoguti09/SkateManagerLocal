@@ -273,11 +273,18 @@ export class EventoDetailComponent implements OnInit {
     });
   }
 
+  certificadoDisponible = false;
+  actualizarEstadoCircuito(data: any): void {
+    this.certificadoDisponible = data?.certificadoDisponible === true;
+    this.inscripto = !!data?.inscripciones?.length;
+    this.errorCertificado = '';
+  }
+  get dentroDelPanel(): boolean { return this.router.url.startsWith('/dashboard-deport/'); }
   errorCertificado = '';
   generandoCertificado = false;
 
   async descargarCertificado(e: Evento): Promise<void> {
-    if (this.generandoCertificado) return;
+    if (this.generandoCertificado || !this.certificadoDisponible) return;
     this.generandoCertificado = true;
     this.errorCertificado = '';
     try {

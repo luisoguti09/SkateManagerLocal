@@ -4,4 +4,4 @@
 
 
 
-<app-carga-fempa [activa]="navegando" texto="Abriendo pantalla…"></app-carga-fempa>
+<app-carga-fempa [activa]="navegando || carga.pendientes() > 0" texto="Cargando…"></app-carga-fempa>

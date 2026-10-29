@@ -194,7 +194,9 @@ router.put('/:id', roles('deportista', 'administrador'), async (req, res) => {
       return res.status(403).json({ error: 'Perfil ajeno.' });
 
     const nextClubId = clubId ?? perfil.clubId;
-    const nextClubSedeId = clubSedeId ?? perfil.clubSedeId;
+    const nextClubSedeId = Object.prototype.hasOwnProperty.call(req.body, 'clubSedeId')
+      ? clubSedeId
+      : (Number(nextClubId) === Number(perfil.clubId) ? perfil.clubSedeId : null);
 
     const validacionClub = await validarClubYSede({
       clubId: nextClubId,

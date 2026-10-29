@@ -1,4 +1,6 @@
-import { Component, Input, OnChanges, OnInit, HostListener, inject } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfirmarPerfilesComponent } from './confirmar-perfiles.component';
+import { Component, Input, Output, EventEmitter, OnChanges, OnInit, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -16,6 +18,9 @@ import { environment } from '../../../environments/environment';
 })
 export class CircuitoEventoComponent implements OnInit, OnChanges {
   @Input() eventoId: number | null = null;
+  @Output() estadoActualizado = new EventEmitter<any>();
+  private dialog = inject(MatDialog);
+  confirmando = false;
   auth = inject(AuthService);
   private http = inject(HttpClient);
   private api = environment.SERVER_API;
@@ -83,7 +88,7 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
   }
   @HostListener('window:focus')
   alRecuperarFoco(): void {
-    if (this.rol === 'deportista' && this.eventoId && !this.ocupado &&
+    if (this.rol === 'deportista' && this.eventoId && !this.ocupado && !this.confirmando &&
         (!this.editable || this.yaInscripto)) void this.cargar();
   }
   get yaInscripto(): boolean { return !!this.data?.inscripciones?.length; }
@@ -139,6 +144,7 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
     this.error = '';
     this.data = null;
     this.cargos = [];
+    this.estadoActualizado.emit(null);
     if (!this.eventoId) return;
     this.ocupado = true;
     try {
@@ -159,6 +165,7 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
         );
         if (seq === this.sequence) {
           this.data = data;
+          this.estadoActualizado.emit(data);
           this.seleccion = data.inscripciones.map(
             (i: any) => i.perfilDeportivoId,
           );
@@ -171,7 +178,13 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
       if (seq === this.sequence) this.ocupado = false;
     }
   }
+  get puedeGuardar(): boolean {
+    return !this.ocupado && !this.confirmando && !!this.editable &&
+      (!this.yaInscripto || this.data.etapa === 'abm') &&
+      (this.seleccion.length > 0 || (this.yaInscripto && this.data.etapa === 'abm'));
+  }
   toggle(id: number, checked: boolean) {
+    if (this.ocupado || this.confirmando || !this.editable || (this.yaInscripto && this.data.etapa !== 'abm')) return;
     this.seleccion = checked
       ? [...new Set([...this.seleccion, id])]
       : this.seleccion.filter((x) => x !== id);
@@ -190,18 +203,23 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
       this.ocupado = false;
     }
   }
-  guardar() {
-    return this.accion(
-      () =>
-        firstValueFrom(
-          this.http.put(
-            `${this.api}/eventos/${this.eventoId}/mi-inscripcion`,
-            { perfilDeportivoIds: this.seleccion },
-            this.options,
-          ),
-        ),
-      'Tu inscripción se actualizó correctamente.',
-    );
+  async guardar() {
+    if (!this.puedeGuardar) return;
+    const ids = [...this.seleccion];
+    const eventoId = this.eventoId;
+    this.confirmando = true;
+    let confirmado = false;
+    try {
+      confirmado = await firstValueFrom(this.dialog.open(ConfirmarPerfilesComponent, {
+        width: '520px', maxWidth: '94vw', autoFocus: 'first-tabbable',
+        data: { perfiles: this.data.perfiles.filter((p: any) => ids.includes(p.id)), abm: this.data.etapa === 'abm' }
+      }).afterClosed());
+    } finally { this.confirmando = false; }
+    if (!confirmado || eventoId !== this.eventoId) return;
+    return this.accion(() => firstValueFrom(this.http.put(
+      `${this.api}/eventos/${eventoId}/mi-inscripcion`,
+      { perfilDeportivoIds: ids }, this.options
+    )), ids.length ? 'Tu inscripción se actualizó correctamente.' : 'Se registró la baja de tus participaciones.');
   }
   confirmar() {
     if (

@@ -24,6 +24,7 @@ import { RegistroService } from '../../services/registro.service';
 import { ClubOption, ClubSedeOption } from '../../interfaces/club-option.interface';
 import { ChangeDetectorRef } from '@angular/core';
 import {
+  LICENCIAS, categoriasPerfil, CATEGORIAS_DANZA_2026,
   DISCIPLINAS,
   MODALIDADES,
   DIVISIONALES,
@@ -79,10 +80,11 @@ export class MyProfileComponent implements OnInit {
   };
   public readonly origenesCategoria = [
     { valor: 'CAP', etiqueta: 'CAP', habilitado: true },
-    { valor: 'PROMOS_FEMPA', etiqueta: 'PROMOS FEMPA', habilitado: false },
+    { valor: 'PROMOS_FEMPA', etiqueta: 'PROMOS FEMPA', habilitado: true },
     { valor: 'ESPECIAL_FEMPA', etiqueta: 'Especial FEMPA', habilitado: false }
   ];
   public guardandoPerfil = false;
+  public perfilEditandoId: number | null = null;
   public perfilEditandoOrigenId: number | null = null;
   public origenCategoriaEditado: string | null = null;
   public guardandoOrigen = false;
@@ -93,8 +95,17 @@ export class MyProfileComponent implements OnInit {
   public errorClubes = '';
 
   public disciplinas = DISCIPLINAS;
-  public modalidades = MODALIDADES;
-  public divisionales = DIVISIONALES;
+  get modalidades(): string[] { return this.nuevoPerfil.disciplina === 'Danza' ? ['Individual', 'Parejas'] : MODALIDADES; }
+  public licencias = LICENCIAS;
+  get divisionales(): string[] {
+    if (this.nuevoPerfil.origenCategoria === 'PROMOS_FEMPA') return this.nuevoPerfil.disciplina === 'Libre' ? ['Promos FEMPA'] : [];
+    return this.nuevoPerfil.disciplina === 'Danza' ? Object.keys(CATEGORIAS_DANZA_2026) : DIVISIONALES;
+  }
+  onOrigenChange(origen: string): void {
+    if (this.guardandoPerfil) return;
+    this.nuevoPerfil = { ...this.nuevoPerfil, origenCategoria: origen, divisional: '', categoria: '' };
+    this.eficiencias = [];
+  }
   public eficiencias: string[] = [];
 
   readonly snackBar = inject(MatSnackBar);
@@ -109,6 +120,8 @@ export class MyProfileComponent implements OnInit {
   private registroService = inject(RegistroService);
 
   constructor() { }
+
+  get dentroDelPanel(): boolean { return this.router.url.startsWith('/dashboard-deport/'); }
 
   volver() {
     this.router.navigate(['/dashboard-deport']);
@@ -170,6 +183,39 @@ export class MyProfileComponent implements OnInit {
     });
   }
 
+  editarPerfil(perfil: PerfilDeportivo): void {
+    if (this.guardandoPerfil) return;
+    this.perfilEditandoId = perfil.id;
+    this.nuevoPerfil = {
+      usuarioId: perfil.usuarioId, disciplina: perfil.disciplina,
+      origenCategoria: perfil.origenCategoria, modalidad: perfil.modalidad,
+      licencia: ['Internacional WS', 'Nacional Atleta'].includes(perfil.licencia || '') ? 'Nacional' : perfil.licencia,
+      divisional: perfil.divisional, categoria: perfil.categoria, temporada: perfil.temporada,
+      clubId: perfil.clubId, clubSedeId: perfil.clubSedeId, club: perfil.club, activa: perfil.activa
+    };
+    this.eficiencias = categoriasPerfil(perfil.disciplina, perfil.origenCategoria, perfil.divisional || '');
+    this.sedesDisponibles = this.clubes.find(c => c.id === perfil.clubId)?.sedes || [];
+    this.mostrarFormPerfil = true;
+    setTimeout(() => document.querySelector('.perfil-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+  abrirNuevoPerfil(): void {
+    if (this.guardandoPerfil) return;
+    if (this.perfilEditandoId !== null) {
+      this.perfilEditandoId = null;
+      this.nuevoPerfil = { usuarioId: 0, disciplina: '', origenCategoria: null, licencia: '', modalidad: '', divisional: '', categoria: '', temporada: '', clubId: null, clubSedeId: null, activa: true };
+      this.eficiencias = [];
+      this.sedesDisponibles = [];
+      this.mostrarFormPerfil = false;
+    } else this.mostrarFormPerfil = !this.mostrarFormPerfil;
+  }
+  onDisciplinaChange(disciplina: string): void {
+    if (this.guardandoPerfil) return;
+    this.nuevoPerfil = {
+      ...this.nuevoPerfil, disciplina, modalidad: '', divisional: '', categoria: ''
+    };
+    this.eficiencias = [];
+  }
+
   crearPerfil(): void {
     if (this.guardandoPerfil || this.cargandoClubes) return;
     if (!this.nuevoPerfil.disciplina.trim() ||
@@ -177,6 +223,13 @@ export class MyProfileComponent implements OnInit {
       this.snackBar.open('Seleccioná la disciplina y el origen de la categoría', 'Cerrar', {
         duration: 3000
       });
+      return;
+    }
+    if (!this.nuevoPerfil.licencia || !this.nuevoPerfil.modalidad || !this.nuevoPerfil.temporada ||
+        !this.divisionales.includes(this.nuevoPerfil.divisional || '') ||
+        ((this.eficiencias.length > 0 || this.nuevoPerfil.disciplina === 'Danza' || this.nuevoPerfil.origenCategoria === 'PROMOS_FEMPA') &&
+         !this.eficiencias.includes(this.nuevoPerfil.categoria || ''))) {
+      this.snackBar.open('Completá la licencia, modalidad, divisional, categoría y temporada del perfil.', 'Cerrar', { duration: 5000 });
       return;
     }
     const usuario = this.authService.getUsuario();
@@ -198,16 +251,26 @@ export class MyProfileComponent implements OnInit {
       club: club.nombre
     };
 
-    console.log('Payload perfil deportivo:', payload);
+    // Copia independiente: lo confirmado no cambia durante la solicitud.
 
+    const editandoId = this.perfilEditandoId;
+    const guardar = editandoId === null ? this.perfilesService.create(payload) : this.perfilesService.update(editandoId, payload);
     this.guardandoPerfil = true;
-    this.perfilesService.create(payload).subscribe({
+    guardar.subscribe({
       next: (perfilCreado) => {
         this.guardandoPerfil = false;
-        this.perfilesDeportivos = [
-          ...this.perfilesDeportivos,
-          perfilCreado
-        ];
+        if (!perfilCreado || perfilCreado.disciplina !== payload.disciplina ||
+            perfilCreado.origenCategoria !== payload.origenCategoria) {
+          this.cargarPerfilesDeportivos();
+          this.mostrarFormPerfil = false;
+          this.snackBar.open('El servidor devolvió un perfil distinto al enviado. Revisá el listado antes de volver a guardar.', 'Cerrar', { duration: 10000 });
+          this.cd.detectChanges();
+          return;
+        }
+        this.perfilesDeportivos = editandoId === null
+          ? [...this.perfilesDeportivos, perfilCreado]
+          : this.perfilesDeportivos.map(p => p.id === editandoId ? perfilCreado : p);
+        this.perfilEditandoId = null;
 
         this.nuevoPerfil = {
           usuarioId: 0,
@@ -231,7 +294,7 @@ export class MyProfileComponent implements OnInit {
 
         this.cd.detectChanges();
 
-        this.snackBar.open('Perfil creado correctamente', 'Cerrar', {
+        this.snackBar.open(editandoId === null ? 'Perfil creado correctamente' : 'Perfil actualizado correctamente', 'Cerrar', {
           duration: 2000
         });
       },
@@ -240,7 +303,7 @@ export class MyProfileComponent implements OnInit {
         console.error('Error creando perfil deportivo:', err);
 
         this.snackBar.open(
-          'No se pudo crear el perfil deportivo',
+          err?.error?.error || 'No se pudo crear el perfil deportivo',
           'Cerrar',
           { duration: 3000 }
         );
@@ -328,11 +391,18 @@ export class MyProfileComponent implements OnInit {
     if (this.guardandoOrigen || this.perfilEditandoOrigenId !== perfil.id ||
         !this.origenHabilitado(this.origenCategoriaEditado)) return;
 
+    const origenSolicitado = this.origenCategoriaEditado;
     this.guardandoOrigen = true;
     this.perfilesService.update(perfil.id, {
       origenCategoria: this.origenCategoriaEditado
     }).subscribe({
       next: (perfilActualizado) => {
+        if (perfilActualizado?.origenCategoria !== origenSolicitado) {
+          this.guardandoOrigen = false;
+          this.cargarPerfilesDeportivos();
+          this.snackBar.open('No se confirmó el cambio de origen. Revisá el listado antes de reintentar.', 'Cerrar', { duration: 7000 });
+          return;
+        }
         this.perfilesDeportivos = this.perfilesDeportivos.map(actual =>
           actual.id === perfilActualizado.id ? perfilActualizado : actual
         );
@@ -364,9 +434,8 @@ export class MyProfileComponent implements OnInit {
   }
 
   onDivisionalChange(divisional: string): void {
-    const key = divisional as keyof typeof EFICIENCIAS_POR_DIVISIONAL;
-
-    this.eficiencias = EFICIENCIAS_POR_DIVISIONAL[key] || [];
+    this.nuevoPerfil.divisional = divisional;
+    this.eficiencias = categoriasPerfil(this.nuevoPerfil.disciplina, this.nuevoPerfil.origenCategoria, divisional);
     this.nuevoPerfil.categoria = '';
   }
 
@@ -386,7 +455,7 @@ export class MyProfileComponent implements OnInit {
   }
 
   buscarEnPadron(dni: string): void {
-    this.deportistService.getDeportistByDni(dni).subscribe({
+    this.deportistService.consultarPadronPorDni(dni).subscribe({
       next: (res) => {
         // 1) Siempre limpiamos el form para no arrastrar valores previos
         this.form.reset({

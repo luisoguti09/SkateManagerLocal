@@ -173,7 +173,7 @@ export class DashboardDeportComponent implements OnInit {
       
       : 'assets/img/default-profile.jpg';
 
-    this.depServ.getDeportistByDni(usuario.dni).subscribe({
+    this.depServ.consultarPadronPorDni(usuario.dni).subscribe({
       next: (res: any) => {
         const padron = Array.isArray(res)
           ? res.find((x: any) => String(x.documentoN) === String(usuario.dni))

@@ -1,6 +1,6 @@
 <div class="profile-page">
   <div class="profile-container">
-    <button mat-mini-fab class="back-fab" aria-label="Volver" (click)="back()">
+    <button mat-mini-fab class="back-fab" *ngIf="!dentroDelPanel" aria-label="Volver" (click)="back()">
       <mat-icon>arrow_back</mat-icon>
     </button>
     <div class="avatar-container">
@@ -84,15 +84,16 @@
       <h2>Perfiles Deportivos</h2>
 
       <button type="button" mat-raised-button color="primary" class="add-profile-btn"
-        (click)="mostrarFormPerfil = !mostrarFormPerfil">
-        {{ mostrarFormPerfil ? 'Cerrar formulario' : '+ Agregar Perfil Deportivo' }}
+        [disabled]="guardandoPerfil" (click)="abrirNuevoPerfil()">
+        {{ perfilEditandoId !== null ? 'Cancelar edición' : (mostrarFormPerfil ? 'Cerrar formulario' : '+ Agregar Perfil Deportivo') }}
       </button>
 
       <div *ngIf="mostrarFormPerfil" class="perfil-form">
+        <p *ngIf="perfilEditandoId !== null">Editando el perfil #{{perfilEditandoId}}. Sus participaciones ya registradas se conservan; los cambios de inscripción se gestionan durante ABM.</p>
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Disciplina</mat-label>
-          <mat-select [(ngModel)]="nuevoPerfil.disciplina" name="disciplina">
+          <mat-select [disabled]="guardandoPerfil" [ngModel]="nuevoPerfil.disciplina" (ngModelChange)="onDisciplinaChange($event)" name="disciplina">
             <mat-option *ngFor="let d of disciplinas" [value]="d">
               {{ d }}
             </mat-option>
@@ -101,7 +102,7 @@
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Origen de la categoría</mat-label>
-          <mat-select [(ngModel)]="nuevoPerfil.origenCategoria" name="origenCategoria" required>
+          <mat-select [disabled]="guardandoPerfil" [ngModel]="nuevoPerfil.origenCategoria" (ngModelChange)="onOrigenChange($event)" name="origenCategoria" required>
             <mat-option *ngFor="let origen of origenesCategoria" [value]="origen.valor"
               [disabled]="!origen.habilitado">
               {{ origen.etiqueta }}{{ origen.habilitado ? '' : ' (pendiente de catálogo)' }}
@@ -110,19 +111,17 @@
           <mat-hint>Indica de dónde proviene la categoría; es independiente de la licencia.</mat-hint>
         </mat-form-field>
 
+        <p *ngIf="nuevoPerfil.origenCategoria === 'PROMOS_FEMPA' && nuevoPerfil.disciplina !== 'Libre'" role="status">El reglamento Promos FEMPA cargado corresponde a Libre. Para Danza, elegí CAP.</p>
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Licencia</mat-label>
-          <mat-select [(ngModel)]="nuevoPerfil.licencia" name="licencia">
-            <mat-option value="Nacional Atleta">Nacional Atleta</mat-option>
-            <mat-option value="Internacional WS">Internacional WS</mat-option>
-            <mat-option value="Promocional">Promocional</mat-option>
-            <mat-option value="Adaptado">Adaptado</mat-option>
+          <mat-select [disabled]="guardandoPerfil" [(ngModel)]="nuevoPerfil.licencia" name="licencia">
+            <mat-option *ngFor="let licencia of licencias" [value]="licencia">{{ licencia }}</mat-option>
           </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Modalidad</mat-label>
-          <mat-select [(ngModel)]="nuevoPerfil.modalidad" name="modalidad">
+          <mat-select [disabled]="guardandoPerfil" [(ngModel)]="nuevoPerfil.modalidad" name="modalidad">
             <mat-option *ngFor="let m of modalidades" [value]="m">
               {{ m }}
             </mat-option>
@@ -131,7 +130,7 @@
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Divisional</mat-label>
-          <mat-select [(ngModel)]="nuevoPerfil.divisional" name="divisional"
+          <mat-select [disabled]="guardandoPerfil" [(ngModel)]="nuevoPerfil.divisional" name="divisional"
             (selectionChange)="onDivisionalChange($event.value)">
             <mat-option *ngFor="let d of divisionales" [value]="d">
               {{ d }}
@@ -141,7 +140,7 @@
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Categoría / Eficiencia</mat-label>
-          <mat-select [(ngModel)]="nuevoPerfil.categoria" name="categoria">
+          <mat-select [disabled]="guardandoPerfil" [(ngModel)]="nuevoPerfil.categoria" name="categoria">
             <mat-option *ngFor="let e of eficiencias" [value]="e">
               {{ e }}
             </mat-option>
@@ -150,7 +149,7 @@
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Temporada</mat-label>
-          <mat-select [(ngModel)]="nuevoPerfil.temporada" name="temporada">
+          <mat-select [disabled]="guardandoPerfil" [(ngModel)]="nuevoPerfil.temporada" name="temporada">
             <mat-option value="2026">2026</mat-option>
             <mat-option value="2027">2027</mat-option>
             <mat-option value="2028">2028</mat-option>
@@ -187,15 +186,21 @@
           </mat-select>
         </mat-form-field>
 
+        <p class="perfil-resumen" aria-live="polite" *ngIf="nuevoPerfil.disciplina">
+          Vas a guardar: <strong>{{ nuevoPerfil.disciplina }}</strong>
+          <span *ngIf="nuevoPerfil.divisional"> · {{ nuevoPerfil.divisional }}</span>
+          <span *ngIf="nuevoPerfil.categoria"> · {{ nuevoPerfil.categoria }}</span>
+        </p>
         <button type="button" mat-raised-button color="accent" (click)="crearPerfil()"
           [disabled]="guardandoPerfil || !clubYSedeValidos() || !nuevoPerfil.disciplina.trim() || !origenHabilitado(nuevoPerfil.origenCategoria)">
-          {{ guardandoPerfil ? 'Guardando…' : 'Guardar Perfil' }}
+          {{ guardandoPerfil ? 'Guardando…' : (perfilEditandoId !== null ? 'Guardar cambios del perfil' : 'Guardar Perfil') }}
         </button>
       </div>
 
       <ng-container *ngIf="perfilesDeportivos && perfilesDeportivos.length > 0; else sinPerfiles">
         <div class="perfiles-list">
           <div *ngFor="let perfil of perfilesDeportivos; trackBy: trackByPerfilId" class="perfil-item">
+            <button type="button" mat-button (click)="editarPerfil(perfil)" [disabled]="guardandoPerfil">Editar perfil deportivo</button>
             <p><strong>Disciplina:</strong> {{ perfil.disciplina }}</p>
             <p><strong>Origen de la categoría:</strong> {{ etiquetaOrigen(perfil.origenCategoria) }}</p>
             <p><strong>Licencia:</strong> {{ perfil.licencia }}</p>

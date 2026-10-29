@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { environment } from '../../environments/environment.development';
+import { environment } from '../../environments/environment';
 import { Deportist } from '../interfaces/deportist';
 import { catchError, map, tap } from "rxjs/operators";
 import { Observable, of } from 'rxjs';
@@ -49,6 +49,10 @@ export class DeportistService {
   getDeportistById(id: number): Observable<Deportist[]> {
     return this.http.get<Deportist[]>(`${this.apURL}/Padron?id=${id}`);
   }
+
+ consultarPadronPorDni(dni: string): Observable<any> {
+   return this.http.get(`${this.apURL}/Padron/${encodeURIComponent(String(dni).replace(/\D/g, ''))}`);
+ }
 
  getDeportistByDni(dni: string): Observable<Deportist[]> {
   return this.http.get<Deportist[]>(`${this.apURL}/Padron?dni=${dni}`);

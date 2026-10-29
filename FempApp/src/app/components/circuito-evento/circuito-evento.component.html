@@ -79,14 +79,14 @@
         ><input
           type="checkbox"
           [checked]="seleccion.includes(p.id)"
-          [disabled]="ocupado || !editable || (yaInscripto && data.etapa !== 'abm')"
+          [disabled]="ocupado || confirmando || !editable || (yaInscripto && data.etapa !== 'abm')"
           (change)="toggle(p.id, $any($event.target).checked)"
         /><span><strong>{{ p.disciplina }}</strong><span>{{ p.modalidad }} · {{ p.categoria }} · {{ p.divisional }}</span></span></label
       >
       <p *ngIf="!data.perfiles.length">
         Cargá tus perfiles deportivos desde Mi perfil.
       </p>
-      <button (click)="guardar()" [disabled]="ocupado || !editable || (yaInscripto && data.etapa !== 'abm')">
+      <button (click)="guardar()" [disabled]="!puedeGuardar">
         {{ yaInscripto ? (data.etapa === 'abm' ? 'Editar inscripción' : 'Ya estás inscripto/a') : 'Inscribirme' }}
       </button>
       <div *ngIf="data.cargo as c" class="resumen-pago" [class.pagado]="pagado">

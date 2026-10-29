@@ -1,5 +1,5 @@
 <div class="main-gradient">
-  <div class="back-wrapper">
+  <div class="back-wrapper" *ngIf="!dentroDelPanel">
     <button mat-stroked-button class="back-btn" (click)="volver()">
       <mat-icon>arrow_back</mat-icon>
       Volver
@@ -81,7 +81,7 @@
             auth.getRolNombre() === 'deportista' ||
             auth.getRolNombre() === 'administrador'
           "
-          [eventoId]="evento.id"
+          [eventoId]="evento.id" (estadoActualizado)="actualizarEstadoCircuito($event)"
         ></app-circuito-evento>
         <h2>Info del Evento</h2>
         <p><strong>Nombre:</strong> {{ evento.nombre || evento.titulo }}</p>
@@ -92,7 +92,7 @@
             mat-stroked-button
             class="btn-secundario"
             (click)="descargarCert()"
-            [disabled]="generandoCertificado"
+            [disabled]="generandoCertificado || !certificadoDisponible"
           >
             {{ generandoCertificado ? 'Generando…' : 'Descargar certificado' }}
           </button>
@@ -108,8 +108,8 @@
           </button>
         </div>
 
-        <p class="hint-certificado" *ngIf="!inscripto">
-          Para descargar necesitás estar inscripto y, si el evento es pago, tener el pago aprobado.
+        <p class="hint-certificado" *ngIf="!certificadoDisponible">
+          Para descargar necesitás estar fehacientemente inscripto.
         </p>
       </div>
     </ng-template>

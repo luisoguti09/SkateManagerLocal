@@ -319,3 +319,10 @@ app-qr-credencial {
 .perfil-item {
   padding: 12px 0;
 }
+.perfil-resumen{padding:12px;border:1px solid #8dbbff;border-radius:12px;line-height:1.5}
+@media(max-width:600px){
+  .profile-container .profile-card{padding:20px 14px;margin-top:20px;box-sizing:border-box;min-width:0}
+  .perfil-form{scroll-margin-top:80px}
+  .perfil-item{overflow-wrap:anywhere}
+  h2{font-size:1.4rem;line-height:1.3}
+}

@@ -255,3 +255,10 @@ $dark-color: #000000;
   color: rgba(255, 255, 255, .78);
   font-size: .9rem;
 }
+@media(max-width:600px){
+  .event-card,.card-section{padding:14px;max-width:100%;box-sizing:border-box}
+  h1,h2{font-size:1.5rem;line-height:1.25;overflow-wrap:anywhere}
+  .evento-actions{gap:8px;margin-top:16px}
+  .evento-actions button{min-height:44px;white-space:normal}
+}
+.btn-secundario:disabled{opacity:.55;cursor:default}

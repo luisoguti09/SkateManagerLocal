@@ -13,6 +13,11 @@ const {
   Op,
 } = require('../services/circuito');
 const auth = [verifyToken, sesion];
+function certificadoDisponible(ev, inscripciones, cargo) {
+  return inscripciones.some(i => i.estadoInscripcion !== 'baja') &&
+    (ev.inscripcionRequierePago === false ||
+      (ev.inscripcionRequierePago === true && cargo?.estado === 'pagado'));
+}
 router.get(
   '/:id/circuito',
   ...auth,
@@ -25,6 +30,7 @@ router.get(
       inscripciones: [],
       perfiles: [],
       cargo: null,
+      certificadoDisponible: false,
     };
     if (req.auth.rol === 'deportista') {
       result.inscripciones = await db.UsuarioEventos.findAll({
@@ -40,6 +46,7 @@ router.get(
       const cargo = await db.CargoInscripcion.findOne({
         where: { eventoId: ev.id, usuarioId: req.auth.id },
       });
+      result.certificadoDisponible = certificadoDisponible(ev, result.inscripciones, cargo);
       result.cargo = cargo ? datoCargo(cargo, ev) : null;
       if (result.cargo?.liquidacionSnapshot) {
         const { gestion, gestionFempaReferencia, gestionACargoDe, ...detalle } = result.cargo.liquidacionSnapshot;
@@ -79,14 +86,17 @@ async function guardar(req, res, append = false) {
           ]),
         ]
       : seleccion;
+    if (!desired.length && !(stage === 'abm' && vigentes.length))
+      R.fail(400, 'Seleccioná al menos un perfil deportivo para inscribirte.');
     if (vigentes.some((x) => !x.perfilDeportivoId))
       R.fail(
         409,
         'La inscripción antigua debe ser revisada por administración.',
       );
     if (
-      stage !== 'abm' &&
-      vigentes.some((x) => !desired.includes(x.perfilDeportivoId))
+      stage !== 'abm' && vigentes.length > 0 &&
+      (vigentes.some((x) => !desired.includes(x.perfilDeportivoId)) ||
+       desired.some(id => !vigentes.some(x => x.perfilDeportivoId === id)))
     )
       R.fail(409, 'Las bajas y modificaciones se realizan durante ABM.');
     const perfiles = [];
@@ -266,8 +276,8 @@ router.get('/:id/certificado-datos', ...auth, roles('deportista'), wrap(async (r
   const cargo = await db.CargoInscripcion.findOne({
     where: { eventoId: ev.id, usuarioId: req.auth.id },
   });
-  if (ev.inscripcionRequierePago && cargo?.estado !== 'pagado')
-    R.fail(403, 'El certificado estará disponible cuando el pago esté aprobado y conciliado.');
+  if (!certificadoDisponible(ev, vigentes, cargo))
+    R.fail(403, 'Para descargar necesitás estar fehacientemente inscripto.');
   const u = await db.Usuario.findByPk(req.auth.id);
   const clubes = [];
   const snapshots = cargo?.participacionesSnapshot || [];

@@ -21,3 +21,12 @@ main{margin:0 auto;align-self:start}.hero{min-height:260px;padding:36px 40px;bac
 .workspace{background:transparent}.topbar{background:#ffffffed;color:#234d83;padding:14px 18px;border-radius:16px}footer{color:#fff;text-shadow:0 1px 2px #123b73}.loading{color:#fff}
 .hero-art{opacity:.55}.rueda-fempa{animation-duration:16s}.sidebar-bottom button{min-height:44px;border:1px solid #b7cfee;border-radius:10px;padding:10px 14px;color:#164b93;background:#edf4ff;font-weight:600}
 @media(max-width:700px){.hero-art{opacity:.3;width:42%;right:8px}.hero-copy{max-width:78%}}
+
+
+.mobile-sections{display:none}
+@media(max-width:700px){
+ .sidebar{padding:10px 14px;gap:8px}.sidebar nav{display:none}.sidebar .brand-logo{width:76px;height:48px}.sidebar-bottom{gap:8px;flex-wrap:wrap}.sidebar-bottom small{display:none}main{padding:12px;min-width:0}.mobile-sections{display:flex;gap:10px;align-items:center;background:white;border-radius:12px;padding:8px 12px;margin-bottom:10px;color:#164b93;font-size:13px;position:sticky;top:0;z-index:5}.mobile-sections select{flex:1;min-width:0;border:1px solid #b7cfee;border-radius:8px;background:#f4f8ff;color:#163c70;padding:10px;font:inherit}
+ .hero{min-height:190px;padding:20px 18px 40px}.hero h1{font-size:27px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metrics button{padding:12px}.metrics strong{font-size:28px;margin:6px 0}.metrics span{font-size:10px}.metrics small{font-size:11px;line-height:1.4}.card{padding:16px}.topbar{padding:10px;margin-bottom:12px}.hero-copy{max-width:80%}.event summary{padding:12px}.table-wrap table{min-width:420px}.score-row{flex-wrap:wrap;gap:8px}[data-section],.detail{scroll-margin-top:66px}
+}
+
+.logout-panel{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;margin-left:auto}

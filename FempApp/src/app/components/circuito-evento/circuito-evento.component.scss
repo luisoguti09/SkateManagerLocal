@@ -112,3 +112,12 @@ a {
 .resumen-pago { margin-top: 24px; padding: 20px; border: 1px solid #a5c8f5; border-radius: 12px; }
 .resumen-pago.pagado { background: #075943; border-color: #8ae4bc; }
 .estado-pago { font-weight: 700; font-size: 1.15rem; }
+
+@media(max-width:600px){
+  .circuito{padding:14px}
+  .circuito h2,.circuito h3{font-size:1.4rem;line-height:1.3;margin:14px 0}
+  .circuito .perfil{padding:12px;min-height:64px;flex-wrap:nowrap;gap:12px}
+  .circuito .perfil>span{min-width:0;overflow-wrap:anywhere}
+  .circuito .perfil strong{font-size:1.05rem}
+  .circuito button{min-height:44px;margin:6px 0;max-width:100%;white-space:normal}
+}

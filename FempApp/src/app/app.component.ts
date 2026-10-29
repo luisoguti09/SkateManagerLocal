@@ -1,3 +1,4 @@
+import { CargaApiService } from './core/carga.interceptor';
 import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { Router, RouterOutlet, NavigationStart, NavigationEnd, NavigationCancel, NavigationError, NavigationSkipped } from '@angular/router';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
@@ -13,6 +14,7 @@ import { AuthService } from './services/auth.service';
 })
 export class AppComponent implements OnInit {
   title = 'FempApp';
+  carga = inject(CargaApiService);
   navegando=false;
   private destroyRef=inject(DestroyRef);
   constructor(){

@@ -73,7 +73,7 @@ function model(name) {
         throw Error('unique cargo');
       const row = instance({
         ...(name === 'Usuario' ? { sessionVersion: 0 } : {}),
-        id: tables[name].length + 1,
+        id: Math.max(0, ...tables[name].map(row => Number(row.id) || 0)) + 1,
         createdAt: new Date(),
         updatedAt: new Date(),
         ...v,
@@ -149,6 +149,7 @@ require.cache[require.resolve('mercadopago')] = {
 const app = express();
 app.use(express.json());
 app.use('/eventos', require('../routes/circuito.router'));
+app.use('/perfiles-deportivos', require('../routes/perfilesdeportivos.router'));
 app.use('/pagos', require('../routes/pagos.router'));
 app.use(
   '/precios-participacion',
@@ -230,6 +231,12 @@ test('real routes: permissions, ABM, immutable charge, retry and reconciliation'
       club: 'Club A',
     });
   await db.PerfilDeportivo.create({ id: 99, usuarioId: 4, activa: true });
+  const rowsBeforeEmpty = tables.UsuarioEventos.length;
+  const auditsBeforeEmpty = tables.CambioInscripcion.length;
+  assert.equal((await request('/eventos/1/mi-inscripcion', 'deportista', { perfilDeportivoIds: [] }, 'PUT')).status, 400);
+  assert.equal(tables.UsuarioEventos.length, rowsBeforeEmpty);
+  assert.equal(tables.CambioInscripcion.length, auditsBeforeEmpty);
+
   assert.equal((await request('/pagos', null)).status, 401);
   assert.equal((await request('/pagos', 'administrador')).status, 403);
   assert.equal((await request('/pagos/cargos', 'administrador')).status, 403);
@@ -316,6 +323,7 @@ test('real routes: permissions, ABM, immutable charge, retry and reconciliation'
     ).status,
     409,
   );
+  assert.equal((await request('/eventos/1/mi-inscripcion', 'deportista', { perfilDeportivoIds: [10, 11, 12, 99] }, 'PUT')).status, 409, 'No se agregan perfiles después de confirmar fuera de ABM');
   ev.inscripcionHasta = at(-1000);
   ev.abmDesde = at(90000);
   assert.equal((await request('/eventos/1/circuito')).data.etapa, 'cuadernillo');
@@ -353,6 +361,9 @@ test('real routes: permissions, ABM, immutable charge, retry and reconciliation'
     ).status,
     200,
   );
+  assert.equal((await request('/eventos/1/mi-inscripcion', 'deportista', { perfilDeportivoIds: [] }, 'PUT')).status, 200, 'ABM permite la baja total');
+  assert.equal(tables.UsuarioEventos.filter(x => x.EventoId === 1 && x.UsuarioId === 1 && x.estadoInscripcion !== 'baja').length, 0);
+  assert.equal((await request('/eventos/1/mi-inscripcion', 'deportista', { perfilDeportivoIds: [10, 11, 12] }, 'PUT')).status, 200);
   const csv = await request('/eventos/1/inscripciones.csv', 'administrador');
   assert.equal(csv.status, 200);
   assert.ok(!csv.data.includes('monto'));
@@ -502,7 +513,12 @@ test('real routes: permissions, ABM, immutable charge, retry and reconciliation'
 test('constancia: pago propio, bajas, reintegro y gratuito; sin exigir asistencia', async () => {
   await db.Usuario.create({ id: 910, rol: 'deportista', aprobado: true, estado: 'aprobado', nombre: 'Deportista', dni: '123', club: 'Club' });
   const evento = await db.Evento.create({ id: 900, titulo: 'Evento futuro', fechaInicio: '2030-11-20', fechaFin: '2030-11-22', inscripcionRequierePago: true });
-  const consultar = () => request('/eventos/900/certificado-datos', 'deportista', undefined, 'GET', 910);
+  const consultar = async () => {
+    const respuesta = await request('/eventos/900/certificado-datos', 'deportista', undefined, 'GET', 910);
+    const circuito = await request('/eventos/900/circuito', 'deportista', undefined, 'GET', 910);
+    assert.equal(circuito.data.certificadoDisponible, respuesta.status === 200);
+    return respuesta;
+  };
   assert.equal((await consultar()).status, 403);
   const ins = await db.UsuarioEventos.create({ EventoId: 900, UsuarioId: 910, estadoInscripcion: 'confirmada', perfilDeportivoId: 999 });
   await db.CargoInscripcion.create({ eventoId: 900, usuarioId: 4, estado: 'pagado' });
@@ -567,4 +583,29 @@ test('tarifario general: permisos, versiones, cargos mixtos y reutilización ent
   assert.equal(cargo.liquidacionSnapshot.tarifarioId, vigente.id);
   assert.equal((await request(`/eventos/${primero.id}/confirmar-inscripciones`, 'administrador', {})).status, 200);
   assert.equal(tables.CargoInscripcion.filter(c => c.eventoId === primero.id).length, 1);
+});
+
+
+test('perfil deportivo: guarda la última disciplina, actualiza origen sin cambiar identidad y conserva inscripciones', async () => {
+  await db.Usuario.create({ id: 1200, rol: 'deportista', aprobado: true, estado: 'aprobado' });
+  const borrador = { usuarioId: 1200, disciplina: 'Figuras Obligatorias', origenCategoria: 'CAP', categoria: 'Tercera' };
+  Object.assign(borrador, { disciplina: 'Danza', categoria: 'Básico · Infantil · Combinada', divisional: 'Danza Nacional', licencia: 'Nacional' });
+  const creado = await request('/perfiles-deportivos', 'deportista', borrador, 'POST', 1200);
+  assert.equal(creado.status, 201);
+  assert.equal(creado.data.disciplina, 'Danza');
+  const id = creado.data.id;
+  const perfilDb = await db.PerfilDeportivo.findByPk(id);
+  await perfilDb.update({ clubSedeId: 77 });
+  const sinSede = await request(`/perfiles-deportivos/${id}`, 'deportista', { clubSedeId: null }, 'PUT', 1200);
+  assert.equal(sinSede.status, 200);
+  assert.equal(sinSede.data.clubSedeId, null, 'Una sede retirada no reaparece al guardar');
+  const registro = await db.UsuarioEventos.create({ EventoId: 1200, UsuarioId: 1200, perfilDeportivoId: id, disciplina: 'Danza', categoria: borrador.categoria, estadoInscripcion: 'provisoria' });
+  const actualizado = await request(`/perfiles-deportivos/${id}`, 'deportista', { origenCategoria: 'PROMOS_FEMPA' }, 'PUT', 1200);
+  assert.equal(actualizado.status, 200);
+  assert.equal(actualizado.data.origenCategoria, 'PROMOS_FEMPA');
+  assert.equal(actualizado.data.disciplina, 'Danza');
+  assert.equal(actualizado.data.id, id);
+  assert.equal((await request(`/perfiles-deportivos/${id}`, 'deportista', { disciplina: 'Libre' }, 'PUT', 4)).status, 403);
+  assert.equal(registro.disciplina, 'Danza');
+  assert.equal(registro.categoria, borrador.categoria);
 });
