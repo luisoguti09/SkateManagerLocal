@@ -15,3 +15,8 @@ td button { color: #fff !important; border-color: #ffffff90 !important; margin: 
 .cerrar-resumen { background: #104b9e; color: #fff; border: 1px solid #ffffff90; padding: 10px 14px; border-radius: 8px; cursor: pointer; }
 button:focus-visible { outline: 3px solid #ffdc73; outline-offset: 3px; }
 @media (max-width: 600px) { .card { padding: 12px; } .evento-resumen { padding: 16px; } th, td { padding: 10px 8px; } }
+
+
+@media(max-width:600px){
+ :host{display:block;min-width:0}.card{padding:10px}.mat-mdc-table{width:100%}.mat-mdc-header-row{display:none}.mat-mdc-row{display:flex;flex-wrap:wrap;height:auto;padding:12px 0;border-bottom:1px solid #ffffff55}.mat-mdc-cell{display:block;flex:1 1 100%;padding:6px 10px;border:0;white-space:normal;overflow-wrap:anywhere}.mat-column-acciones{display:flex;flex-wrap:wrap;gap:8px}.resumen-cabecera{flex-wrap:wrap;gap:8px}.resumen-cabecera h2{font-size:22px;line-height:1.25}
+}

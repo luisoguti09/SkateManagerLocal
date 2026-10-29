@@ -115,3 +115,6 @@ background: linear-gradient(90deg, rgba(2,70,206,1) 0%, rgba(132,162,223,1) 32%,
     }
   }
 }
+
+.contentLogin{box-sizing:border-box;min-height:100dvh}.login-card{min-width:0}
+@media(max-width:600px){.contentLogin{padding:16px;align-items:flex-start}.login-card mat-card-header{padding:16px}.login-card .cardImg{max-width:180px}.login-card mat-card-content mat-form-field{margin-bottom:8px}}

@@ -27,6 +27,7 @@ export class LoginComponent {
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required]
   });
+  mostrarPassword = false;
   cargando = false;
   errorMsg = '';
   estado: 'pendiente' | 'bloqueado' | null =

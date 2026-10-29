@@ -209,3 +209,8 @@ table[mat-table] {
   .content { padding: 16px; margin: 8px auto 24px; }
 }
 */
+
+:host,.shell,.content-area,.content{min-width:0;max-width:100%;box-sizing:border-box}
+.shell{min-height:100dvh}.side{width:260px;max-width:85vw}.spacer{flex:1 1 auto}.title{white-space:normal;line-height:1.25;min-width:0}.topbar{gap:4px}.only-mobile{display:none}
+@media(max-width:1024px){.only-mobile{display:inline-flex}}
+@media(max-width:600px){.content{padding:10px}.topbar.mat-toolbar{height:auto;min-height:56px;flex-wrap:wrap;padding:6px 8px}.topbar .title{flex:1;font-size:17px}.topbar .spacer{display:none}.topbar>a,.topbar>button[mat-button]{font-size:13px}.topbar .back-btn{margin:0}}

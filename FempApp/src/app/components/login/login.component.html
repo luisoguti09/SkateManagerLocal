@@ -27,7 +27,10 @@
           </mat-form-field>
           <mat-form-field class="example-full-width">
             <mat-label>Contraseña</mat-label>
-            <input matInput type="password" formControlName="password" autocomplete="current-password" [readonly]="cargando">
+            <input matInput [type]="mostrarPassword ? 'text' : 'password'" formControlName="password" autocomplete="current-password" [readonly]="cargando">
+            <button mat-icon-button matSuffix type="button" (click)="mostrarPassword = !mostrarPassword" [attr.aria-label]="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="mostrarPassword">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path *ngIf="mostrarPassword" d="M3 3l18 18"/></svg>
+            </button>
             <mat-error>Ingresá tu contraseña.</mat-error>
           </mat-form-field>
           <p *ngIf="errorMsg" role="alert">{{ errorMsg }}</p>

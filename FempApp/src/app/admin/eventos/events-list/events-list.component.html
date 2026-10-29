@@ -21,7 +21,9 @@
     <app-circuito-evento [eventoId]="evento.id"></app-circuito-evento>
   </section>
 
-  <app-eventos-agrupados [eventos]="data" [plantilla]="tabla"></app-eventos-agrupados>
+  <p *ngIf="cargando" role="status">Cargando eventos…</p>
+  <div *ngIf="errorCarga" role="alert">{{errorCarga}} <button mat-stroked-button (click)="load()">Reintentar</button></div>
+  <app-eventos-agrupados *ngIf="!cargando && !errorCarga" [eventos]="data" [plantilla]="tabla"></app-eventos-agrupados>
   <ng-template #tabla let-filas>
   <table mat-table [dataSource]="filas" class="mat-elevation-z8">
 

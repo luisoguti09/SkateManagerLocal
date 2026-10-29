@@ -30,6 +30,8 @@ export class EventsListComponent implements OnInit {
   private ev = inject(EventosService);
   private router = inject(Router);
 
+  public cargando = false;
+  public errorCarga = '';
   public data: Evento[] = [];
   public seleccionado: Evento | null = null;
   public displayed = ['nombre', 'fecha', 'acciones'];
@@ -54,7 +56,9 @@ export class EventsListComponent implements OnInit {
   }
 
   load() {
-    this.ev.getEventos().subscribe(evts => {
+    if (this.cargando) return;
+    this.cargando = true; this.errorCarga = '';
+    this.ev.getEventosSinOcultarErrores().subscribe({next: evts => {
       const normalizados = (evts ?? []).map((e: any, index: number) => {
         const nombre = e.nombre || e.titulo || 'Sin nombre';
         const fechaRaw = e.fechaInicio || e.fecha || null;
@@ -84,8 +88,11 @@ export class EventsListComponent implements OnInit {
       });
 
 
-      this.data = normalizados;
-    });
+      this.data = normalizados; this.cargando = false;
+    }, error: () => {
+      this.cargando = false;
+      this.errorCarga = 'No pudimos consultar los eventos. Comprobá la conexión y reintentá.';
+    }});
   }
 
 

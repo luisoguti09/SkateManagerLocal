@@ -2,7 +2,7 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth.service';
-import { environment } from '../../environments/environment.development';
+import { environment } from '../../environments/environment';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
@@ -10,7 +10,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const token = auth.getToken();
 
 
-  if (token && req.url.startsWith(environment.SERVER_API)) {
+  const base = new URL(environment.SERVER_API, window.location.origin);
+  const target = new URL(req.url, window.location.origin);
+  const path = base.pathname.replace(/\/$/, '');
+  const esApi = target.origin === base.origin && (target.pathname === path || target.pathname.startsWith(path + '/'));
+  if (token && esApi) {
     req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
   }
   return next(req);

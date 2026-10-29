@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { Evento, EventoLite } from '../interfaces/evento';
-import { environment } from '../../environments/environment.development';
+import { environment } from '../../environments/environment';
 import { NuevoEventoDto, EditEventoDto } from '../interfaces/evento-dto';
 import { AuthService } from './auth.service';
 
@@ -55,6 +55,10 @@ export class EventosService {
     nombre: e.titulo ?? e.nombre,
     fecha: e.fechaInicio ?? e.fecha,
   });
+
+  getEventosSinOcultarErrores(): Observable<Evento[]> {
+    return this.http.get<Evento[]>(this.base).pipe(map(list => (list ?? []).map(this.mapEvento)));
+  }
 
   getEventos(): Observable<Evento[]> {
     return this.http.get<Evento[]>(this.base).pipe(
