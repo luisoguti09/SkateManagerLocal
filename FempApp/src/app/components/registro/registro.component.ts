@@ -30,6 +30,8 @@ import { ClubOption } from '../../interfaces/club-option.interface';
   styleUrl: './registro.component.scss'
 })
 export class RegistroComponent implements OnDestroy {
+  mostrarPassword = false;
+  mostrarConfirmacion = false;
   public form!: FormGroup;
   private router = inject(Router);
   private fb = inject(FormBuilder);

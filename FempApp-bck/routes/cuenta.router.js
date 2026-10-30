@@ -28,6 +28,17 @@ router.get('/mia/requisito-wada',C.wrap(async(req,res)=>{
  const perfiles=await P.findAll({where:{usuarioId:req.auth.id,temporada,activa:true}});
  res.json(V.requisitoWada(req.cuenta,perfiles,temporada));
 }));
+// Consulta sin guardar: usa la fecha del formulario y solo los perfiles propios.
+router.post('/mia/requisito-wada/preview',C.wrap(async(req,res)=>{
+ const V=require('../services/edad-deportiva');let temporada;
+ try{temporada=V.temporadaValida(req.body.temporada);}catch{C.R.fail(400,'Seleccioná una temporada válida.');}
+ const fecha=req.body.fechaNacimiento;
+ if(typeof fecha!=='string' || fecha.length>10)C.R.fail(400,'Ingresá una fecha válida.');
+ const P=require('../models/perfildeportivo.model');
+ const perfiles=await P.findAll({where:{usuarioId:req.auth.id,temporada,activa:true}});
+ const usuario={id:req.auth.id,rol:req.cuenta.rol,fechaNacimiento:fecha};
+ res.json({...V.requisitoWada(usuario,perfiles,temporada),fechaConsultada:fecha,preliminar:true});
+}));
 router.get('/mia',C.wrap(async(req,res)=>res.json(await C.detalle(req.cuenta))));
 router.patch('/mia',C.wrap(async(req,res)=>{
   const data=C.R.perfil(req.body);

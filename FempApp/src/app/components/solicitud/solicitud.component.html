@@ -40,22 +40,27 @@
     <div class="acciones"><button type="button" (click)="renovarDocumento(d.campo)" [disabled]="busy">Guardar y enviar a revisión</button><button type="button" class="secundario" *ngIf="u.documentos[d.campo]" (click)="verArchivo(d.campo,d.label)" [disabled]="busy">Ver documento</button></div>
    </ng-container>
   </div></div>
-  <h3>Consultar requisito WADA</h3><label>Temporada deportiva<input type="number" min="2000" max="2200" [(ngModel)]="temporada"></label><button type="button" class="secundario" (click)="consultarWada()" [disabled]="consultandoWada">Consultar temporada</button>
+  <ng-container *ngIf="!editable" [ngTemplateOutlet]="consultaWada"></ng-container>
+ </section>
+ <ng-template #consultaWada>
+  <h3>Consultar requisito WADA</h3><label>Temporada deportiva<input type="number" min="2000" max="2200" [(ngModel)]="temporada" (ngModelChange)="programarWada()"></label><button type="button" class="secundario" (click)="consultarWada()" [disabled]="consultandoWada">Consultar temporada</button>
   <p *ngIf="consultandoWada" role="status">Consultando requisito…</p>
   <p *ngIf="errorWada" class="error">{{errorWada}}</p>
   <p *ngIf="requisitoWada">{{requisitoWada.obligatorio===null?'Completá tu fecha de nacimiento para determinar el requisito.':requisitoWada.obligatorio?'WADA requerido para la temporada consultada.':'WADA no requerido para la temporada consultada.'}}</p>
   <p *ngIf="requisitoWada?.motivo === 'perfil_ws'">Se requiere por tu perfil WS activo en esta temporada, aunque tengas menos de 16 años.</p>
-  <p *ngIf="requisitoWada?.edadDeportiva != null">Edad deportiva: {{requisitoWada.edadDeportiva}} años en {{requisitoWada.temporada}}. Fecha de nacimiento: {{u.fechaNacimiento | date:'dd/MM/yyyy':'UTC'}}.</p>
-  <p class="mini">WADA se requiere desde la temporada en que cumplís 16 años, o antes si tenés un perfil WS activo en esa temporada. La edad se calcula con tu fecha de nacimiento guardada. Esta consulta no emite ni renueva una licencia.</p>
- </section>
+  <p *ngIf="requisitoWada?.edadDeportiva != null">Edad deportiva: {{requisitoWada.edadDeportiva}} años en {{requisitoWada.temporada}}. Fecha de nacimiento: {{(requisitoWada.fechaConsultada || u.fechaNacimiento) | date:'dd/MM/yyyy':'UTC'}}.</p>
+  <p class="mini">WADA se requiere desde la temporada en que cumplís 16 años, o antes si tenés un perfil WS activo en esa temporada. La edad se calcula con la fecha de nacimiento y la temporada consultadas. Esta consulta no emite ni renueva una licencia.</p>
+ <p *ngIf="editable" class="mini">Esta consulta usa la fecha que estás completando. No guarda ni envía la solicitud.</p>
+ </ng-template>
  <form *ngIf="editable" #solicitud="ngForm" (ngSubmit)="enviar()">
  <section class="panel"><h2>Datos personales</h2><p class="mini">{{u.email}} · DNI {{u.dni}} · Rol solicitado: {{u.rol}}</p>
-  <div class="grid"><label *ngFor="let c of campos">{{c.label}}<input [name]="c.key" [(ngModel)]="form[c.key]" [type]="c.key==='edad'?'number':c.key==='fechaNacimiento'?'date':c.key==='telefono'?'tel':'text'" [required]="c.key==='nombre' || c.key==='edad'" [disabled]="busy" maxlength="255" [attr.min]="c.key==='edad'?0:null" [attr.max]="c.key==='edad'?120:null"></label>
+  <div class="grid"><label *ngFor="let c of campos">{{c.label}}<input [name]="c.key" [(ngModel)]="form[c.key]" (ngModelChange)="c.key === 'fechaNacimiento' && programarWada()" [type]="c.key==='edad'?'number':c.key==='fechaNacimiento'?'date':c.key==='telefono'?'tel':'text'" [required]="c.key==='nombre' || c.key==='edad'" [disabled]="busy" maxlength="255" [attr.min]="c.key==='edad'?0:null" [attr.max]="c.key==='edad'?120:null"></label>
   <label *ngIf="deportiva">Club<select name="club" [(ngModel)]="form.club" required [disabled]="busy || cargandoClubes || !!errorClubes"><option value="">Seleccioná tu club</option><option *ngFor="let c of clubes" [value]="c.nombre">{{c.nombre}}</option></select></label></div>
   <p *ngIf="deportiva && errorClubes" class="error">{{errorClubes}} <button type="button" class="secundario" (click)="cargarClubes()" [disabled]="cargandoClubes">Reintentar clubes</button></p>
   <p *ngIf="u.rol==='deportista'" class="nota">Esta solicitud corresponde a la licencia provincial.</p>
   <p class="mini">La categoría, disciplina y divisional se gestionan en los perfiles deportivos, después de aprobar la cuenta.</p>
  </section>
+ <section class="panel" *ngIf="u.rol==='deportista'" aria-live="polite"><ng-container [ngTemplateOutlet]="consultaWada"></ng-container></section>
  <section class="panel"><h2>Foto y documentación</h2><p *ngIf="u.rol==='tecnico'" class="nota">Para solicitar una cuenta de técnica debés tener 18 años cumplidos y presentar el certificado de antecedentes penales. Solo vos y los administradores pueden consultar este archivo. Se admite imagen o PDF de hasta 2 MB para PDF.</p><p>{{u.rol==='tesoreria'?'Foto de perfil opcional.':'Foto de perfil obligatoria.'}} <span *ngIf="u.requiereDni">También se requieren frente y dorso del DNI.</span></p><p class="mini">Imágenes JPG, PNG o WebP de hasta 6 MB; se optimizan al guardarlas. {{u.rol==='deportista'?'Ficha médica y WADA: imagen o PDF de hasta 2 MB. Indicá la fecha del documento. La ficha vence a los 12 meses y WADA a los 2 años.':''}}</p>
   <div class="archivos"><div class="archivo" *ngFor="let c of archivos"><label>{{c.label}}<input type="file" [accept]="['fichaMedica','certificadoAntecedentes','certificadoWada'].includes(c.key)?'image/jpeg,image/png,image/webp,application/pdf':'image/jpeg,image/png,image/webp'" (change)="seleccionar($event,c.key)" [disabled]="busy"></label><label *ngIf="fechas[c.key]">Fecha de expedición<input type="date" [name]="fechas[c.key]" [(ngModel)]="form[fechas[c.key]]" [disabled]="busy"></label><p class="mini">{{files[c.key] ? 'Seleccionado: '+files[c.key]?.name : u.documentos?.[c.key] ? 'Archivo ya cargado; no hace falta seleccionarlo otra vez.' : 'Sin archivo'}}</p><div class="acciones" *ngIf="u.documentos?.[c.key]"><button type="button" class="secundario" (click)="verArchivo(c.key,c.label)" [disabled]="busy || cargandoArchivo===c.key">Ver documento</button><button type="button" class="secundario" (click)="descargar(c.key)" [disabled]="busy">Descargar</button></div></div></div>
  </section>

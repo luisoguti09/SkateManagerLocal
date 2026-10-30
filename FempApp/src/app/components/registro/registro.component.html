@@ -90,14 +90,16 @@
 
           <mat-form-field class="example-full-width" appearance="outline" floatLabel="always">
             <mat-label for="password">Contraseña</mat-label>
-            <input id="password" type="password" matInput formControlName="password" minlength="8" autocomplete="new-password">
+            <input id="password" [type]="mostrarPassword ? 'text' : 'password'" matInput formControlName="password" minlength="8" autocomplete="new-password">
+            <button mat-icon-button matSuffix type="button" (click)="mostrarPassword = !mostrarPassword" [attr.aria-label]="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="mostrarPassword"><mat-icon>{{mostrarPassword ? 'visibility_off' : 'visibility'}}</mat-icon></button>
             <mat-hint>Mínimo 8 caracteres, con una letra y un número.</mat-hint>
             <mat-error>{{ passwordError }}</mat-error>
           </mat-form-field>
 
           <mat-form-field class="example-full-width" appearance="outline" floatLabel="always">
             <mat-label>Confirmá tu contraseña</mat-label>
-            <input id="confirmPass" type="password" matInput formControlName="confirmPass" autocomplete="new-password">
+            <input id="confirmPass" [type]="mostrarConfirmacion ? 'text' : 'password'" matInput formControlName="confirmPass" autocomplete="new-password">
+            <button mat-icon-button matSuffix type="button" (click)="mostrarConfirmacion = !mostrarConfirmacion" [attr.aria-label]="mostrarConfirmacion ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="mostrarConfirmacion"><mat-icon>{{mostrarConfirmacion ? 'visibility_off' : 'visibility'}}</mat-icon></button>
             <mat-error>Repetí la contraseña.</mat-error>
             <mat-hint *ngIf="form.get('confirmPass')?.value && form.get('confirmPass')?.value !== form.get('password')?.value" style="color:#b91c1c" role="status">Las contraseñas no coinciden.</mat-hint>
           </mat-form-field>

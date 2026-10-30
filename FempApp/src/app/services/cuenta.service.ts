@@ -17,6 +17,7 @@ export class CuentaService {
  enviar(files:FormData){return this.http.post<any>(this.base+'/mia/enviar',files,this.opts);}
  renovarCertificado(files:FormData){return this.http.post<any>(this.base+'/mia/certificado-antecedentes',files,this.opts);}
  renovarDocumentos(files:FormData){return this.http.post<any>(this.base+'/mia/documentos-vigencia',files,this.opts);}
+ previsualizarWada(temporada:number,fechaNacimiento:string){return this.http.post<any>(this.base+'/mia/requisito-wada/preview',{temporada,fechaNacimiento},this.opts);}
  requisitoWada(temporada:number){return this.http.get<any>(this.base+'/mia/requisito-wada',{...this.opts,params:{temporada}});}
  mia(){return this.http.get<any>(this.base+'/mia',this.opts);}
  guardar(data:any){return this.http.patch<any>(this.base+'/mia',data,this.opts);}

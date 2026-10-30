@@ -25,6 +25,7 @@ function model(name){
  const M={rows,name,sequelize:null,async create(data){const r={id:rows.length+1,revision:0,sessionVersion:0,createdAt:new Date(),intentos:0,...data};r.update=async function(d){Object.assign(this,d);return this;};r.save=async()=>r;r.toJSON=()=>Object.fromEntries(Object.entries(r).filter(([k,v])=>typeof v!=='function'));rows.push(r);return r;},async findByPk(id){return rows.find(r=>String(r.id)===String(id)) || null;},async findOne(o={}){return rows.find(r=>match(r,o.where)) || null;},async findAll(o={}){return rows.filter(r=>match(r,o.where));},async findAndCountAll(o){const rows=await M.findAll(o);return{rows,count:rows.length};},async update(data,o){let n=0;for(const r of rows)if(match(r,o.where)){await r.update(data);n++;}return[n];}};
  all.push(M);return M;
 }
+const Perfiles=model('PerfilDeportivo');
 const U=model('Usuario'),H=model('CuentaHistorial'),Q=model('CuentaCorreo'),Reset=model('CuentaReset'),Rol=model('Rol'),Padron=model('Padron'),Club=model('Club');
 const transaction=async fn=>{
  const snapshots=all.map(m=>({m,rows:[...m.rows],values:m.rows.map(r=>({...r}))}));
@@ -33,7 +34,7 @@ const transaction=async fn=>{
 for(const m of all)m.sequelize={transaction};
 const load=Module._load;
 Module._load=function(request,parent,isMain){
- const map={'usuario.model':U,'cuentahistorial.model':H,'cuentacorreo.model':Q,'cuentareset.model':Reset,'rol.model':Rol,'padron.model':Padron,'club.model':Club};
+ const map={'perfildeportivo.model':Perfiles,'usuario.model':U,'cuentahistorial.model':H,'cuentacorreo.model':Q,'cuentareset.model':Reset,'rol.model':Rol,'padron.model':Padron,'club.model':Club};
  const key=path.basename(request).replace(/\.js$/,'');
  if(map[key])return map[key];return load.call(this,request,parent,isMain);
 };
@@ -56,6 +57,20 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
    const text=await response.text();let data;try{data=JSON.parse(text);}catch{data=text;}return{status:response.status,data};
  };
  try{
+ await t.test('WADA se consulta con fecha sin guardar antes de enviar y conserva WS',async()=>{
+  const url='/cuenta/mia/requisito-wada/preview';
+  const consultar=fecha=>call('POST',url,user,{temporada:2026,fechaNacimiento:fecha,usuarioId:other.id});
+  assert.equal((await call('POST',url,null,{temporada:2026,fechaNacimiento:'2011-12-31'})).status,401);
+  assert.equal((await consultar('2011-12-31')).data.obligatorio,false);
+  assert.equal((await consultar('2010-12-31')).data.obligatorio,true);
+  assert.equal((await consultar('2011-02-30')).data.obligatorio,null);
+  await Perfiles.create({usuarioId:other.id,temporada:2026,activa:true,licencia:'Internacional WS'});
+  assert.equal((await consultar('2011-12-31')).data.obligatorio,false);
+  await Perfiles.create({usuarioId:user.id,temporada:2026,activa:true,licencia:'Internacional WS'});
+  assert.equal((await consultar('2011-12-31')).data.motivo,'perfil_ws');
+  assert.equal(user.fechaNacimiento,undefined);assert.equal(user.revision,0);assert.equal(user.estado,'pendiente');
+  Perfiles.rows.length=0;
+ });
  await t.test('administración filtra por club en el servidor',async()=>{
   const r=await call('GET','/cuenta/admin/usuarios?club=Giol&estado=pendiente',admin);
   assert.equal(r.status,200);assert.deepEqual(r.data.usuarios.map(x=>x.id),[user.id]);

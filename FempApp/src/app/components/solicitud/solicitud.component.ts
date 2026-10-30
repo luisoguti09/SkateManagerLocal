@@ -21,7 +21,13 @@ export class SolicitudComponent implements OnInit,OnDestroy {
   if(this.vistaArchivo)URL.revokeObjectURL(this.vistaArchivo.url);
   this.vistaArchivo=null;this.cargandoArchivo='';this.errorArchivo='';
  }
- ngOnDestroy(){this.cerrarArchivo();this.wadaPeticion?.unsubscribe();}
+ private temporizadorWada?:ReturnType<typeof setTimeout>;
+ programarWada(){
+  if(this.u?.rol!=='deportista')return;
+  clearTimeout(this.temporizadorWada);this.wadaPeticion?.unsubscribe();this.requisitoWada=null;this.errorWada='';this.consultandoWada=false;
+  this.temporizadorWada=setTimeout(()=>this.consultarWada(),400);
+ }
+ ngOnDestroy(){clearTimeout(this.temporizadorWada);this.cerrarArchivo();this.wadaPeticion?.unsubscribe();}
  verArchivo(key:string,label:string){
   if(!this.u || this.busy)return;
   this.cerrarArchivo();this.cargandoArchivo=key;
@@ -55,8 +61,10 @@ export class SolicitudComponent implements OnInit,OnDestroy {
  consultandoWada=false;
  private wadaPeticion?:Subscription;
  consultarWada(){
+  clearTimeout(this.temporizadorWada);
   this.wadaPeticion?.unsubscribe();this.errorWada='';this.requisitoWada=null;this.consultandoWada=true;
-  this.wadaPeticion=this.api.requisitoWada(this.temporada).subscribe({
+  const consulta=this.editable ? this.api.previsualizarWada(this.temporada,String(this.form.fechaNacimiento || '')) : this.api.requisitoWada(this.temporada);
+  this.wadaPeticion=consulta.subscribe({
    next:r=>{this.requisitoWada=r;this.consultandoWada=false;this.vista.markForCheck();},
    error:()=>{this.errorWada='No se pudo consultar el requisito para esa temporada.';this.consultandoWada=false;this.vista.markForCheck();}
   });
@@ -79,7 +87,7 @@ export class SolicitudComponent implements OnInit,OnDestroy {
  get tituloEstado(){return this.u?.etapaSolicitud || this.estados[this.u?.estado] || 'Mi solicitud';}
  ngOnInit(){this.cargar();this.cargarClubes();}
  private enfocar(selector:string){this.vista.detectChanges();const el=this.host.nativeElement.querySelector(selector) as HTMLElement|null;el?.focus({preventScroll:true});el?.scrollIntoView({block:'start',behavior:'auto'});}
- set(data:any){this.u=data;this.form={};for(const c of this.campos)this.form[c.key]=data[c.key]??'';this.form.club=data.club??'';for(const k of Object.values(this.fechas))this.form[k]=data[k]??'';this.auth.setUsuario(data);}
+ set(data:any){this.u=data;this.form={};for(const c of this.campos)this.form[c.key]=data[c.key]??'';this.form.club=data.club??'';for(const k of Object.values(this.fechas))this.form[k]=data[k]??'';this.auth.setUsuario(data);this.programarWada();}
  cargar(){if(this.busy)return;this.cerrarArchivo();this.busy=true;this.error='';this.api.mia().pipe(finalize(()=>{this.busy=false;this.vista.markForCheck();})).subscribe({next:u=>{this.set(u);this.files={};},error:e=>{this.error=e.error?.error || 'No se pudo consultar la solicitud.';}});}
  cargarClubes(){if(this.cargandoClubes)return;this.cargandoClubes=true;this.errorClubes='';this.api.clubes().pipe(finalize(()=>{this.cargandoClubes=false;this.vista.markForCheck();})).subscribe({next:r=>{this.clubes=Array.isArray(r)?r:[];if(!this.clubes.length)this.errorClubes='No hay clubes disponibles. Consultá a la Federación antes de enviar.';},error:()=>this.errorClubes='No se pudo cargar el listado de clubes. Reintentá.'});}
  seleccionar(event:Event,key:string){const input=event.target as HTMLInputElement;const file=input.files?.[0];delete this.files[key];this.error='';if(!file)return;const pdf=['fichaMedica','certificadoAntecedentes','certificadoWada'].includes(key) && file.type==='application/pdf';if(!['image/jpeg','image/png','image/webp',...(['fichaMedica','certificadoAntecedentes','certificadoWada'].includes(key)?['application/pdf']:[])].includes(file.type)){this.error='Seleccioná JPG, PNG o WebP; la ficha médica y el certificado también admiten PDF.';input.value='';return;}if(file.size>(pdf?2:6)*1024*1024){this.error=pdf?'El PDF debe pesar hasta 2 MB.':'La imagen debe pesar hasta 6 MB.';input.value='';return;}this.files[key]=file;}
