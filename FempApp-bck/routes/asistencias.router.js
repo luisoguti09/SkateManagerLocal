@@ -38,7 +38,7 @@ router.post('/check-in', verifyToken, requireRole('juez', 'administrador'), asyn
 const consulta=require('../services/asistencias-consulta');
 const consultaSegura=fn=>async(req,res)=>{
   try{res.set('Cache-Control','private, no-store');res.json(await fn(req));}
-  catch(e){console.error('[ASISTENCIAS_CONSULTA]',e.name);res.status(e.status||500).json({error:e.status?e.message:'No se pudieron consultar las asistencias.'});}
+  catch(e){console.error("[FEMPA][asistencias.router.js] [ASISTENCIAS_CONSULTA]");res.status(e.status||500).json({error:e.status?e.message:'No se pudieron consultar las asistencias.'});}
 };
 router.get('/resumen',verifyToken,requireRole('administrador','juez','tecnico'),consultaSegura(req=>consulta.resumen(req.cuenta)));
 router.get('/eventos/:id',verifyToken,requireRole('administrador','juez','tecnico'),consultaSegura(req=>consulta.detalle(req.cuenta,req.params.id,req.query)));
@@ -68,7 +68,7 @@ router.get('/', verifyToken, requireRole('administrador', 'juez'), async (req, r
 
     res.json(asistencias);
   } catch (error) {
-    console.error('Error listando asistencias:', error);
+    console.error("[FEMPA][asistencias.router.js] Error listando asistencias:");
     res.status(500).json({ error: 'Error al listar asistencias' });
   }
 });

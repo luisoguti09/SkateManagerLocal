@@ -38,7 +38,7 @@ export class ScanEventComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.subscribe(params => {
       const raw = params.get('eventoId');
       this.eventoId = raw ? Number(raw) : 0;
-      console.log('eventoId recibido en scanner:', this.eventoId);
+      void 0;
     });
     this.start();
   }

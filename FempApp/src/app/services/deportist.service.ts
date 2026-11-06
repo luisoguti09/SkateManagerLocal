@@ -21,10 +21,10 @@ export class DeportistService {
     return this.http.get<Deportist[]>(`${this.apURL}/Padron`)
       .pipe(
         tap(data => {
-          console.log('Datos recibidos:', data);
+          void 0;
         }),
         catchError(error => {
-          console.error('Error al obtener deportistas:', error);
+          void 0;
           return of([]);
         })
       );
@@ -71,10 +71,10 @@ export class DeportistService {
   return this.http.post(`${this.apURL}/usuarios/${dni}/fotoPerfil`, formData)
     .pipe(
       tap(response => {
-        console.log('Foto de perfil cargada:', response);
+        void 0;
       }),
       catchError(error => {
-        console.error('Error al cargar la foto de perfil:', error);
+        void 0;
         return of(null);
       })
     );
@@ -88,10 +88,10 @@ eliminarFotoPerfil(dni: string): Observable<any> {
   return this.http.delete(`${this.apURL}/usuarios/${dni}/fotoPerfil`)
     .pipe(
       tap(response => {
-        console.log('Foto de perfil eliminada:', response);
+        void 0;
       }),
       catchError(error => {
-        console.error('Error al eliminar la foto de perfil:', error);
+        void 0;
         return of(null);
       })
     );
@@ -99,7 +99,7 @@ eliminarFotoPerfil(dni: string): Observable<any> {
   evaluarElemento(data: any): Observable<any> {
     return this.http.post(`${this.apURL}/evaluaciones`, data).pipe(
       catchError(err => {
-        console.error('Error al registrar evaluación', err);
+        void 0;
         return of(null);
       })
     );

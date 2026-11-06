@@ -13,7 +13,7 @@ export class ElementosService {
   getElementos(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/elementos`).pipe(
       catchError((err) => {
-        console.error('Error al obtener elementos técnicos', err);
+        void 0;
         return of([]);
       })
     );

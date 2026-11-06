@@ -100,7 +100,7 @@ router.post('/:id/fotoPerfil', upload.single('fotoPerfil'), async (req, res) => 
 
     res.json({ message: 'Foto de perfil actualizada', path: patinador.fotoPerfil });
   } catch (error) {
-    console.error('Error al subir la foto:', error);
+    console.error("[FEMPA][patinadores.router.js] Error al subir la foto:");
     res.status(500).json({ error: 'Error al subir la foto' });
   }
 });
@@ -144,7 +144,7 @@ router.delete('/:id/fotoPerfil', async (req, res) => {
 // Obtener eventos en los que está inscripto un patinador
 router.get('/:dni/eventos', async (req, res) => {
   try {
-    console.log('DNI del patinador:', req.params.dni);
+    void 0;
     const patinador = await Patinador.findAll({where:{dni:req.params.dni}}, {
       include: {
         model: Evento,
@@ -155,12 +155,12 @@ router.get('/:dni/eventos', async (req, res) => {
     if (!patinador) {
       return res.status(404).json({ error: 'Patinador no encontrado' });
     }
-    console.log(patinador,'patinador');
-    console.log(patinador.Eventos,'Eventos');
+    void 0;
+    void 0;
     res.json(patinador.Eventos);
     
   } catch (error) {
-    console.error('Error al obtener eventos del patinador:', error);
+    console.error("[FEMPA][patinadores.router.js] Error al obtener eventos del patinador:");
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

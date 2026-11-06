@@ -151,7 +151,7 @@ export class DashboardDeportComponent implements OnInit {
     const usuario = this.authService.getUsuario();
 
     if (!usuario || !usuario.dni) {
-      console.warn('No se encontraron datos válidos del usuario logueado.');
+      void 0;
       this.router.navigate(['/login']);
       return;
     }
@@ -183,14 +183,14 @@ export class DashboardDeportComponent implements OnInit {
           this.pers.padronReferencia = padron;
           this.club = padron.club || this.club;
           this.categoria = padron.categoria || this.categoria;
-          console.log('Encontrado en padrón:', padron);
+          void 0;
         } else {
-          console.warn('Este usuario no está empadronado');
+          void 0;
         }
 
         this.cdr.markForCheck();
       },
-      error: (err) => console.error('Error al consultar padrón:', err)
+      error: (err) => void 0
     });
   }
 
@@ -209,10 +209,10 @@ export class DashboardDeportComponent implements OnInit {
         this.eventosDisponibles = eventos ?? [];
         this.dataSource = new MatTableDataSource(this.eventosDisponibles);
         this.cdr.markForCheck();
-        console.log('Eventos disponibles:', this.eventosDisponibles);
+        void 0;
       },
       error: err => {
-        console.error('Error al obtener eventos:', err);
+        void 0;
         this.eventosDisponibles = [];
         this.cdr.markForCheck();
       }
@@ -244,10 +244,10 @@ export class DashboardDeportComponent implements OnInit {
     this.eventServ.getEventosDelUsuario(usuarioDni).subscribe({
       next: (eventos: Evento[]) => {
         this.eventosInscriptos = eventos;
-        console.log('Eventos inscriptos:', eventos);
+        void 0;
       },
       error: err => {
-        console.error('Error al obtener eventos inscriptos:', err);
+        void 0;
       }
     });
   }
@@ -264,7 +264,7 @@ export class DashboardDeportComponent implements OnInit {
         this.mostrarEventosInscriptos();
       },
       error: err => {
-        console.error('Error al inscribirse al evento:', err);
+        void 0;
         this.snackBar.open('Registro fallido', 'Cerrar', { duration: 3000 });
       }
     });
@@ -290,11 +290,11 @@ export class DashboardDeportComponent implements OnInit {
     this.depServ.subirFotoPerfil(this.authService.loggedUser.dni
       , formData).subscribe({
         next: (response: any) => {
-          console.log('Foto de perfil subida exitosamente', response);
+          void 0;
           this.pers.fotoPerfilUrl = response.url;
         },
         error: (e: any) => {
-          console.error('Error al subir la foto de perfil', e.error.error);
+          void 0;
         }
       });
   }
@@ -303,11 +303,11 @@ export class DashboardDeportComponent implements OnInit {
     this.depServ.obtenerFotoPerfil(this.authService.loggedUser.dni
     ).subscribe({
       next: (response: any) => {
-        console.log('Foto de perfil obtenida exitosamente', response);
+        void 0;
 
       },
       error: (e: any) => {
-        console.error('Error al obtener la foto de perfil', e.error.error);
+        void 0;
       }
     });
   }
@@ -319,7 +319,7 @@ export class DashboardDeportComponent implements OnInit {
 
       },
       error: (e: any) => {
-        console.error('Error al mostrar la foto de perfil', e.error.error);
+        void 0;
       }
     });
   }
@@ -328,11 +328,11 @@ export class DashboardDeportComponent implements OnInit {
     this.depServ.eliminarFotoPerfil(this.authService.loggedUser.dni
     ).subscribe({
       next: (response: any) => {
-        console.log('Foto de perfil eliminada exitosamente', response);
+        void 0;
 
       },
       error: (e: any) => {
-        console.error('Error al eliminar la foto de perfil', e.error.error);
+        void 0;
       }
     });
   }
@@ -361,7 +361,7 @@ export class DashboardDeportComponent implements OnInit {
 
   descargarCert(e: Evento) {
     // luego lo conectamos al certService
-    console.log('Descargar certificado para', e);
+    void 0;
   }
 
 

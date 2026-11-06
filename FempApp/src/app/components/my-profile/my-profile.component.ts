@@ -147,7 +147,7 @@ export class MyProfileComponent implements OnInit {
     if (this.usuario?.dni) {
       this.buscarEnPadron(this.usuario.dni);
     }
-    console.log('✅ MyProfileComponent inicializado');
+    void 0;
 
   }
 
@@ -312,7 +312,7 @@ export class MyProfileComponent implements OnInit {
       },
       error: (err) => {
         this.guardandoPerfil = false;
-        console.error('Error creando perfil deportivo:', err);
+        void 0;
 
         this.snackBar.open(
           err?.error?.error || 'No se pudo crear el perfil deportivo',
@@ -357,7 +357,7 @@ export class MyProfileComponent implements OnInit {
       error: (err) => {
         this.cargandoClubes = false;
         this.errorClubes = 'No se pudo cargar el listado de clubes. Reintentá la carga.';
-        console.error('Error cargando clubes:', err);
+        void 0;
       }
     });
   }
@@ -425,7 +425,7 @@ export class MyProfileComponent implements OnInit {
       },
       error: (err) => {
         this.guardandoOrigen = false;
-        console.error('Error actualizando origen:', err);
+        void 0;
         this.snackBar.open('No se pudo actualizar el origen. Podés reintentar.', 'Cerrar', {
           duration: 3000
         });
@@ -534,7 +534,7 @@ export class MyProfileComponent implements OnInit {
         this.form.updateValueAndValidity({ emitEvent: false });
       },
       error: (e) => {
-        console.error('Error al consultar padrón:', e);
+        void 0;
         // fallback mínimo para no dejar el form “sucio”
         this.form.patchValue({
           email: this.usuario?.email ?? '',
@@ -657,6 +657,7 @@ export class MyProfileComponent implements OnInit {
 
     const destino =
       rol === 'administrador' ? '/admin/usuarios/pendientes' :
+        rol === 'delegado' ? '/dashboard-prof' :
         rol === 'tecnico' ? '/dashboard-prof' :
         rol === 'juez' ? '/dashboard-juez' :
           '/dashboard-deport';         // default deportista

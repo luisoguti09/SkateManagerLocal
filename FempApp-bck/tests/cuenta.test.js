@@ -47,7 +47,7 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
  const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));const base='http://127.0.0.1:'+server.address().port;
  const password=await bcrypt.hash('Mi contraseña de prueba',10);
  const admin=await U.create({nombre:'Admin',email:'admin@example.org',dni:'10000001',rol:'administrador',rolId:2,estado:'aprobado',aprobado:true,password});
- const user=await U.create({club:'Giol',nombre:'Atleta',edad:20,email:'atleta@example.org',dni:'10000002',rol:'deportista',rolId:1,estado:'pendiente',aprobado:false,password});
+ const user=await U.create({club:'Giol',nombre:'Atleta',cuil:'20100000025',edad:20,email:'atleta@example.org',dni:'10000002',rol:'deportista',rolId:1,estado:'pendiente',aprobado:false,password});
  const other=await U.create({nombre:'Otro',dni:'10000003',email:'otro@example.org',estado:'pendiente',rol:'deportista',rolId:1,password});
  await Club.create({nombre:'Giol',activo:true});
  await Rol.create({id:1,nombre:'deportista'});await Rol.create({id:2,nombre:'administrador'});
@@ -57,6 +57,22 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
    const text=await response.text();let data;try{data=JSON.parse(text);}catch{data=text;}return{status:response.status,data};
  };
  try{
+ await t.test('CUIL: registro obligatorio solo para deportista y validado en servidor',async()=>{
+  const datos={nombre:'CUIL demo',edad:20,email:'cuil@example.org',dni:'10000004',password:'UnaClave1234',rolId:1};
+  assert.equal((await call('POST','/auth/register',null,datos)).status,400);
+  assert.equal((await call('POST','/auth/register',null,{...datos,cuil:'20100000024'})).status,400);
+  const r=await call('POST','/auth/register',null,{...datos,cuil:'20-10000002-5'});
+  assert.equal(r.status,201);const u=await U.findByPk(r.data.usuario.id);assert.equal(u.cuil,'20100000025');
+ });
+ await t.test('CUIL existente: completar solo propio, con revisión y sin reemplazo silencioso',async()=>{
+  assert.equal((await call('PATCH','/cuenta/mia/cuil',null,{cuil:'20100000025',revision:0})).status,401);
+  assert.equal((await call('PATCH','/cuenta/mia/cuil',admin,{cuil:'20100000025',revision:admin.revision})).status,403);
+  const anterior=other.revision;
+  assert.equal((await call('PATCH','/cuenta/mia/cuil',other,{cuil:'20100000025',revision:anterior+1})).status,409);
+  const r=await call('PATCH','/cuenta/mia/cuil',other,{usuarioId:user.id,cuil:'20-10000002-5',revision:anterior});
+  assert.equal(r.status,200);assert.equal(other.cuil,'20100000025');assert.equal(other.revision,anterior+1);
+  assert.equal((await call('PATCH','/cuenta/mia/cuil',other,{cuil:'20100000017',revision:other.revision})).status,409);
+ });
  await t.test('WADA se consulta con fecha sin guardar antes de enviar y conserva WS',async()=>{
   const url='/cuenta/mia/requisito-wada/preview';
   const consultar=fecha=>call('POST',url,user,{temporada:2026,fechaNacimiento:fecha,usuarioId:other.id});
@@ -140,7 +156,7 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
   process.env.REQUIRE_DNI_DOCUMENTS='true';user.solicitaLicenciaProvincial=false;user.dniDorso=user.dniFrente;
  });
  await t.test('aprobar genera historial y aviso; habilita negocio',async()=>{
-  const r=await call('PATCH',`/cuenta/admin/usuarios/${user.id}/estado`,admin,{estado:'aprobado',revision:user.revision,motivo:''});assert.equal(r.status,200);assert.equal(user.aprobado,true);assert.equal(Q.rows.at(-1).tipo,'aprobado');assert.ok(H.rows.some(h=>h.usuarioId===user.id && h.estado==='aprobado'));
+  const r=await call('PATCH',`/cuenta/admin/usuarios/${user.id}/estado`,admin,{estado:'aprobado',revision:user.revision,motivo:''});assert.equal(r.status,200);assert.equal(user.aprobado,true);assert.equal(user.documentacionAprobada,true);assert.equal(Q.rows.at(-1).tipo,'aprobado');assert.ok(H.rows.some(h=>h.usuarioId===user.id && h.estado==='aprobado'));
   assert.equal((await call('POST','/negocio',user)).status,200);
  });
  await t.test('bloquear corta una sesión ya emitida',async()=>{
@@ -179,7 +195,7 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
   assert.equal((await call('GET','/cuenta/clubes',nuevo)).data[0].nombre,'Giol');
   assert.equal((await call('GET','/cuenta/mia',nuevo)).data.etapaSolicitud,'Por completar');
   assert.equal((await call('PATCH',`/cuenta/admin/usuarios/${nuevo.id}/estado`,admin,{estado:'aprobado',revision:nuevo.revision})).status,409);
-  const datos={nombre:'Nueva',edad:21,club:'Giol',revision:0,solicitaLicenciaProvincial:false,categoria:'IGNORAR'};
+  const datos={cuil:'20100000025',nombre:'Nueva',edad:21,club:'Giol',revision:0,solicitaLicenciaProvincial:false,categoria:'IGNORAR'};
   const before=await fs.readdir(path.join(temp,'privado'));
   assert.equal((await enviar(datos,['fotoPerfil','dniFrente'])).status,400);
   assert.deepEqual(await fs.readdir(path.join(temp,'privado')),before);

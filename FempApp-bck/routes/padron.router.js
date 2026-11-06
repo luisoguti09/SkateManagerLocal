@@ -47,7 +47,7 @@ router.get('/:dni', limite('padron',30), async (req, res) => {
 
     res.json(padron ? { apellidoYNombre:padron.apellidoYNombre, club:padron.club, categoria:padron.categoria } : null);
   } catch (error) {
-    console.error('Error buscando DNI en padrón:', error);
+    console.error("[FEMPA][padron.router.js] Error buscando DNI en padrón:");
     res.status(500).json({ error: 'No se encuentra el DNI en la base de datos!' });
   }
 });

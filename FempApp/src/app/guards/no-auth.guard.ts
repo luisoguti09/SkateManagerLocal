@@ -3,7 +3,7 @@ import { inject } from '@angular/core';
 import { AuthService } from '../services/auth.service';
 
 function destinoPorRol(rol: string | null, rolId: number | null): string {
-  const destinos: Record<string,string>={administrador:'/admin',tecnico:'/dashboard-prof',juez:'/dashboard-juez',deportista:'/dashboard-deport',tesoreria:'/dashboard-tesoreria'};
+  const destinos: Record<string,string>={administrador:'/admin',delegado:'/dashboard-prof',tecnico:'/dashboard-prof',juez:'/dashboard-juez',deportista:'/dashboard-deport',tesoreria:'/dashboard-tesoreria'};
   return destinos[String(rol || '').toLowerCase()] || '/login';
 }
 

@@ -65,7 +65,7 @@ router.get('/', async (req, res) => {
 
     res.json(eventos.map(mapEventoResponse));
   } catch (error) {
-    console.error('Error al obtener los eventos:', error);
+    console.error("[FEMPA][eventos.router.js] Error al obtener los eventos:");
     res.status(500).json({ error: 'Error al obtener los eventos' });
   }
 });
@@ -107,7 +107,7 @@ router.post(
 
       res.status(201).json(mapEventoResponse(nuevoEvento));
     } catch (error) {
-      console.error('Error al crear el evento:', error);
+      console.error("[FEMPA][eventos.router.js] Error al crear el evento:");
       res
         .status(error.status || 500)
         .json({
@@ -129,7 +129,7 @@ router.get('/:id', async (req, res) => {
 
     res.json(mapEventoResponse(evento));
   } catch (error) {
-    console.error('Error al obtener el evento:', error);
+    console.error("[FEMPA][eventos.router.js] Error al obtener el evento:");
     res.status(500).json({ error: 'Error al obtener el evento' });
   }
 });
@@ -193,7 +193,7 @@ router.put(
 
       res.json(mapEventoResponse(actualizado));
     } catch (error) {
-      console.error('Error al actualizar el evento:', error);
+      console.error("[FEMPA][eventos.router.js] Error al actualizar el evento:");
       res
         .status(error.status || 500)
         .json({
@@ -224,7 +224,7 @@ router.get('/usuarios/:usuarioId/eventos', verifyToken, (req,res,next)=>Number(r
 
     res.json(usuario.Eventos);
   } catch (error) {
-    console.error('Error al obtener eventos del usuario:', error);
+    console.error("[FEMPA][eventos.router.js] Error al obtener eventos del usuario:");
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
@@ -359,7 +359,7 @@ router.post('/:eventId/checkin', verifyToken, requireRole('deportista'), async (
   const created=await require('../services/asistencia-registro').registrar(Asistencia,id,userId);
   res.json({created});
  }catch(e){
-  console.error('[ASISTENCIA_GUARDADO]',e.name);
+  console.error("[FEMPA][eventos.router.js] [ASISTENCIA_GUARDADO]");
   res.status(503).json({error:'No se pudo guardar la asistencia. Volvé a intentar o acercate a mesa de control.'});
  }
 });

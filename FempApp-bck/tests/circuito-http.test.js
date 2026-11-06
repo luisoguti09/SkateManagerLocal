@@ -627,3 +627,133 @@ test('circuito informa habilitación de asistencia solo con inscripción propia 
   await ev.update({inscripcionesConfirmadasAt:null,inscripcionRequierePago:false});assert.equal(await consultar(),false);
   await ev.update({inscripcionesConfirmadasAt:'2026-10-29'});assert.equal(await consultar(),true);
 });
+
+test('técnica: solo club actual, ABM y auditoría; delegada sin escritura', async () => {
+  await db.Club.create({id:810,nombre:'Club gestión',activo:true});
+  const tecnico=await db.Usuario.create({id:810,rol:'tecnico',estado:'aprobado',aprobado:true,club:'Club gestión'});
+  await db.Usuario.create({id:811,rol:'deportista',estado:'aprobado',aprobado:true,club:'Club gestión'});
+  await db.Usuario.create({id:812,rol:'deportista',estado:'aprobado',aprobado:true,club:'Otro'});
+  await db.Usuario.create({id:813,rol:'delegado',estado:'aprobado',aprobado:true,club:'Club gestión'});
+  const evento=await db.Evento.create({id:810,nombre:'ABM club',inscripcionRequierePago:false,inscripcionDesde:at(-90000),inscripcionHasta:at(-60000),abmDesde:at(-50000),abmHasta:at(90000),pagoDesde:at(100000),pagoHasta:at(200000)});
+  await db.PerfilDeportivo.create({id:810,usuarioId:811,activa:true,disciplina:'Libre'});
+  await db.PerfilDeportivo.create({id:811,usuarioId:812,activa:true,disciplina:'Libre'});
+  const url='/eventos/810/deportistas/811/inscripcion';
+  assert.equal((await request(url,'tecnico',{perfilDeportivoIds:[810],seleccionAnterior:[]},'PUT',810)).status,200);
+  const log=tables.CambioInscripcion.at(-1);assert.equal(log.actorId,810);assert.equal(log.usuarioId,811);assert.equal(log.accion,'seleccion_tecnica');
+  assert.equal((await request(url,'delegado',{perfilDeportivoIds:[810],seleccionAnterior:[]},'PUT',813)).status,403);
+  assert.equal((await request('/eventos/810/deportistas/812/inscripcion','tecnico',{perfilDeportivoIds:[811],seleccionAnterior:[810]},'PUT',810)).status,403);
+  assert.equal((await request(url,'tecnico',{perfilDeportivoIds:[811],seleccionAnterior:[810]},'PUT',810)).status,403);
+  tecnico.club='Otro';assert.equal((await request(url,'tecnico',{perfilDeportivoIds:[810],seleccionAnterior:[]},'PUT',810)).status,403);tecnico.club='Club gestión';
+  evento.abmHasta=at(-1);assert.equal((await request(url,'tecnico',{perfilDeportivoIds:[810],seleccionAnterior:[]},'PUT',810)).status,409);
+  evento.abmHasta=at(90000);evento.inscripcionesConfirmadasAt=new Date();assert.equal((await request(url,'tecnico',{perfilDeportivoIds:[810],seleccionAnterior:[]},'PUT',810)).status,409);
+});
+
+test('panel club: delegada consulta documentos propios; perfil fuera de ABM con catálogo, versión e historial',async()=>{
+  const C=require('../services/circuito');
+  require.cache[require.resolve('../services/cuenta')]={exports:{Usuario:db.Usuario,R:C.R,wrap:C.wrap,historial:async(u,actorId,accion,motivo)=>{tables.historialClub ||= [];tables.historialClub.push({usuarioId:u.id,actorId,accion,detalle:motivo.startsWith('{')?JSON.parse(motivo):motivo});}}};
+  require.cache[require.resolve('../services/cuenta-archivos')]={exports:{existe:async()=>false}};
+  require.cache[require.resolve('../services/alcance-evaluaciones')]={exports:{deportistas:async()=>[]}};
+  for(const [file,key] of [['club','Club'],['usuarioevento','UsuarioEventos'],['evento','Evento']])require.cache[require.resolve('../models/'+file+'.model')]={exports:db[key]};
+  app.use('/tecnica',require('../routes/tecnica.router'));
+  const evento=await db.Evento.findByPk(810);evento.inscripcionesConfirmadasAt=null;evento.abmHasta=at(90000);
+  const panel=await request('/tecnica/panel','delegado',undefined,'GET',813);
+  assert.equal(panel.status,200);assert.deepEqual(panel.data.deportistas.map(x=>x.usuarioId),[811]);
+  assert.equal((await request('/tecnica/deportistas/811/documentos','delegado',undefined,'GET',813)).status,200);
+  assert.equal((await request('/tecnica/deportistas/811/archivo/dniFrente','delegado',undefined,'GET',813)).status,404);
+  assert.equal((await request('/tecnica/deportistas/812/perfiles','delegado',undefined,'GET',813)).status,403);
+  assert.equal((await request('/tecnica/deportistas/812/documentos','delegado',undefined,'GET',813)).status,403);
+  assert.equal((await request('/tecnica/deportistas/812/archivo/dniFrente','delegado',undefined,'GET',813)).status,403);
+  const listado=await request('/tecnica/deportistas/811/perfiles','tecnico',undefined,'GET',810);
+  assert.equal(listado.status,200);const version=listado.data[0].versionToken;
+  const url='/tecnica/deportistas/811/perfiles/810';const body={version,cambios:{disciplina:'Libre',origenCategoria:'CAP',licencia:'Nacional',modalidad:'Individual',divisional:'Sub Divisional B',categoria:'Tercera',temporada:'2027'}};
+  evento.abmHasta=at(-1); // Editar el perfil no requiere ningún evento abierto.
+  const snapshot=JSON.stringify(tables.UsuarioEventos);
+  assert.equal((await request(url,'delegado',body,'PATCH',813)).status,403);
+  assert.equal((await request(url,'tecnico',{...body,cambios:{usuarioId:'812'}},'PATCH',810)).status,400);
+  assert.equal((await request(url,'tecnico',body,'PATCH',810)).status,200);
+  assert.equal((await db.PerfilDeportivo.findByPk(810)).categoria,'Tercera');
+  assert.equal(JSON.stringify(tables.UsuarioEventos),snapshot);
+  const log=tables.historialClub.at(-1);assert.equal(log.accion,'perfil_tecnica');assert.equal(log.actorId,810);assert.equal(log.usuarioId,811);assert.equal(log.detalle.despues.categoria,'Tercera');
+  assert.equal((await request(url,'tecnico',body,'PATCH',810)).status,409);
+  assert.equal((await request('/tecnica/deportistas/811/perfiles/811','tecnico',body,'PATCH',810)).status,403);
+  const fresh=await request('/tecnica/deportistas/811/perfiles','tecnico',undefined,'GET',810);
+  assert.equal((await request(url,'tecnico',{...body,version:fresh.data[0].versionToken,cambios:{categoria:'C3era'}},'PATCH',810)).status,400);
+  assert.equal((await db.PerfilDeportivo.findByPk(810)).categoria,'Tercera');
+  const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'club-doc-'));
+  const file=path.join(dir,'ficticio.pdf');fs.writeFileSync(file,'%PDF-1.4 Documento ficticio de prueba');
+  const F=require('../services/cuenta-archivos');F.existe=async()=>true;F.fullpath=()=>file;
+  try {
+   assert.equal((await request('/tecnica/deportistas/811/archivo/dniFrente','delegado',undefined,'GET',813)).status,200);
+   const logDoc=tables.historialClub.at(-1);assert.equal(logDoc.actorId,813);assert.equal(logDoc.accion,'documento_consultado_por_delegada');
+   assert.equal((await request('/tecnica/deportistas/812/archivo/dniFrente','delegado',undefined,'GET',813)).status,403);
+  } finally {F.existe=async()=>false;fs.rmSync(dir,{recursive:true,force:true});}
+});
+
+test('configuración de licencias: solo tesorería escribe, revisión y auditoría',async()=>{
+ const Config=model('LicenciaConfiguracion'),Audit=model('LicenciaConfiguracionHistorial');Config.sequelize=db.sequelize;
+ require.cache[require.resolve('../models/licenciaconfiguracion.model')]={exports:{Config,Audit}};
+ const datos=structuredClone(require('../services/licencias/propuesta').inicial);
+ await Config.create({id:2027,revision:0,datos});
+ app.use('/licencias-config',require('../routes/licencias-config.router'));
+ const body={revision:0,datos,motivo:'Propuesta revisada por Tesorería'};
+ assert.equal((await request('/licencias-config','deportista')).status,403);
+ assert.equal((await request('/licencias-config','delegado',undefined,'GET',813)).status,403);
+ assert.equal((await request('/licencias-config','administrador')).status,200);
+ assert.equal((await request('/licencias-config','administrador',body,'PUT')).status,403);
+ assert.equal((await request('/licencias-config','tesoreria',{...body,revision:99},'PUT')).status,409);
+ assert.equal((await request('/licencias-config','tesoreria',body,'PUT')).status,200);
+ assert.equal((await Config.findByPk(2027)).revision,1);assert.equal(tables.LicenciaConfiguracionHistorial.length,1);assert.equal(tables.LicenciaConfiguracionHistorial[0].actorId,3);
+ assert.equal((await request('/licencias-config','tesoreria',body,'PUT')).status,409);
+ assert.equal((await request('/licencias-config','tesoreria')).data.cobrosHabilitados,false);
+});
+
+test('cotejo CSV exclusivo de tesorería; neutraliza fórmulas y no acredita pagos',async()=>{
+ await db.Usuario.create({id:820,rol:'deportista',nombre:'=SUM(1;2)',dni:'12345678',club:'Club CSV',estado:'pendiente'});
+ assert.equal((await request('/licencias-config/cotejo.csv','administrador')).status,403);
+ assert.equal((await request('/licencias-config/cotejo.csv','delegado',undefined,'GET',813)).status,403);
+ const csv=await request('/licencias-config/cotejo.csv','tesoreria');assert.equal(csv.status,200);
+ assert.ok(csv.data.includes("'=SUM(1;2)"));assert.ok(csv.data.includes('no acredita pago'));assert.ok(!csv.data.includes('password'));
+});
+
+
+test('credencial: técnica y delegada acceden solo a su QR; crear es idempotente',async()=>{
+ process.env.QR_SECRET='secreto-local-exclusivo-tests';
+ require.cache[require.resolve('../services/cuenta-archivos')].exports.recibir=(_q,_s,next)=>next();
+ require.cache[require.resolve('../models/rol.model')]={exports:{}};
+ app.use('/usuarios',require('../routes/usuarios.router'));
+ const u=await db.Usuario.findByPk(810);u.qrJti=null;
+ assert.equal((await request('/usuarios/810/qr.png','tecnico',undefined,'GET',810)).status,404);
+ const first=await request('/usuarios/810/qr','tecnico',{},'POST',810);assert.equal(first.status,200);
+ const jti=u.qrJti;assert.ok(jti);
+ assert.equal((await request('/usuarios/810/qr','tecnico',{},'POST',810)).status,200);assert.equal(u.qrJti,jti);
+ assert.equal((await request('/usuarios/810/qr.png','tecnico',undefined,'GET',810)).status,200);
+ assert.equal((await request('/usuarios/811/qr','tecnico',{},'POST',810)).status,403);
+ assert.equal((await request('/usuarios/810/qr.png','delegado',undefined,'GET',813)).status,403);
+ const d=await db.Usuario.findByPk(813);d.qrJti=null;
+ assert.equal((await request('/usuarios/813/qr','delegado',{},'POST',813)).status,200);
+ delete process.env.QR_SECRET;
+ assert.equal((await request('/usuarios/810/qr.png','tecnico',undefined,'GET',810)).status,503);
+});
+
+test('tesorería: búsqueda y CSV de cotejo comparten filtros; aranceles no acreditan pagos',async()=>{
+ const url='/licencias-config/cotejo?club=Club%20CSV&buscar=SUM';
+ const r=await request(url,'tesoreria');assert.equal(r.status,200);assert.equal(r.data.registros.length,1);assert.equal(r.data.registros[0].id,820);assert.equal(r.data.registros[0].estadoPago,null);
+ const csv=await request('/licencias-config/cotejo.csv?club=Club%20CSV&buscar=SUM','tesoreria');assert.equal(csv.status,200);assert.ok(csv.data.includes("'=SUM"));assert.ok(!csv.data.includes('Club gestión'));
+ assert.equal((await request(url,'delegado',undefined,'GET',813)).status,403);
+ assert.equal((await request('/licencias-config/cotejo?estado=inexistente','tesoreria')).status,400);
+ const tarifas=await request('/licencias-config/aranceles.csv','tesoreria');assert.equal(tarifas.status,200);assert.ok(tarifas.data.includes('no acredita pagos'));assert.ok(tarifas.data.includes('115000'));
+});
+test('tesorería: temporadas independientes con revisión, nombres e historial separado',async()=>{
+ const before=(await request('/licencias-config?temporada=2027','tesoreria')).data;
+ const datos={...before.datos,temporada:2028,tramos:[{nombre:'Promocional',desde:'2027-11-01',hasta:'2027-12-01',vencimiento:'2028-01-01',importe:150000}]};
+ assert.equal((await request('/licencias-config?temporada=2028','tesoreria')).data.datos.tramos.length,0);
+ assert.equal((await request('/licencias-config?temporada=2028','administrador',{datos,revision:0,motivo:'Nueva temporada'},'PUT')).status,403);
+ assert.equal((await request('/licencias-config?temporada=2028','tesoreria',{datos,revision:0,motivo:'Nueva temporada'},'PUT')).status,200);
+ const after=(await request('/licencias-config?temporada=2027','tesoreria')).data;assert.deepEqual(after.datos,before.datos);assert.equal(after.revision,before.revision);
+ const historial=await request('/licencias-config/historial?temporada=2028','tesoreria');assert.equal(historial.data.length,1);assert.equal(historial.data[0].despues.temporada,2028);
+ assert.equal((await request('/licencias-config?temporada=2028','tesoreria',{datos,revision:0,motivo:'Cambiar otra vez'},'PUT')).status,409);
+ assert.equal((await request('/licencias-config?temporada=2027','tesoreria',{datos,revision:after.revision,motivo:'Temporada distinta'},'PUT')).status,400);
+ assert.equal((await request('/licencias-config?temporada=xyz','tesoreria')).status,400);
+ const csv=await request('/licencias-config/aranceles.csv?temporada=2028','tesoreria');assert.ok(csv.data.includes('Promocional'));assert.ok(csv.data.includes('150000'));
+});

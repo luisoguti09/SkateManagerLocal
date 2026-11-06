@@ -11,6 +11,8 @@ const { Op } = require('sequelize');
 const ROL_CANON = {
   admin: 'administrador',
   administrador: 'administrador',
+  delegado: 'delegado',
+  delegada: 'delegado',
   auditor: 'tecnico',
   tecnico: 'tecnico',
   juez: 'juez',
@@ -83,6 +85,7 @@ router.post('/register', async (req, res) => {
     }
     const isTec = rolCanon === 'tecnico';
     const isDep = rolCanon === 'deportista';
+    const cuil = isDep ? require('../services/cuil').exigirCuil(req.body.cuil) : null;
     // Toda alta pública requiere aprobación, incluso administradores.
 
     const nuevo = await Usuario.sequelize.transaction(async t => {
@@ -92,6 +95,7 @@ router.post('/register', async (req, res) => {
       email,
       password,
       dni: dniNormalizado,
+      cuil,
       rol: rolCanon,
       rolId: rol.id,
       categoria: isDep ? (categoria ?? '') : '',
@@ -127,10 +131,11 @@ router.post('/register', async (req, res) => {
       }
     });
   } catch (error) {
+    if (error?.status === 400) return res.status(400).json({error:error.message});
     if (error?.name === 'SequelizeUniqueConstraintError') {
       return res.status(409).json({ error: 'Ya existe una cuenta con ese DNI o email.' });
     }
-    console.error('[REGISTER]', error?.name);
+    console.error("[FEMPA][auth.router.js] [REGISTER]");
     return res.status(500).json({ error: 'Error al registrar el usuario' });
   }
 });
@@ -182,7 +187,7 @@ router.post('/login', async (req, res) => {
       usuario: C.R.safe(usuario)
     });
   } catch (error) {
-    console.error('[LOGIN]', error?.name);
+    console.error("[FEMPA][auth.router.js] [LOGIN]");
     return res.status(500).json({ error: 'Error al autenticar el usuario' });
   }
 });

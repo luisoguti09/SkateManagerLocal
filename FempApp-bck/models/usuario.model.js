@@ -7,6 +7,7 @@ const Role = require('./rol.model');
 const { v4: uuidv4 } = require('uuid');
 const Usuario = sequelize.define('Usuario', {
 
+  cuil: { type: DataTypes.STRING(11), allowNull: true },
   sessionVersion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   revision: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   correcciones: { type: DataTypes.TEXT, allowNull: true },
@@ -37,7 +38,7 @@ const Usuario = sequelize.define('Usuario', {
   },
   rol: {
     type: DataTypes.ENUM,
-    values: ['administrador', 'tecnico', 'juez', 'deportista', 'tesoreria'],
+    values: ['administrador', 'tecnico', 'juez', 'deportista', 'tesoreria', 'delegado'],
     allowNull: false
   },
   rolId: {
@@ -123,7 +124,7 @@ certificadoWada: {type: DataTypes.STRING, allowNull: true},
 fichaMedicaFecha: {type: DataTypes.DATEONLY, allowNull: true},
 wadaFecha: {type: DataTypes.DATEONLY, allowNull: true},
 rolSolicitado: {
-  type: DataTypes.ENUM('administrador','tecnico','juez','deportista','tesoreria'),
+  type: DataTypes.ENUM('administrador','tecnico','juez','deportista','tesoreria','delegado'),
   allowNull: true
 },
 

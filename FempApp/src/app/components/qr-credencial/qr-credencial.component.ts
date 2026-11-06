@@ -1,4 +1,4 @@
-import { Subscription } from 'rxjs';
+import { Subscription, catchError, switchMap, throwError } from 'rxjs';
 import { Component, Input, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { UsuariosService } from '../../services/usuarios.service';
 import { AuthService } from '../../services/auth.service';
@@ -69,16 +69,19 @@ export class QrCredencialComponent implements OnDestroy {
       return;
     }
     this.loading = true;
-    this.peticion = this.qr.getPng(id, true).subscribe({
+    this.peticion = this.qr.getPng(id, true).pipe(catchError(e => {
+      if(e.status!==404)return throwError(()=>e);
+      return this.qr.generar(id).pipe(switchMap(()=>this.qr.getPng(id,true)));
+    })).subscribe({
       next: blob => {
         this.objectUrl = URL.createObjectURL(blob);
         this.qrUrl = this.sanitizer.bypassSecurityTrustUrl(this.objectUrl);
         this.loading = false;
         this.cd.markForCheck();
       },
-      error: () => {
+      error: (e) => {
         this.loading = false;
-        this.error = 'No pudimos cargar tu QR. Probá nuevamente.';
+        this.error = e.status===503 ? 'La credencial QR todavía no está configurada. Contactá a Administración.' : e.status===403 ? 'Tu cuenta no tiene permiso para consultar esta credencial.' : 'No pudimos cargar tu QR. Probá nuevamente.';
         this.cd.markForCheck();
       }
     });

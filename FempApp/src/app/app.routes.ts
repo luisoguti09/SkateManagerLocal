@@ -76,13 +76,15 @@ export const routes: Routes = [
       ),
   },
   { path: 'dashboard-admin', redirectTo: 'admin', pathMatch: 'full' }, // canActivate: [authGuard] },
+  {path:'licencias/configuracion',canActivate:[authGuard],data:{roles:['tesoreria','administrador']},loadComponent:()=>import('./components/licencias-config/licencias-config.component').then(m=>m.LicenciasConfigComponent)},
+  {path:'gestion-club',canActivate:[authGuard],data:{roles:['tecnico','delegado']},loadComponent:()=>import('./components/gestion-club/gestion-club.component').then(m=>m.GestionClubComponent)},
   { path: 'dashboard-tecnico', redirectTo: 'dashboard-juez', pathMatch: 'full' },
   { path: 'dashboard-juez', component: DashboardTecnicoComponent, canActivate: [authGuard], data: { roles: ['juez', 'administrador'] } }, // canActivate: [authGuard] },
   {
     path: 'dashboard-prof',
     loadComponent: () => import('./components/panel-tecnica/panel-tecnica.component').then(m => m.PanelTecnicaComponent),
     canActivate: [authGuard],
-    data: { roles: ['tecnico'] },
+    data: { roles: ['tecnico','delegado'] },
   }, // canActivate: [authGuard] },
   // Ruta por defecto redirige a login
   { path: '', redirectTo: 'login', pathMatch: 'full' },

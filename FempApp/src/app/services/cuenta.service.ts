@@ -4,7 +4,7 @@ import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 export const estados: Record<string,string> = {pendiente:'Pendiente de revisión',requiere_correcciones:'Requiere correcciones',aprobado:'Aprobada',bloqueado:'Bloqueada'};
 export const camposCuenta = [
- {key:'nombre',label:'Nombre completo'}, {key:'edad',label:'Edad'}, {key:'club',label:'Club'},
+ {key:'cuil',label:'CUIL de la deportista'}, {key:'nombre',label:'Nombre completo'}, {key:'edad',label:'Edad'}, {key:'club',label:'Club'},
  {key:'categoria',label:'Categoría'}, {key:'nivel',label:'Nivel'}, {key:'domicilio',label:'Domicilio'},
  {key:'telefono',label:'Teléfono'}, {key:'fechaNacimiento',label:'Fecha de nacimiento'},
  {key:'fotoPerfil',label:'Foto de perfil'}, {key:'dniFrente',label:'DNI · frente'}, {key:'dniDorso',label:'DNI · dorso'}, {key:'fichaMedica',label:'Ficha médica'}, {key:'certificadoWada',label:'Certificado WADA'}, {key:'certificadoAntecedentes',label:'Certificado de antecedentes penales'}
@@ -19,6 +19,7 @@ export class CuentaService {
  renovarDocumentos(files:FormData){return this.http.post<any>(this.base+'/mia/documentos-vigencia',files,this.opts);}
  previsualizarWada(temporada:number,fechaNacimiento:string){return this.http.post<any>(this.base+'/mia/requisito-wada/preview',{temporada,fechaNacimiento},this.opts);}
  requisitoWada(temporada:number){return this.http.get<any>(this.base+'/mia/requisito-wada',{...this.opts,params:{temporada}});}
+ completarCuil(cuil:string,revision:number){return this.http.patch<any>(this.base+'/mia/cuil',{cuil,revision},this.opts);}
  mia(){return this.http.get<any>(this.base+'/mia',this.opts);}
  guardar(data:any){return this.http.patch<any>(this.base+'/mia',data,this.opts);}
  subir(files:FormData){return this.http.post<any>(this.base+'/mia/archivos',files,this.opts);}

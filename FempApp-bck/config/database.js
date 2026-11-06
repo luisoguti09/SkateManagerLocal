@@ -10,13 +10,7 @@ requiredEnv.forEach((key) => {
 
 const isLocal = process.env.NODE_ENV === 'local';
 
-console.log('DB CONFIG:', {
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT || 3306,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  environment: process.env.NODE_ENV || 'sin NODE_ENV'
-});
+void 0;
 
 const sequelize = new Sequelize(
   process.env.DB_NAME,
@@ -38,19 +32,3 @@ const sequelize = new Sequelize(
 );
 
 module.exports = sequelize;
-
-
-
-/*const conectionString = "mysql://root:CAtFaezrXbDgIiaknlKQZhCYaoMhKHjK@tramway.proxy.rlwy.net:16455/railway";
-const sequelize = new Sequelize(conectionString, {
-  dialect: 'mysql',
-  logging: false, // Desactiva los logs de Sequelize
-  dialectOptions: process.env.DATABASE_URL || {
-    ssl: {
-      rejectUnauthorized: false // Permite conexiones SSL sin verificar el certificado
-    }
-  }
-});
- 
-module.exports = sequelize;
-//mysql://root:CAtFaezrXbDgIiaknlKQZhCYaoMhKHjK@tramway.proxy.rlwy.net:16455/railway*/

@@ -39,6 +39,17 @@ router.post('/mia/requisito-wada/preview',C.wrap(async(req,res)=>{
  const usuario={id:req.auth.id,rol:req.cuenta.rol,fechaNacimiento:fecha};
  res.json({...V.requisitoWada(usuario,perfiles,temporada),fechaConsultada:fecha,preliminar:true});
 }));
+router.patch('/mia/cuil',C.wrap(async(req,res)=>{
+ const cuil=require('../services/cuil').exigirCuil(req.body.cuil);
+ await C.Usuario.sequelize.transaction(async t=>{
+  const u=await C.Usuario.findByPk(req.auth.id,{transaction:t,lock:t.LOCK.UPDATE});
+  if(!u || u.rol!=='deportista')C.R.fail(403,'Este dato corresponde a una cuenta de deportista.');
+  if(!Number.isInteger(req.body.revision) || req.body.revision!==u.revision)C.R.fail(409,'La cuenta cambió. Actualizá antes de guardar.');
+  if(u.cuil && u.cuil!==cuil)C.R.fail(409,'Para corregir un CUIL ya registrado, solicitá la revisión a Administración.');
+  if(!u.cuil){await u.update({cuil,revision:u.revision+1},{transaction:t});await C.historial(u,u.id,'cuil_completado',null,t);}
+ });
+ res.json(await C.detalle(await C.Usuario.findByPk(req.auth.id)));
+}));
 router.get('/mia',C.wrap(async(req,res)=>res.json(await C.detalle(req.cuenta))));
 router.patch('/mia',C.wrap(async(req,res)=>{
   const data=C.R.perfil(req.body);
@@ -46,6 +57,7 @@ router.patch('/mia',C.wrap(async(req,res)=>{
     const u=await C.Usuario.findByPk(req.auth.id,{transaction:t,lock:t.LOCK.UPDATE});
     if(u.estado==='bloqueado')C.R.fail(403,'Cuenta bloqueada.');
     await C.editable(u,t);
+    if('cuil' in data && u.estado==='aprobado' && data.cuil!==u.cuil)C.R.fail(409,'Para completar el CUIL utilizá la sección CUIL de Mi solicitud.');
     if(u.estado==='aprobado' && 'club' in data && data.club!==u.club)C.R.fail(403,'El cambio de club debe gestionarlo la Federación.');
     if(Number(req.body.revision)!==u.revision)C.R.fail(409,'Tu solicitud cambió. Actualizá la pantalla.');
     if('certificadoAntecedentesFecha' in data || 'fichaMedicaFecha' in data || 'wadaFecha' in data)C.R.fail(400,'Actualizá las fechas junto con la documentación desde Mi solicitud.');
@@ -91,7 +103,8 @@ router.patch('/admin/usuarios/:id/estado',C.wrap(async(req,res)=>{
     const u=await C.Usuario.findByPk(req.params.id,{transaction:t,lock:t.LOCK.UPDATE});if(!u)C.R.fail(404,'Cuenta no encontrada.');
     const data=C.R.decision(u,req.body,req.auth.id);
     if(['aprobado','requiere_correcciones'].includes(data.estado) && u.estado==='pendiente' && !await C.presentada(u,t))C.R.fail(409,'La persona todavía no envió la solicitud.');
-    if(data.estado==='aprobado'){await C.completa(u);data.solicitaLicenciaProvincial=C.deportiva(u);}
+    if(data.estado==='aprobado'){await C.completa(u);for(const d of require('../services/documentos-vigencia').resumen(u)){if(u[d.campo]&&!d.vence)C.R.fail(400,'Falta la fecha de expedición: '+d.label);}data.solicitaLicenciaProvincial=C.deportiva(u);data.documentacionAprobada=true;}
+    if(data.estado==='requiere_correcciones')data.documentacionAprobada=false;
     await u.update(data,{transaction:t});await C.historial(u,req.auth.id,'estado_actualizado',data.correcciones,t);
     await C.encolar(u,data.estado,t);
   });
@@ -105,6 +118,7 @@ router.patch('/admin/usuarios/:id/documentacion',C.wrap(async(req,res)=>{
     const u=await C.Usuario.findByPk(req.params.id,{transaction:t,lock:t.LOCK.UPDATE});if(!u)C.R.fail(404,'Cuenta no encontrada.');
     if(Number(u.id)===req.auth.id)C.R.fail(400,'No podés revisar tus documentos.');
     if(Number(req.body.revision)!==u.revision)C.R.fail(409,'La solicitud cambió.');
+    if(req.body.aprobada && u.estado!=='aprobado')C.R.fail(409,'Aprobá la cuenta: esa decisión incluye la revisión documental.');
     if(req.body.aprobada){if(u.estado==='pendiente' && !await C.presentada(u,t))C.R.fail(409,'La persona todavía no envió la solicitud.');await C.completa(u);for(const d of require('../services/documentos-vigencia').resumen(u)){if(u[d.campo]&&!d.vence)C.R.fail(400,'Falta la fecha de expedición: '+d.label);}}
     await u.update({documentacionAprobada:req.body.aprobada,revision:u.revision+1},{transaction:t});
     await C.historial(u,req.auth.id,req.body.aprobada?'documentacion_aprobada':'documentacion_observada',motivo,t);

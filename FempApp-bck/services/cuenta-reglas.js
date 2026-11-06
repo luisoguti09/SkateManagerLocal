@@ -1,6 +1,6 @@
 const crypto = require('node:crypto');
 const ESTADOS = ['pendiente', 'requiere_correcciones', 'aprobado', 'bloqueado'];
-const CAMPOS = ['nombre', 'edad', 'club', 'categoria', 'nivel', 'domicilio', 'telefono', 'fechaNacimiento', 'fotoPerfil', 'dniFrente', 'dniDorso', 'fichaMedica', 'certificadoAntecedentes', 'certificadoWada', 'certificadoAntecedentesFecha', 'fichaMedicaFecha', 'wadaFecha'];
+const CAMPOS = ['cuil', 'nombre', 'edad', 'club', 'categoria', 'nivel', 'domicilio', 'telefono', 'fechaNacimiento', 'fotoPerfil', 'dniFrente', 'dniDorso', 'fichaMedica', 'certificadoAntecedentes', 'certificadoWada', 'certificadoAntecedentesFecha', 'fichaMedicaFecha', 'wadaFecha'];
 const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
 function passwordValida(p) { return typeof p === 'string' && p.length >= 8 && /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(p) && /[0-9]/.test(p) && Buffer.byteLength(p) <= 72; }
 function hashToken(token) { return crypto.createHash('sha256').update(token).digest('hex'); }
@@ -8,8 +8,8 @@ function decision(u, body, actor) {
   if (!ESTADOS.includes(body.estado)) fail(400, 'Estado inválido.');
   if (Number(body.revision) !== u.revision) fail(409, 'La solicitud cambió. Actualizá antes de decidir.');
   if (Number(u.id) === Number(actor)) fail(400, 'No podés revisar tu propia cuenta.');
-  if (u.estado === body.estado) fail(409, 'La cuenta ya tiene ese estado.');
-  if (body.estado === 'requiere_correcciones' && !['pendiente','requiere_correcciones'].includes(u.estado)) fail(409, 'Las correcciones corresponden a una solicitud pendiente.');
+  if (u.estado === body.estado && !(body.estado === 'aprobado' && !u.documentacionAprobada)) fail(409, 'La cuenta ya tiene ese estado.');
+  if (body.estado === 'requiere_correcciones' && !['pendiente','requiere_correcciones','aprobado'].includes(u.estado)) fail(409, 'Las correcciones corresponden a una solicitud pendiente.');
   if (u.estado === 'requiere_correcciones' && body.estado === 'aprobado') fail(409, 'Esperá el reenvío de las correcciones.');
   if (body.estado === 'pendiente' && u.estado !== 'bloqueado') fail(409, 'Solo se devuelve a revisión una cuenta bloqueada.');
   const motivo = typeof body.motivo === 'string' ? body.motivo.trim() : '';
@@ -27,6 +27,7 @@ function perfil(body) {
   const allowed = [...CAMPOS, 'instagram','facebook','tiktok'].filter(c => !['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','certificadoWada'].includes(c));
   const data = {};
   for (const k of allowed) if (k in body) {
+    if (k === 'cuil') { data.cuil = body[k] === null || body[k] === '' ? null : require('./cuil').exigirCuil(body[k]); continue; }
     if (body[k] === null && !['nombre','edad'].includes(k)) { data[k]=null; continue; }
     if (k === 'edad') {
       if (body[k] === '' || !Number.isInteger(Number(body[k])) || Number(body[k]) < 0 || Number(body[k]) > 120) fail(400,'Edad inválida.');
@@ -45,5 +46,5 @@ function perfil(body) {
   }
   return data;
 }
-const safe = u => Object.fromEntries(['id','dni','nombre','edad','email','rol','rolId','club','categoria','nivel','estado','aprobado','domicilio','telefono','fechaNacimiento','fotoPerfil','documentacionAprobada','solicitaLicenciaProvincial','revision','correcciones','camposCorregir','rolSolicitado','qrJti','certificadoAntecedentesFecha','fichaMedicaFecha','wadaFecha','instagram','facebook','tiktok'].map(k=>[k,u[k]]));
+const safe = u => Object.fromEntries(['id','dni','cuil','nombre','edad','email','rol','rolId','club','categoria','nivel','estado','aprobado','domicilio','telefono','fechaNacimiento','fotoPerfil','documentacionAprobada','solicitaLicenciaProvincial','revision','correcciones','camposCorregir','rolSolicitado','qrJti','certificadoAntecedentesFecha','fichaMedicaFecha','wadaFecha','instagram','facebook','tiktok'].map(k=>[k,u[k]]));
 module.exports = { ESTADOS, CAMPOS, fail, passwordValida, hashToken, decision, perfil, safe };

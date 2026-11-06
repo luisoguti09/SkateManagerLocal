@@ -17,12 +17,14 @@ export class PanelTecnicaComponent implements OnInit,OnDestroy {
  private base=environment.SERVER_API.replace(/\/$/,'');private subscriptions=new Subscription();private archivoPeticion?:Subscription;private docPeticion?:Subscription;private version=0;
  panel:Panel|null=null;busy=false;error='';evaluaciones:any[]=[];errorEvaluaciones='';cargandoEvaluaciones=false;
  tab='resumen';buscar='';
- secciones=[{id:'resumen',texto:'Mi panorama'},{id:'padron',texto:'Deportistas'},{id:'eventos',texto:'Inscripciones'},{id:'evolucion',texto:'Evaluaciones'},{id:'documentos',texto:'Documentación'}];seleccion:Deportista|null=null;documentos:string[]=[];vigencias:any[]=[];cargandoDocumentos=false;errorDocumentos='';cargandoArchivo=false;
+ get delegada(){return this.auth.getUsuario()?.rol==='delegado';}
+ get navegacion(){return this.secciones.map(s=>({id:s.id,text:s.texto,icon:({resumen:'◈',padron:'◎',eventos:'▦',evolucion:'↗',documentos:'▤'} as Record<string,string>)[s.id]}));}
+ get secciones(){return [{id:'resumen',texto:'Mi panorama'},{id:'padron',texto:'Deportistas'},{id:'eventos',texto:'Inscripciones'},{id:'evolucion',texto:'Evaluaciones'},{id:'documentos',texto:'Documentación'}].filter(s=>!this.delegada||s.id!=='evolucion');}seleccion:Deportista|null=null;documentos:string[]=[];vigencias:any[]=[];cargandoDocumentos=false;errorDocumentos='';cargandoArchivo=false;
  archivo:{url:string;pdf:SafeResourceUrl|null;nombre:string}|null=null;
  labels:Record<string,string>={fotoPerfil:'Foto de perfil',dniFrente:'DNI · frente',dniDorso:'DNI · dorso',fichaMedica:'Ficha médica',certificadoWada:'Certificado WADA'};
  ngOnInit(){this.cargar();}
  get opts(){return {headers:{Authorization:'Bearer '+(this.auth.getToken()||'')}};}
- get nombre(){return this.auth.getUsuario()?.nombre?.split(' ')[0]||'Entrenadora';}
+ get nombre(){return this.auth.getUsuario()?.nombre?.trim()||'bienvenida';}
  get filtradas(){const q=this.buscar.toLocaleLowerCase();return this.panel?.deportistas.filter(p=>`${p.nombre} ${p.dni} ${p.categoria||''}`.toLocaleLowerCase().includes(q))||[];}
  get pendientes(){return this.panel?.deportistas.filter(p=>p.documentacionAprobada===false).length||0;}
  get participaciones(){return this.panel?.eventos.reduce((n,e)=>n+e.inscripciones.filter((i:any)=>!['baja','cancelada','cancelado'].includes(i.estadoInscripcion)).length,0)||0;}
@@ -30,9 +32,10 @@ export class PanelTecnicaComponent implements OnInit,OnDestroy {
  get historial(){return this.seleccion?this.evaluaciones.filter(e=>Number(e.deportistaId)===this.seleccion!.padronId):this.evaluaciones;}
  nombreDeportista(id:number){return this.panel?.deportistas.find(p=>p.padronId===Number(id))?.nombre||'Deportista';}
  get meses(){const now=new Date();const rows=Array.from({length:6},(_,i)=>{const d=new Date(now.getFullYear(),now.getMonth()-5+i,1);return {key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,label:d.toLocaleDateString('es-AR',{month:'short'}),cantidad:0,alto:0};});for(const e of this.evaluaciones){const d=new Date(e.fechaEvaluacion||e.createdAt);if(!Number.isNaN(d.getTime())){const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;const r=rows.find(x=>x.key===k);if(r)r.cantidad++;}}const max=Math.max(1,...rows.map(r=>r.cantidad));return rows.map(r=>({...r,alto:r.cantidad/max*100}));}
- cargar(){if(this.busy)return;this.cerrar();this.busy=true;this.error='';this.subscriptions.add(this.http.get<Panel>(this.base+'/tecnica/panel',this.opts).pipe(finalize(()=>this.busy=false)).subscribe({next:r=>{this.panel=r;this.cargarEvaluaciones();},error:e=>{this.panel=null;this.evaluaciones=[];this.error=e.error?.error||'No pudimos cargar tu club. Reintentá.';}}));}
- cargarEvaluaciones(){this.errorEvaluaciones='';this.cargandoEvaluaciones=true;this.subscriptions.add(this.http.get<any[]>(this.base+'/evaluaciones',this.opts).pipe(finalize(()=>this.cargandoEvaluaciones=false)).subscribe({next:r=>this.evaluaciones=r,error:()=>{this.evaluaciones=[];this.errorEvaluaciones='No se pudieron consultar las evaluaciones.';}}));}
+ cargar(){if(this.busy)return;this.cerrar();this.busy=true;this.error='';this.subscriptions.add(this.http.get<Panel>(this.base+'/tecnica/panel',this.opts).pipe(finalize(()=>this.busy=false)).subscribe({next:r=>{this.panel=r;if(!this.delegada)this.cargarEvaluaciones();},error:e=>{this.panel=null;this.evaluaciones=[];this.error=e.error?.error||'No pudimos cargar tu club. Reintentá.';}}));}
+ cargarEvaluaciones(){if(this.delegada)return;this.errorEvaluaciones='';this.cargandoEvaluaciones=true;this.subscriptions.add(this.http.get<any[]>(this.base+'/evaluaciones',this.opts).pipe(finalize(()=>this.cargandoEvaluaciones=false)).subscribe({next:r=>this.evaluaciones=r,error:()=>{this.evaluaciones=[];this.errorEvaluaciones='No se pudieron consultar las evaluaciones.';}}));}
  cambiar(tab:string){
+  if(this.delegada && tab==='evolucion')return;
   if(!['resumen','padron','eventos','evolucion','documentos'].includes(tab))return;
   this.cerrar();this.tab=tab;this.view.detectChanges();
   const section=this.host.nativeElement.querySelector('[data-section="'+tab+'"]') as HTMLElement|null;

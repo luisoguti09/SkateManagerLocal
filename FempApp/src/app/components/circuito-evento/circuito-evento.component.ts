@@ -95,6 +95,10 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
   get editable() {
     return this.data && ['inscripcion', 'abm'].includes(this.data.etapa);
   }
+  get clubesCargos(): string[] { return [...new Set<string>(this.cargos.flatMap(c=>(c.participacionesSnapshot||[]).map((p:any)=>String(p.club||'').trim())).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')); }
+  get mesesCargos(): string[] { return [...new Set<string>(this.cargos.map(c=>new Date(c.createdAt).toLocaleDateString('sv-SE',{timeZone:'America/Argentina/Buenos_Aires'}).slice(0,7)))].sort().reverse(); }
+  nombreMes(m:string):string { return new Date(m+'-15T12:00:00Z').toLocaleDateString('es-AR',{month:'long',year:'numeric',timeZone:'UTC'}); }
+  get gestionEvento():number { return this.cargosFiltrados.filter(c=>c.estado==='pagado').reduce((n,c)=>n+Math.round(Number(c.liquidacionSnapshot?.gestionFempaReferencia||0)*100),0)/100; }
   get cargosFiltrados() {
     return this.cargos.filter(
       (c) =>
@@ -107,9 +111,7 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
             .startsWith(this.filtroMes)) &&
         (!this.filtroClub ||
           (c.participacionesSnapshot || []).some((p: any) =>
-            String(p.club || '')
-              .toLowerCase()
-              .includes(this.filtroClub.toLowerCase()),
+            String(p.club || '').trim() === this.filtroClub,
           )),
     );
   }
@@ -315,12 +317,12 @@ export class CircuitoEventoComponent implements OnInit, OnChanges {
     this.descargar(
       new Blob(
         [
-          '\uFEFFEvento,Deportista,DNI,Club,Participaciones,Inscripción,Referencia FEMPA (no sumada),Total,Estado,Vencido\r\n' +
+          '\uFEFFEvento,Deportista,DNI,Club,Participaciones,Inscripción,Gestión Skate Manager a cargo de la entidad,Total,Estado,Vencido\r\n' +
             rows.map((r) => r.map(esc).join(',')).join('\r\n'),
         ],
         { type: 'text/csv;charset=utf-8' },
       ),
-      `cargos_evento_${this.eventoId}_${this.filtroMes || 'todos'}.csv`,
+      `movimientos_evento_${this.eventoId}_${this.filtroMes || 'todos'}.csv`,
     );
   }
   private descargar(blob: Blob, name: string) {

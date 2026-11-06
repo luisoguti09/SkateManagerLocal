@@ -7,7 +7,7 @@ const wrap = (fn) => async (req, res, next) => {
   try {
     await fn(req, res, next);
   } catch (e) {
-    if (!e.status) console.error('[Circuito]', e.message);
+    if (!e.status) console.error("[FEMPA][circuito.js] [Circuito]");
     res
       .status(e.status || 500)
       .json({

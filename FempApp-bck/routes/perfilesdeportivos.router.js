@@ -92,7 +92,7 @@ router.get('/usuario/:usuarioId', async (req, res) => {
 
     return res.status(200).json(perfiles);
   } catch (error) {
-    console.error('Error al listar perfiles deportivos:', error);
+    console.error("[FEMPA][perfilesdeportivos.router.js] Error al listar perfiles deportivos:");
     return res
       .status(500)
       .json({ error: 'Error al listar perfiles deportivos' });
@@ -160,7 +160,7 @@ router.post('/', roles('deportista', 'administrador'), async (req, res) => {
 
     return res.status(201).json(perfilCreado);
   } catch (error) {
-    console.error('Error al crear perfil deportivo:', error);
+    console.error("[FEMPA][perfilesdeportivos.router.js] Error al crear perfil deportivo:");
     return res.status(500).json({ error: 'Error al crear perfil deportivo' });
   }
 });
@@ -232,7 +232,7 @@ router.put('/:id', roles('deportista', 'administrador'), async (req, res) => {
 
     return res.status(200).json(perfilActualizado);
   } catch (error) {
-    console.error('Error al actualizar perfil deportivo:', error);
+    console.error("[FEMPA][perfilesdeportivos.router.js] Error al actualizar perfil deportivo:");
     return res
       .status(500)
       .json({ error: 'Error al actualizar perfil deportivo' });
@@ -276,7 +276,7 @@ router.delete(
         .status(200)
         .json({ message: 'Perfil deportivo eliminado correctamente' });
     } catch (error) {
-      console.error('Error al eliminar perfil deportivo:', error);
+      console.error("[FEMPA][perfilesdeportivos.router.js] Error al eliminar perfil deportivo:");
       return res
         .status(500)
         .json({ error: 'Error al eliminar perfil deportivo' });

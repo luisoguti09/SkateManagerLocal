@@ -7,7 +7,7 @@ const {dniRequerido}=require('../config/archivos');
 const F=require('./cuenta-archivos');
 const {politica}=require('./cuenta-documentos');
 const wrap=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(e=>{
-  if(!e.status) console.error('[CUENTA]',e.name);
+  if(!e.status) console.error("[FEMPA][cuenta.js] [CUENTA]");
   res.status(e.status || 500).json({error:e.status?e.message:'No se pudo completar la operación.'});
 });
 async function historial(u,actor,accion,motivo,t) {

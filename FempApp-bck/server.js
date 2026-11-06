@@ -31,7 +31,7 @@ if (process.env.NODE_ENV === 'local') {
     throw new Error('PELIGRO: Local Dev está conectado a Railway. Abortando.');
   }*/
 
-  console.log(`🛡️ Local Dev usando base: ${dbName} en host: ${dbHost}`);
+  void 0;
 }
 
 const express = require('express');
@@ -55,15 +55,6 @@ const clubesRouter = require('./routes/clubes.router');
 
 // DB: Importa todos los modelos y relaciones
 const db = require('./models');
-
-db.sequelize
-  .query('SELECT DATABASE() AS dbActual')
-  .then(([rows]) => {
-    console.log('DB ACTUAL:', rows);
-  })
-  .catch((err) => console.error('Error consultando DB actual:', err));
-
-//console.log('MODELOS CARGADOS:', Object.keys(db));
 
 // Middlewares
 
@@ -135,6 +126,7 @@ app.use('/usuarios', require('./routes/usuarios.router'));
 app.use('/auth', require('./routes/auth.router'));
 app.use('/cuenta', require('./routes/cuenta.router'));
 app.use('/tecnica', require('./routes/tecnica.router'));
+app.use('/licencias-config',require('./routes/licencias-config.router'));
 app.use('/asistencias', require('./routes/asistencias.router'));
 app.use('/perfiles-deportivos', perfilesDeportivosRouter);
 app.use('/evaluaciones', evaluacionesRouter);
@@ -156,6 +148,7 @@ async function start() {
   await db.CuentaCorreo.count();await db.CuentaHistorial.count();await db.CuentaReset.count();
   require('./services/cuenta-correo').start();
   require('./services/documentos-avisos').start();
-  app.listen(port,'0.0.0.0',()=>console.log('FEMPA API lista. Archivos persistentes configurados.'));
+  require('./services/licencias/avisos').start();
+  app.listen(port,'0.0.0.0',()=>void 0);
 }
-start().catch(e=>{console.error('No se pudo iniciar. Revisá migración y variables:',e.name,e.message);process.exitCode=1;});
+start().catch(e=>{console.error("[FEMPA][server.js] No se pudo iniciar. Revisá migración y variables:");process.exitCode=1;});

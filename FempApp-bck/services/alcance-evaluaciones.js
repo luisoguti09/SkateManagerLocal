@@ -11,7 +11,7 @@ function filtrar(padron,usuarios,club){
 }
 async function deportistas(u){
  if(['administrador','juez'].includes(u.rol))return Padron.findAll();
- if(u.rol!=='tecnico' || !u.club)return [];
+ if(!['tecnico','delegado'].includes(u.rol) || !u.club)return [];
  const club=await Club.findOne({where:{nombre:u.club,activo:true}});if(!club)return [];
  const [padron,usuarios]=await Promise.all([Padron.findAll({attributes:['id','documentoN','apellidoYNombre','club','categoria']}),Usuario.findAll({attributes:['dni','rol','estado','club']})]);
  return filtrar(padron,usuarios,u.club).map(p=>({...p.toJSON(),club:u.club}));

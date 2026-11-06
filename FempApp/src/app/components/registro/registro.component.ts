@@ -75,6 +75,7 @@ export class RegistroComponent implements OnDestroy {
       password: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=[\s\S]*[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])(?=[\s\S]*[0-9])[\s\S]*$/), (control: AbstractControl) => new TextEncoder().encode(control.value || '').length > 72 ? {passwordBytes: true} : null]],
       confirmPass: ['', Validators.required],
       dni: ['', Validators.required],
+      cuil: [''],
       rolId: [null, Validators.required],
       categoria: [{ value: '', disabled: true }],
       nivel: [{ value: '', disabled: true }],
@@ -138,7 +139,11 @@ export class RegistroComponent implements OnDestroy {
       });
   }
 
+  get esDeportista(): boolean {return String(this.roles.find(r=>Number(r.id)===Number(this.form?.get('rolId')?.value))?.nombre || '').toLowerCase().trim()==='deportista';}
   private configurarPorRol(rolId: number): void {
+    const cuil=this.form.get('cuil')!;
+    cuil.setValidators(this.esDeportista ? [Validators.required,Validators.pattern(/^(?:[0-9]{11}|[0-9]{2}-[0-9]{8}-[0-9])$/)] : []);
+    cuil.updateValueAndValidity({emitEvent:false});
     for (const key of ['categoria', 'nivel']) {
       const control = this.form.get(key)!;
       control.clearValidators();
@@ -269,6 +274,7 @@ export class RegistroComponent implements OnDestroy {
       email: this.form.get('email')!.value,
       password: raw.password,
       dni,
+      cuil: this.esDeportista ? raw.cuil : null,
       rolId,
       clubId: this.clubSeleccionado?.id ?? null,
       club: this.clubSeleccionado?.nombre ?? this.pers?.club ?? null,

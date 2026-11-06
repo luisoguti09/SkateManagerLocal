@@ -62,28 +62,39 @@ router.get(
     res.json(result);
   }),
 );
-async function guardar(req, res, append = false) {
+async function guardar(req, res, append = false, porTecnica = false) {
+  const usuarioId = porTecnica ? R.id(req.params.usuarioId) : req.auth.id;
   const seleccion = append
     ? R.ids(req.body.perfilDeportivoIds || [req.body.perfilDeportivoId])
     : Array.isArray(req.body.perfilDeportivoIds) &&
         req.body.perfilDeportivoIds.length === 0
       ? []
       : R.ids(req.body.perfilDeportivoIds);
-  if (req.body.usuarioId != null && Number(req.body.usuarioId) !== req.auth.id)
+  if (req.body.usuarioId != null && Number(req.body.usuarioId) !== usuarioId)
     R.fail(403, 'Solo podés gestionar tu inscripción.');
   await db.sequelize.transaction(async (t) => {
     const ev = await evento(req.params.id, t),
       stage = R.etapa(ev);
+    if(porTecnica){
+      const gestion=require('../services/club-gestion');
+      gestion.exigirAbm(ev);
+      await gestion.miembro(req.auth.id,usuarioId,t,true);
+    }
     if (
       !['inscripcion', 'abm'].includes(stage) ||
       ev.inscripcionesConfirmadasAt
     )
       R.fail(409, 'La inscripción o el período de edición no están abiertos.');
     const existentes = await db.UsuarioEventos.findAll({
-      where: { EventoId: ev.id, UsuarioId: req.auth.id },
+      where: { EventoId: ev.id, UsuarioId: usuarioId },
       transaction: t,
     });
     const vigentes = existentes.filter((x) => x.estadoInscripcion !== 'baja');
+    if(porTecnica){
+      const anterior=req.body.seleccionAnterior;
+      const actual=vigentes.map(x=>Number(x.perfilDeportivoId)).sort((a,b)=>a-b);
+      if(!Array.isArray(anterior)||anterior.some(x=>!Number.isSafeInteger(x)||x<=0)||JSON.stringify([...new Set(anterior)].sort((a,b)=>a-b))!==JSON.stringify(actual))R.fail(409,'La inscripción cambió. Actualizá y cargá la selección antes de guardar.');
+    }
     const desired = append
       ? [
           ...new Set([
@@ -110,7 +121,7 @@ async function guardar(req, res, append = false) {
       const p = await db.PerfilDeportivo.findByPk(R.id(pId), {
         transaction: t,
       });
-      if (!p || Number(p.usuarioId) !== req.auth.id || !p.activa)
+      if (!p || Number(p.usuarioId) !== usuarioId || !p.activa)
         R.fail(403, 'Perfil no disponible para esta inscripción.');
       perfiles.push(p);
     }
@@ -121,7 +132,7 @@ async function guardar(req, res, append = false) {
       const row = existentes.find((x) => x.perfilDeportivoId === p.id);
       const data = {
         EventoId: ev.id,
-        UsuarioId: req.auth.id,
+        UsuarioId: usuarioId,
         perfilDeportivoId: p.id,
         estadoInscripcion: 'provisoria',
         categoria: p.categoria,
@@ -136,9 +147,9 @@ async function guardar(req, res, append = false) {
     }
     await audit(
       ev.id,
+      usuarioId,
       req.auth.id,
-      req.auth.id,
-      'seleccion',
+      porTecnica ? 'seleccion_tecnica' : 'seleccion',
       { antes: vigentes.map((x) => x.perfilDeportivoId), despues: desired },
       t,
     );
@@ -160,6 +171,7 @@ router.post(
   roles('deportista'),
   wrap((req, res) => guardar(req, res, true)),
 );
+router.put('/:id/deportistas/:usuarioId/inscripcion', ...auth, roles('tecnico'), wrap((req,res)=>guardar(req,res,false,true)));
 router.post(
   '/:id/confirmar-inscripciones',
   ...auth,

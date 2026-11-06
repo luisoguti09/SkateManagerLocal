@@ -1,8 +1,8 @@
-<section class="circuito">
+<section class="circuito" [class.tesoreria]="rol === 'tesoreria'">
   <ng-container *ngIf="rol === 'tesoreria'"
-    ><a routerLink="/dashboard-tesoreria">Volver a pagos</a>
+    ><nav class="areas"><a routerLink="/dashboard-tesoreria">Panorama</a><span>Eventos y aranceles</span><a routerLink="/licencias/configuracion">Licencias provinciales</a></nav>
     <app-tarifario-general [editar]="true"></app-tarifario-general>
-    <h2>Consultar cargos por evento</h2>
+    <h2>Movimientos por evento</h2>
     <div class="buscador-eventos">
       <p *ngIf="eventoSeleccionado as ev" class="evento-elegido">
         Evento seleccionado: <strong>{{ ev.titulo || ev.nombre || 'Evento #' + ev.id }}</strong>
@@ -108,15 +108,14 @@
     ></ng-container
   >
   <ng-container *ngIf="rol === 'tesoreria' && eventoId"
-    ><h3>Cargos confirmados</h3>
-    <p>Referencia FEMPA: $2.000 por inscripción pagada en la plataforma, a cargo de FEMPA. No se suma al deportista. Esta referencia no acredita una liquidación al proveedor.</p>
+    ><h3>Movimientos del evento</h3>
+    <aside class="gestion"><span>Gestión Skate Manager · evento filtrado</span><strong>{{ formatoImporte(gestionEvento) }}</strong><small>A cargo de la entidad, sobre inscripciones pagadas. No descuenta liquidaciones previas al proveedor.</small></aside>
     <p>
-      Incluye inscripciones cuyo checkout todavía no se abrió. El mes
-      corresponde a la confirmación, en horario argentino.
+      Incluye importes pendientes y pagos efectuados. El mes corresponde a la confirmación de la inscripción.
     </p>
-    <label>Mes <input type="month" [(ngModel)]="filtroMes" /></label
+    <label>Mes <select [(ngModel)]="filtroMes"><option value="">Todos los meses</option><option *ngFor="let m of mesesCargos" [value]="m">{{nombreMes(m)}}</option></select></label
     ><label
-      >Club <input [(ngModel)]="filtroClub" placeholder="Buscar club" /></label
+      >Club <select [(ngModel)]="filtroClub"><option value="">Todos los clubes</option><option *ngFor="let club of clubesCargos" [value]="club">{{club}}</option></select></label
     ><label
       >Estado
       <select [(ngModel)]="filtroEstado">
@@ -131,7 +130,7 @@
       (click)="exportarCargos()"
       [disabled]="ocupado || !!error || !cargosFiltrados.length"
     >
-      Exportar cargos filtrados (CSV)
+      Exportar movimientos filtrados (CSV)
     </button>
     <div class="tabla">
       <table>
@@ -140,7 +139,7 @@
             <th>Deportista</th>
             <th>Participaciones</th>
             <th>Base</th>
-            <th>Referencia FEMPA</th>
+
             <th>Total</th>
             <th>Estado</th>
           </tr>
@@ -149,16 +148,16 @@
           <tr *ngFor="let c of cargosFiltrados">
             <td>{{ c.deportista }}</td>
             <td>{{ c.perfilDeportivoIds.length }}</td>
-            <td>{{ c.montoBase }}</td>
-            <td>{{ c.estado === 'pagado' ? (c.liquidacionSnapshot?.gestionFempaReferencia || '—') : '—' }}</td>
-            <td>{{ c.montoTotal }}</td>
-            <td>{{ c.estado }}{{ c.vencido ? ' · Vencido' : '' }}</td>
+            <td>{{ formatoImporte(c.montoBase) }}</td>
+
+            <td>{{ formatoImporte(c.montoTotal) }}</td>
+            <td>{{ estadoCargo(c.estado) }}{{ c.vencido ? ' · Vencido' : '' }}</td>
           </tr>
         </tbody>
       </table>
     </div>
     <p *ngIf="!ocupado && !cargosFiltrados.length">
-      No hay cargos confirmados para estos filtros.
+      No hay movimientos para estos filtros.
     </p></ng-container
   >
 </section>

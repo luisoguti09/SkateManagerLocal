@@ -35,9 +35,10 @@ async function send(row) {
     const d=u&&require('./documentos-vigencia').resumen(u).find(v=>v.campo===payload.documento);
     if(!u||u.estado!=='aprobado'||u.rol!=='deportista'||u.email!==payload.email||!d||d.expedicion!==payload.expedicion||d.vence!==payload.vence||require('./documentos-avisos').hito(d.dias)!==payload.etapa||!await require('./cuenta-archivos').existe(u[d.campo],d.campo))return 'vencido';
   }
+  if(row.tipo==='licencia_config_aviso'&&!await require('./licencias/avisos').vigente(row.usuarioId,payload))return 'vencido';
   if(payload.expires && Date.now()>payload.expires) return 'vencido';
-  const subject=row.tipo==='reset' ? 'Recuperá tu acceso a FEMPA' : labels[row.tipo] || 'Novedades de tu cuenta FEMPA';
-  const text=row.tipo==='vencimiento_documental' ? `Tu documentación deportiva tiene un vencimiento próximo o pendiente de renovación (${payload.vence}). Ingresá a Mi solicitud para consultar el detalle y actualizarla.\n\n${frontUrl()}/mi-solicitud\n\nEste aviso no cambia el estado de tu cuenta.` : row.tipo==='reset' ? `Solicitaste cambiar tu contraseña. El enlace es válido durante 30 minutos y una sola vez.\n\n${frontUrl()}/recuperar-cuenta#token=${payload.token}\n\nSi no lo solicitaste, ignorá este correo.` : `${subject}.\n\nIngresá para consultar el estado y los próximos pasos:\n${frontUrl()}/login\n\nLas observaciones y documentos se consultan únicamente dentro de la aplicación.\nFederación Mendocina de Patín`;
+  const subject=row.tipo==='licencia_config_aviso'?'Tesorería · fechas de licencias para revisar':row.tipo==='reset' ? 'Recuperá tu acceso a FEMPA' : labels[row.tipo] || 'Novedades de tu cuenta FEMPA';
+  const text=row.tipo==='licencia_config_aviso' ? `Temporada ${payload.aviso.temporada} · ${payload.aviso.nombre}.\n${payload.aviso.tipo}: ${payload.aviso.fecha} (${payload.aviso.etapa==='vencido'?'vencido':'próximo a vencer'}).\n\nRevisá la configuración en ${frontUrl()}/licencias/configuracion\n\nEl aviso no modifica los importes ni acredita pagos.` : row.tipo==='vencimiento_documental' ? `Tu documentación deportiva tiene un vencimiento próximo o pendiente de renovación (${payload.vence}). Ingresá a Mi solicitud para consultar el detalle y actualizarla.\n\n${frontUrl()}/mi-solicitud\n\nEste aviso no cambia el estado de tu cuenta.` : row.tipo==='reset' ? `Solicitaste cambiar tu contraseña. El enlace es válido durante 30 minutos y una sola vez.\n\n${frontUrl()}/recuperar-cuenta#token=${payload.token}\n\nSi no lo solicitaste, ignorá este correo.` : `${subject}.\n\nIngresá para consultar el estado y los próximos pasos:\n${frontUrl()}/login\n\nLas observaciones y documentos se consultan únicamente dentro de la aplicación.\nFederación Mendocina de Patín`;
   const auth=await fetch('https://oauth2.googleapis.com/token',{method:'POST',signal:AbortSignal.timeout(15000),headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:process.env.GMAIL_CLIENT_ID || '',client_secret:process.env.GMAIL_CLIENT_SECRET || '',refresh_token:process.env.GMAIL_REFRESH_TOKEN || '',grant_type:'refresh_token'})});
   if(!auth.ok) throw new Error('OAUTH_'+auth.status);
   const {access_token}=await auth.json();
@@ -67,13 +68,13 @@ async function tick() {
         etapa='confirmar';
         await Correo.update({estado,enviadoAt:estado==='enviado'?new Date():null,payload:null,error:null,leaseId:null},{where:{id:row.id,leaseId}});
       } catch(e) {
-        if(etapa==='confirmar')console.error('[MAIL_QUEUE]',require('./correo-diagnostico').diagnostico(e,etapa));
+        if(etapa==='confirmar')console.error("[FEMPA][cuenta-correo.js] [MAIL_QUEUE]");
         etapa='reintentar';
         const error=/^(OAUTH|GMAIL)_\d+$/.test(e.message)?e.message:'ENVIO_FALLIDO';
         await Correo.update({estado:row.intentos>=8?'fallido':'pendiente',error,leaseId:null,disponibleAt:new Date(Date.now()+Math.min(3600000,30000*2**row.intentos))},{where:{id:row.id,leaseId}});
       }
     }
-  } catch(e) { console.error('[MAIL_QUEUE]',require('./correo-diagnostico').diagnostico(e,etapa)); } finally { running=false; }
+  } catch(e) { console.error("[FEMPA][cuenta-correo.js] [MAIL_QUEUE]"); } finally { running=false; }
 }
 function start() { key();frontUrl();const timer=setInterval(tick,15000);timer.unref();return timer; }
 module.exports={encolar,start,tick,seal,unseal};

@@ -105,7 +105,7 @@ router.get(
 
       res.json(usuarios);
     } catch (e) {
-      console.error('GET /usuarios/admin/usuarios error', e);
+      console.error("[FEMPA][usuarios.router.js] GET /usuarios/admin/usuarios error");
       res.status(500).json({ error: 'Error al listar usuarios' });
     }
   },
@@ -163,7 +163,7 @@ router.get(
       });
       res.json(usuarios);
     } catch (e) {
-      console.error('GET /usuarios error', e);
+      console.error("[FEMPA][usuarios.router.js] GET /usuarios error");
       res.status(500).json({ error: 'Error al listar usuarios' });
     }
   },
@@ -213,7 +213,7 @@ router.put('/:dni/perfil', verifyToken, async (req, res) => {
     });
     res.status(200).json({ message: 'Datos actualizados correctamente' });
   } catch (error) {
-    console.error(error);
+    console.error("[FEMPA][usuarios.router.js] Error de operación");
     res.status(500).json({ error: 'Error al actualizar perfil' });
   }
 });
@@ -249,7 +249,7 @@ router.get('/dni/:dni', limite('dni',30), async (req, res) => {
 
     return res.json(usuario ? { existe: true } : null);
   } catch (e) {
-    console.error('Error /usuarios/dni/:dni', e);
+    console.error("[FEMPA][usuarios.router.js] Error /usuarios/dni/:dni");
     res.status(500).json({ error: 'Error consultando usuario por DNI' });
   }
 });
@@ -277,7 +277,7 @@ router.get('/:dni/eventos', verifyToken, propia, async (req, res) => {
 
     res.json(usuario.Eventos);
   } catch (error) {
-    console.error('Error al buscar eventos del usuario:', error);
+    console.error("[FEMPA][usuarios.router.js] Error al buscar eventos del usuario:");
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
@@ -285,39 +285,43 @@ router.get('/:dni/eventos', verifyToken, propia, async (req, res) => {
 router.post(
   '/:id/qr',
   verifyToken,
-  requireRole('administrador', 'juez', 'deportista'),
-  async (req, res) => {
+  requireRole('administrador', 'juez', 'deportista', 'tecnico', 'delegado', 'tesoreria'),
+  C.wrap(async (req, res) => {
     const { id } = req.params;
     if (+id !== req.user.id && req.user.rol !== 'administrador')
       return res.status(403).json({ error: 'No autorizado' });
 
-    const u = await Usuario.findByPk(id);
+    let u = await Usuario.findByPk(id);
     if (!u) return res.status(404).json({ error: 'Usuario no encontrado' });
-    u.qrJti = uuidv4();
-    await u.save();
+    if(!process.env.QR_SECRET?.trim()) return res.status(503).json({error:'La credencial QR todavía no está configurada. Contactá a Administración.'});
+    // Crear si falta; reintentar no revoca una credencial existente.
+    await Usuario.update({qrJti:uuidv4()},{where:{id:u.id,qrJti:null}});
+    u = await Usuario.findByPk(id);
 
+    if(!process.env.QR_SECRET?.trim()) return res.status(503).json({error:'La credencial QR todavía no está configurada. Contactá a Administración.'});
     const token = jwt.sign(
       { sub: u.id, jti: u.qrJti, typ: 'qr' },
       process.env.QR_SECRET,
       { algorithm: 'HS256' },
     );
     res.json({ token });
-  },
+  }),
 );
 
 router.get(
   '/:id/qr.png',
   verifyToken,
-  requireRole('administrador', 'juez', 'deportista'),
-  async (req, res) => {
+  requireRole('administrador', 'juez', 'deportista', 'tecnico', 'delegado', 'tesoreria'),
+  C.wrap(async (req, res) => {
     const { id } = req.params;
     const transparent = req.query.transparent === '1';
     if (+id !== req.user.id && req.user.rol !== 'administrador')
       return res.status(403).json({ error: 'No autorizado' });
 
-    const u = await Usuario.findByPk(id);
-    if (!u || !u.qrJti)
-      return res.status(404).json({ error: 'Sin credencial' });
+    let u = await Usuario.findByPk(id);
+    if (!u) return res.status(404).json({error:'Usuario no encontrado'});
+    if (!u.qrJti) return res.status(404).json({error:'Generá tu credencial para verla.',codigo:'QR_NO_GENERADO'});
+    if(!process.env.QR_SECRET?.trim()) return res.status(503).json({error:'La credencial QR todavía no está configurada. Contactá a Administración.'});
     const token = jwt.sign(
       { sub: u.id, jti: u.qrJti, typ: 'qr' },
       process.env.QR_SECRET,
@@ -337,13 +341,13 @@ router.get(
       ...(transparent ? { color: { dark: '#000000', light: '#0000' } } : {}),
     };
     QRCode.toFileStream(res, token, opts);
-  },
+  }),
 );
 
 router.post('/:id/solicitar-rol', verifyToken, async (req, res) => {
   const { id } = req.params;
   const { rol } = req.body;
-  if(!['tecnico','juez','deportista','tesoreria'].includes(rol))return res.status(400).json({error:'Rol inválido.'});
+  if(!['tecnico','juez','deportista','tesoreria','delegado'].includes(rol))return res.status(400).json({error:'Rol inválido.'});
   if (+id !== req.user.id)
     return res.status(403).json({ error: 'No autorizado' });
   const u = await Usuario.findByPk(id);

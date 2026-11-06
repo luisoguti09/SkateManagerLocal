@@ -23,3 +23,4 @@ th { background: #104b9e; }
 dl div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 0; border-bottom: 1px solid #74a9ee; }
 dd { margin: 0; font-weight: 700; }
 @media (max-width: 600px) { .campos { grid-template-columns: 1fr; } .acciones button { width: 100%; } }
+:host{color:#183653}.tarifario{background:#fffdf8;border-color:#e7dfcc;border-radius:22px}h2{color:#183653}.eyebrow{color:#6b7890;font-size:11px;letter-spacing:1.3px}.nota{color:#586e88;font-size:13px}.importe{border:1px solid #c8d8ed}button.principal{background:#165bbb;color:#fff}.mensaje,.aviso{background:#edf7f1;color:#245d47;border-color:#8cc8ac}.error{color:white}th,td{color:#183653;border-color:#dce5f2}th{background:#eef3fb}dl div{border-color:#dce5f2}

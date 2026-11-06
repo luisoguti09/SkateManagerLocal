@@ -19,7 +19,8 @@ async function enviar(id,body,files) {
       if(!Number.isInteger(body.revision) || body.revision!==u.revision)C.R.fail(409,'La solicitud cambió. Actualizá el estado antes de enviar.');
       require('./cuenta-documentos').validarArchivos(u,files);
       const deportiva=C.deportiva(u);
-      if(deportiva || u.rol==='tecnico') {
+      if(deportiva)data.cuil=require('./cuil').exigirCuil(data.cuil || u.cuil);
+      if(deportiva || ['tecnico','delegado'].includes(u.rol)) {
         if(typeof data.club!=='string' || !data.club.trim())C.R.fail(400,'Seleccioná un club activo del listado.');
         const club=await Club.findOne({where:{nombre:data.club,activo:true},transaction:t});
         if(!club)C.R.fail(400,'Seleccioná un club activo del listado.');

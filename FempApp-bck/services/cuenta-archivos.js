@@ -22,7 +22,7 @@ function filename(value,field) {
 }
 function fullpath(value,field) { const name=filename(value,field);return name?path.join(field==='fotoPerfil'?publicDir:privateDir,name):null; }
 async function existe(value,field) { const p=fullpath(value,field);if(!p)return false;try{await fs.access(p);return true;}catch{return false;} }
-async function borrar(value,field) { const p=fullpath(value,field);if(p)await fs.unlink(p).catch(e=>{if(e.code!=='ENOENT')console.error('[ARCHIVO_DELETE]',e.code);}); }
+async function borrar(value,field) { const p=fullpath(value,field);if(p)await fs.unlink(p).catch(e=>{if(e.code!=='ENOENT')console.error("[FEMPA][cuenta-archivos.js] [ARCHIVO_DELETE]");}); }
 async function preparar(files) {
   const prepared={};
   try {

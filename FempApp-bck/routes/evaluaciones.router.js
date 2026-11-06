@@ -13,7 +13,7 @@ router.use(async(req,res,next)=>{
   const id=req.query.deportistaId || (req.path.startsWith('/deportista/')?req.path.split('/')[2]:null);
   if(id && !req.deportistasPermitidos.includes(Number(id)))return res.status(403).json({error:'Solo podés consultar deportistas de tu club.'});
   next();
- } catch(e){console.error('[ALCANCE_EVALUACIONES]',e.name);res.status(503).json({error:'No se pudo verificar el acceso.'});}
+ } catch(e){console.error("[FEMPA][evaluaciones.router.js] [ALCANCE_EVALUACIONES]");res.status(503).json({error:'No se pudo verificar el acceso.'});}
 });
 
 const {
@@ -115,7 +115,7 @@ router.post('/', async (req, res) => {
 
     } catch (error) {
         await t.rollback();
-        console.error('Error creando evaluación:', error);
+        console.error("[FEMPA][evaluaciones.router.js] Error creando evaluación:");
         res.status(500).json({ error: 'Error creando evaluación' });
     }
 });
@@ -195,7 +195,7 @@ router.get('/evolucion/elemento', async (req, res) => {
 
         res.json(data);
     } catch (error) {
-        console.error('Error obteniendo evolución por elemento:', error);
+        console.error("[FEMPA][evaluaciones.router.js] Error obteniendo evolución por elemento:");
         res.status(500).json({
             error: 'Error obteniendo evolución por elemento'
         });
@@ -268,7 +268,7 @@ router.get('/evolucion/componente', async (req, res) => {
 
         res.json(data);
     } catch (error) {
-        console.error('Error obteniendo evolución por componente:', error);
+        console.error("[FEMPA][evaluaciones.router.js] Error obteniendo evolución por componente:");
         res.status(500).json({
             error: 'Error obteniendo evolución por componente'
         });
@@ -299,7 +299,7 @@ router.get('/deportista/:deportistaId', async (req, res) => {
         res.json(evaluaciones);
 
     } catch (error) {
-        console.error('Error obteniendo evaluaciones:', error);
+        console.error("[FEMPA][evaluaciones.router.js] Error obteniendo evaluaciones:");
         res.status(500).json({ error: 'Error obteniendo evaluaciones' });
     }
 });
@@ -352,7 +352,7 @@ router.get('/', async (req, res) => {
 
         res.json(evaluaciones);
     } catch (error) {
-        console.error('Error listando evaluaciones:', error);
+        console.error("[FEMPA][evaluaciones.router.js] Error listando evaluaciones:");
         res.status(500).json({ error: 'Error listando evaluaciones' });
     }
 });

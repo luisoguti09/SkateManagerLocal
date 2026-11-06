@@ -22,7 +22,7 @@ export class EventosService {
     return this.http.get<Evento[]>(`${this.apiURL}/eventos`)
       .pipe(
         catchError(error => {
-          console.error('Error al obtener eventos:', error);
+          void 0;
           return of([]);
         })
       );
@@ -64,7 +64,7 @@ export class EventosService {
     return this.http.get<Evento[]>(this.base).pipe(
       map(list => (list ?? []).map(this.mapEvento)),
 
-      catchError(err => { console.error('getEventos', err); return of([]); })
+      catchError(err => { void 0; return of([]); })
     );
   }
 

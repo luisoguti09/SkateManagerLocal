@@ -121,3 +121,12 @@ a {
   .circuito .perfil strong{font-size:1.05rem}
   .circuito button{min-height:44px;margin:6px 0;max-width:100%;white-space:normal}
 }
+
+.circuito.tesoreria{background:#f6f9ff;color:#183653;border:1px solid #d7e3f4;border-radius:24px}
+.tesoreria h2,.tesoreria h3,.tesoreria .buscador-etiqueta{color:#183653;font-size:25px}
+.tesoreria a{color:#1757ae}.tesoreria .buscador-ayuda{color:#5e7391}
+.tesoreria .resultados-eventos,.tesoreria .evento-elegido{background:#edf4ff;color:#183653;border-color:#c9dbf4}
+.tesoreria .resultados-eventos button{color:#183653}.tesoreria .resultados-eventos small{color:#5e7391}.tesoreria .resultados-eventos button:hover{background:#dceaff}
+.tesoreria td,.tesoreria th{border-bottom:1px solid #dce5f2}.tesoreria th{background:#edf3fb;color:#4c6484}.tesoreria .tabla{background:white;border-radius:16px;margin-top:16px}
+.areas{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px;align-items:center}.areas a,.areas span{padding:12px;border-radius:10px;text-decoration:none}.areas span{background:#165bbb;color:white}
+.gestion{display:flex;flex-direction:column;gap:8px;padding:22px;background:#eef7f2;border:1px solid #d3e8df;border-radius:18px;margin:18px 0}.gestion strong{font-size:28px;color:#17694b}.gestion small{font-size:12px;max-width:550px}

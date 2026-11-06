@@ -217,7 +217,7 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
         this.eventos = eventos || [];
       },
       error: (error: any) => {
-        console.error('Error cargando eventos:', error);
+        void 0;
         this.errorEventos = 'No se pudo cargar el listado de eventos.';
       },
     });
@@ -249,7 +249,7 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
           this.cargando = false;
         },
         error: (error: any) => {
-          console.error('Error cargando pagos:', error);
+          void 0;
           this.pagos = [];
           this.dataSource.data = [];
           this.calcularResumenLocal();
@@ -277,7 +277,7 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
           this.clubes = clubes || [];
         },
         error: (error: any) => {
-          console.error('Error cargando clubes:', error);
+          void 0;
           this.errorClubes = 'No se pudo cargar el listado de clubes y sedes.';
         },
       });
@@ -391,9 +391,11 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
     return mapa[estado] || estado || 'Sin estado';
   }
 
+  tipoExportacion: 'detalle'|'eventos'|'clubes' = 'detalle';
+
   exportarCsv(): void {
     if (!this.puedeExportar) return;
-    const headers = [
+    let headers = [
       'Fecha de solicitud (Argentina UTC-03:00)',
       'Evento',
       'Deportista',
@@ -411,7 +413,7 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
       'External Reference',
     ];
 
-    const rows = this.pagos.map((pago) => [
+    let rows = this.pagos.map((pago) => [
       this.fechaSolicitudCsv(pago.createdAt),
       pago.eventoNombreSnapshot || '',
       pago.deportistaNombreSnapshot || '',
@@ -428,6 +430,20 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
       pago.preferenceId || '',
       pago.externalReference || '',
     ]);
+
+    if(this.tipoExportacion!=='detalle'){
+      const agrupados=new Map<string,{nombre:string;estado:string;conciliacion:string;cantidad:number;base:number;comision:number;total:number}>();
+      for(const p of this.pagos){
+        const nombre=this.tipoExportacion==='eventos'?(p.eventoNombreSnapshot||'Sin evento'):(p.clubSnapshot||'Sin club');
+        const identificador=this.tipoExportacion==='eventos'?p.eventoId:p.clubId;
+        const estado=p.estadoPago||'Sin estado',conciliacion=p.estadoConciliacion||'Sin informar';
+        const key=JSON.stringify([identificador,nombre,estado,conciliacion]);
+        const g=agrupados.get(key)||{nombre,estado,conciliacion,cantidad:0,base:0,comision:0,total:0};
+        g.cantidad++;g.base+=Math.round(Number(p.montoBase||0)*100);g.comision+=Math.round(Number(p.montoComision||0)*100);g.total+=Math.round(Number(p.montoTotal||0)*100);agrupados.set(key,g);
+      }
+      headers=[this.tipoExportacion==='eventos'?'Evento':'Club','Estado pago','Conciliación','Cantidad de registros','Monto base ARS','Comisión ARS','Total ARS'];
+      rows=[...agrupados.values()].map(g=>[g.nombre,g.estado,g.conciliacion,g.cantidad,(g.base/100).toFixed(2),(g.comision/100).toFixed(2),(g.total/100).toFixed(2)]);
+    }
 
     const csv = [headers, ...rows]
       .map((row) => row.map((value) => this.celdaCsv(value)).join(','))
@@ -464,7 +480,7 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
 
   private nombreArchivoCsv(): string {
     const f = this.filtrosAplicados;
-    const partes = ['pagos_tesoreria'];
+    const partes = ['pagos_eventos',this.tipoExportacion];
     if (f?.eventoId !== null && f?.eventoId !== undefined)
       partes.push(`evento-${f.eventoId}`);
     if (f?.clubId !== null && f?.clubId !== undefined)

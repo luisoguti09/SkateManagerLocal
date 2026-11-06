@@ -1,9 +1,6 @@
 <section class="tesoreria-page" lang="es" translate="no">
   <nav class="topbar" aria-label="Navegación de Tesorería">
-    <span class="brand"
-      ><mat-icon aria-hidden="true">account_balance</mat-icon> FEMPA
-      <span class="brand-section">/ Tesorería</span></span
-    >
+    <span class="brand">Tesorería</span>
     <div class="nav-actions">
       <a *ngIf="auth.hasRole('administrador')" mat-button routerLink="/admin"
         ><mat-icon>admin_panel_settings</mat-icon> Administración</a
@@ -19,7 +16,7 @@
   <main class="page-content">
     <header class="page-header">
       <div>
-        <p class="eyebrow">Gestión de la federación</p>
+        <p class="eyebrow">Gestión de cobros</p>
         <h1>Tesorería</h1>
         <p class="subtitle">
           Pagos e inscripciones, con la información que necesitás para cada
@@ -29,7 +26,7 @@
 
       <div class="header-actions">
         <a mat-raised-button class="aranceles-button" routerLink="/tesoreria/aranceles">
-          <mat-icon>payments</mat-icon> Configurar aranceles
+          <mat-icon>payments</mat-icon> Aranceles de eventos
         </a>
       <button
         mat-raised-button
@@ -40,11 +37,19 @@
         (click)="exportarCsv()"
       >
         <mat-icon>download</mat-icon>
-        Exportar resultados (CSV)
+        Exportar pagos de eventos (CSV)
       </button>
       </div>
     </header>
 
+    <nav class="tesoreria-secciones" aria-label="Áreas de tesorería">
+      <span aria-current="page">Panorama · pagos de eventos</span>
+      <a routerLink="/tesoreria/aranceles">Aranceles de eventos</a>
+      <a routerLink="/licencias/configuracion">Licencias provinciales</a>
+    </nav>
+    <div class="export-help"><label>Contenido de la exportación
+      <select [(ngModel)]="tipoExportacion"><option value="detalle">Detalle de pagos</option><option value="eventos">Resumen por evento y estado</option><option value="clubes">Resumen por club y estado</option></select>
+    </label><p>El CSV incluye todas las páginas de los filtros aplicados. Sin filtros: todos los pagos de eventos disponibles. Podés acotar por evento, club, estado y fecha de solicitud. Las licencias se gestionan en su sección.</p></div>
     <p class="summary-caption">
       Resumen del listado filtrado · Los importes incluyen todos los estados
       seleccionados.
@@ -81,14 +86,10 @@
         <small>Importe de inscripción</small>
       </mat-card>
 
-      <mat-card class="summary-card">
+      <mat-card class="summary-card gestion-card">
         <span>Gestión Skate Manager</span>
-        <strong>{{
-          datosDisponibles
-            ? formatoMoneda(resumen.totalComisionSkateManager)
-            : '—'
-        }}</strong>
-        <small>Comisiones</small>
+        <a routerLink="/tesoreria/aranceles">Consultar por evento ↗</a>
+        <small>Importe a cargo de la entidad</small>
       </mat-card>
 
       <mat-card class="summary-card success">
@@ -113,7 +114,7 @@
     <mat-card class="filters-card">
       <div class="section-heading">
         <div>
-          <h2>Filtrar pagos</h2>
+          <h2>Buscar pagos de eventos</h2>
           <p>
             Buscá por evento, club, estado o período. Las fechas corresponden a
             la creación de la solicitud, en horario de Argentina.

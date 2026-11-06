@@ -602,3 +602,22 @@ tr.mat-mdc-row:hover {
 /* Etiquetas externas: no se recortan sobre los bordes blancos. */
 .filtro-campo { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .filtro-etiqueta { display: block; color: #fff !important; font-size: 14px; font-weight: 600; line-height: 1.4; }
+
+.tesoreria-secciones{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 24px}.tesoreria-secciones a,.tesoreria-secciones span{padding:12px 18px;border:1px solid #ffffff70;border-radius:12px;color:#fff;text-decoration:none;font-weight:600}.tesoreria-secciones [aria-current]{background:#fff;color:#164b93}.export-help{border:1px solid #ffffff55;background:#06397666;color:#fff;padding:20px;border-radius:16px;margin-bottom:24px}.export-help label{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.export-help select{background:white;color:#173452;border-radius:8px;padding:10px;border:1px solid #c9d9ed;font:inherit}.export-help p{margin-bottom:0;line-height:1.6}.page-header .aranceles-button{background:white;color:#164b93}
+
+/* La misma familia visual del panel de club: fondos claros y acentos suaves. */
+.tesoreria-page{background:linear-gradient(125deg,#4375c5,#7395d5 48%,#1251b9)}
+.topbar{background:#f5f8ff;color:#173452;border:0;margin:0 24px;border-radius:0 0 20px 20px}
+.topbar .nav-actions a,.topbar .nav-actions button{color:#1757ae}
+.page-header{background:linear-gradient(110deg,#103f89,#1462c2);border-radius:24px;padding:28px}
+.summary-card,.filters-card,.table-card{background:#fff;color:#183653;border:1px solid #d6e3f4;box-shadow:none;border-radius:22px}
+.summary-card.primary{background:#eef4ff;border-color:#d6e3f4}.summary-card.primary strong,.summary-card strong{color:#1458b5}
+.summary-card span,.summary-card small{color:#536d8e}.summary-card.success{background:#f0f8f4}.summary-card.warning{background:#fff9ed}.summary-card.danger{background:#fbf3f5}
+.section-heading h2{color:#183653}.section-heading p,.section-heading>mat-icon,.scroll-hint,.sede{color:#5e7391}
+table{background:#fff}th{background:#f2f6fc!important;color:#506b8d}td,.money-strong{color:#183653}tr.mat-mdc-row:hover{background:#f0f6ff}
+.tesoreria-secciones{background:#f5f8ff;padding:12px;border-radius:18px}.tesoreria-secciones a{color:#1757ae;border-color:#cad9ef;background:#fff}.tesoreria-secciones span{background:#165bbb;color:#fff}
+.export-help{background:#f5f8ff;color:#183653;border-color:#d6e3f4}.export-help p{color:#536d8e}
+.filtro-etiqueta{color:#315170!important}.empty-row td{color:#536d8e}.mat-mdc-paginator{background:#f4f7fc;color:#183653}
+@media(max-width:600px){.topbar{margin:0 12px}.page-header{padding:22px}.header-actions{width:100%}}
+.filters-actions button:not([color="primary"]){color:#1757ae}.gestion-card{background:#eef8f3}.gestion-card a{display:block;margin-top:12px;color:#17694b;font-size:20px;text-decoration:none;font-weight:700}
+:host ::ng-deep .tesoreria-page{.mat-mdc-paginator{background:#f4f7fc;color:#183653;--mat-paginator-enabled-icon-color:#1757ae;--mat-paginator-disabled-icon-color:#8a9ab1}.mat-mdc-progress-spinner{--mdc-circular-progress-active-indicator-color:#1757ae}.mat-sort-header-arrow{color:#1757ae}}

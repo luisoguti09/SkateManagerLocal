@@ -182,7 +182,7 @@ export class DashboardTecnicoComponent implements OnInit {
         this.cargando = false;
       },
       error: (err) => {
-        console.error('Error cargando datos del dashboard técnico:', err);
+        void 0;
         this.cargando = false;
 
         this.snackBar.open(
@@ -195,7 +195,7 @@ export class DashboardTecnicoComponent implements OnInit {
   }
 
   abrirModulo(modulo: ModuloTecnico): void {
-    console.log('Módulo seleccionado:', modulo);
+    void 0;
 
     this.mostrarModulo.set(modulo);
 
@@ -215,7 +215,7 @@ export class DashboardTecnicoComponent implements OnInit {
         this.comparativaClubes = this.construirComparativaClubes(this.historialTecnico);
       },
       error: (err) => {
-        console.error('Error cargando historial técnico inicial:', err);
+        void 0;
         this.ultimosSeguimientos = [];
       }
     });
@@ -325,7 +325,7 @@ export class DashboardTecnicoComponent implements OnInit {
       componentes: this.componentesEvaluados
     };
 
-    console.log('Evaluación completa:', data);
+    void 0;
 
     this.evaluacionesService.crearEvaluacion(data).subscribe({
       next: (resp) => {
@@ -340,7 +340,7 @@ export class DashboardTecnicoComponent implements OnInit {
         this.cargarEvaluaciones(deportistaId);
       },
       error: (err) => {
-        console.error('Error guardando evaluación:', err);
+        void 0;
 
         this.snackBar.open('Error al guardar evaluación', 'Cerrar', {
           duration: 3000
@@ -412,7 +412,7 @@ export class DashboardTecnicoComponent implements OnInit {
         this.snackBar.open('Componente creado correctamente', 'Cerrar', { duration: 2500 });
       },
       error: (err) => {
-        console.error('Error creando componente:', err);
+        void 0;
         this.snackBar.open('Error al crear componente', 'Cerrar', { duration: 2500 });
       }
     });
@@ -423,10 +423,10 @@ export class DashboardTecnicoComponent implements OnInit {
     this.evaluacionesService.getEvaluacionesPorDeportista(deportistaId).subscribe({
       next: (res) => {
         this.evaluaciones = res;
-        console.log('Evaluaciones desde backend:', res);
+        void 0;
       },
       error: (err) => {
-        console.error('Error cargando evaluaciones:', err);
+        void 0;
         this.evaluaciones = [];
       }
     });
@@ -448,7 +448,7 @@ export class DashboardTecnicoComponent implements OnInit {
         });
       },
       error: (err) => {
-        console.error('Error creando elemento:', err);
+        void 0;
         this.snackBar.open('Error al crear elemento', 'Cerrar', {
           duration: 2500
         });
@@ -679,7 +679,7 @@ export class DashboardTecnicoComponent implements OnInit {
         this.aplicarFiltrosHistorialFrontend();
       },
       error: (err: any) => {
-        console.error('Error cargando historial técnico:', err);
+        void 0;
 
         this.snackBar.open('Error al cargar historial técnico', 'Cerrar', {
           duration: 3000

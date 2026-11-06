@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
 
     return res.json(clubes);
   } catch (error) {
-    console.error('[GET /clubes error]', error);
+    console.error("[FEMPA][clubes.router.js] [GET /clubes error]");
     return res.status(500).json({
       error: 'No se pudieron obtener los clubes',
       detail: error.message
@@ -53,7 +53,7 @@ router.get('/:id', async (req, res) => {
 
     return res.json(club);
   } catch (error) {
-    console.error('[GET /clubes/:id error]', error);
+    console.error("[FEMPA][clubes.router.js] [GET /clubes/:id error]");
     return res.status(500).json({
       error: 'No se pudo obtener el club',
       detail: error.message
@@ -85,7 +85,7 @@ router.post('/', async (req, res) => {
       club
     });
   } catch (error) {
-    console.error('[POST /clubes error]', error);
+    console.error("[FEMPA][clubes.router.js] [POST /clubes error]");
     return res.status(500).json({
       error: 'No se pudo crear el club',
       detail: error.message
@@ -120,7 +120,7 @@ router.patch('/:id', async (req, res) => {
       club
     });
   } catch (error) {
-    console.error('[PATCH /clubes/:id error]', error);
+    console.error("[FEMPA][clubes.router.js] [PATCH /clubes/:id error]");
     return res.status(500).json({
       error: 'No se pudo actualizar el club',
       detail: error.message
@@ -143,7 +143,7 @@ router.get('/:clubId/sedes', async (req, res) => {
 
     return res.json(sedes);
   } catch (error) {
-    console.error('[GET /clubes/:clubId/sedes error]', error);
+    console.error("[FEMPA][clubes.router.js] [GET /clubes/:clubId/sedes error]");
     return res.status(500).json({
       error: 'No se pudieron obtener las sedes del club',
       detail: error.message
@@ -183,7 +183,7 @@ router.post('/:clubId/sedes', async (req, res) => {
       sede
     });
   } catch (error) {
-    console.error('[POST /clubes/:clubId/sedes error]', error);
+    console.error("[FEMPA][clubes.router.js] [POST /clubes/:clubId/sedes error]");
     return res.status(500).json({
       error: 'No se pudo crear la sede/referente',
       detail: error.message
@@ -218,7 +218,7 @@ router.patch('/sedes/:sedeId', async (req, res) => {
       sede
     });
   } catch (error) {
-    console.error('[PATCH /clubes/sedes/:sedeId error]', error);
+    console.error("[FEMPA][clubes.router.js] [PATCH /clubes/sedes/:sedeId error]");
     return res.status(500).json({
       error: 'No se pudo actualizar la sede/referente',
       detail: error.message

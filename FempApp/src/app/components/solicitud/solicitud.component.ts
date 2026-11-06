@@ -79,11 +79,11 @@ export class SolicitudComponent implements OnInit,OnDestroy {
   this.api.renovarDocumentos(f).pipe(finalize(()=>{this.busy=false;this.vista.markForCheck();})).subscribe({next:u=>{this.set(u);this.files={};this.ok='Documento actualizado. La revisión documental queda pendiente; tu cuenta continúa aprobada.';},error:e=>this.error=e.error?.error||'No se pudo guardar. Actualizá y reintentá.'});
  }
  get archivos(){return camposCuenta.filter(c=>this.u?.politicaDocumentos?.visibles?.includes(c.key));}
- get deportiva(){return ['deportista','tecnico'].includes(this.u?.rol);}
+ get deportiva(){return ['deportista','tecnico','delegado'].includes(this.u?.rol);}
  get editable(){return this.u && (this.u.estado==='requiere_correcciones' || (this.u.estado==='pendiente' && !this.u.solicitudEnviada));}
- get campos(){return camposCuenta.filter(c=>!['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','certificadoWada','categoria','club'].includes(c.key) && (c.key!=='nivel' || this.u?.rol==='tecnico'));}
+ get campos(){return camposCuenta.filter(c=>(c.key!=='cuil' || this.u?.rol==='deportista') && !['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','certificadoWada','categoria','club'].includes(c.key) && (c.key!=='nivel' || this.u?.rol==='tecnico'));}
  get observacionesCampos(){return camposCuenta.filter(c=>c.key!=='categoria' && this.u?.camposCorregir?.includes(c.key));}
- get destino(){return ({administrador:'/admin',deportista:'/dashboard-deport',tecnico:'/dashboard-prof',juez:'/dashboard-juez',tesoreria:'/dashboard-tesoreria'} as Record<string,string>)[this.u?.rol] || '/login';}
+ get destino(){return ({administrador:'/admin',deportista:'/dashboard-deport',delegado:'/dashboard-prof',tecnico:'/dashboard-prof',juez:'/dashboard-juez',tesoreria:'/dashboard-tesoreria'} as Record<string,string>)[this.u?.rol] || '/login';}
  get tituloEstado(){return this.u?.etapaSolicitud || this.estados[this.u?.estado] || 'Mi solicitud';}
  ngOnInit(){this.cargar();this.cargarClubes();}
  private enfocar(selector:string){this.vista.detectChanges();const el=this.host.nativeElement.querySelector(selector) as HTMLElement|null;el?.focus({preventScroll:true});el?.scrollIntoView({block:'start',behavior:'auto'});}
@@ -118,6 +118,10 @@ export class SolicitudComponent implements OnInit,OnDestroy {
    next:u=>{this.set(u);this.files={};this.ok='Certificado recibido. Queda pendiente de revisión documental por Administración; tu cuenta continúa aprobada.';this.enfocar('[data-estado]');},
    error:e=>this.error=e.error?.error || 'No se pudo guardar el certificado. Actualizá el estado antes de reintentar.'
   });
+ }
+ completarCuil(){
+  if(this.busy)return;this.busy=true;this.error='';this.ok='';
+  this.api.completarCuil(String(this.form.cuil || ''),this.u.revision).pipe(finalize(()=>{this.busy=false;this.vista.markForCheck();})).subscribe({next:u=>{this.set(u);this.ok='CUIL guardado.';},error:e=>this.error=e.error?.error || 'No se pudo guardar el CUIL.'});
  }
  salir(){if(this.busy)return;this.cerrarArchivo();this.auth.logout();}
  descargar(key:string){this.api.descargar(this.u.id,key).subscribe({next:b=>guardarArchivo(b,key),error:()=>{this.error='No se pudo descargar el archivo.';this.enfocar('.error');}});}

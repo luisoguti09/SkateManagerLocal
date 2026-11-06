@@ -18,7 +18,7 @@ function verificar(limitada) {
       next();
     } catch(e) {
       if(['JsonWebTokenError','TokenExpiredError','NotBeforeError'].includes(e.name)) return res.status(401).json({error:'Sesión inválida o vencida.'});
-      console.error('[AUTH]',e.name); res.status(503).json({error:'No se pudo verificar tu sesión.'});
+      console.error("[FEMPA][auth.middleware.js] [AUTH]"); res.status(503).json({error:'No se pudo verificar tu sesión.'});
     }
   };
 }

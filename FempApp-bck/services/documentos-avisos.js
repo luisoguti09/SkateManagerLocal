@@ -28,7 +28,7 @@ async function tick(){
    }
    if(rows.length<100)break;
   }
- }catch(e){console.error('[DOCUMENTOS_AVISOS]',require('./correo-diagnostico').diagnostico(e,'reservar'));}finally{running=false;}
+ }catch(e){console.error("[FEMPA][documentos-avisos.js] [DOCUMENTOS_AVISOS]");}finally{running=false;}
 }
 function start(){const timer=setInterval(tick,3600000);timer.unref();void tick();return timer;}
 module.exports={hito,tick,start};

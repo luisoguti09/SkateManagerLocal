@@ -174,10 +174,10 @@ export class EventoDetailComponent implements OnInit {
     this.perfilesService.getByUsuario(usuario.id).subscribe({
       next: (perfiles) => {
         this.perfilesDeportivos = perfiles || [];
-        console.log('Perfiles cargados:', this.perfilesDeportivos);
+        void 0;
       },
       error: (err) => {
-        console.error('Error cargando perfiles:', err);
+        void 0;
         this.perfilesDeportivos = [];
       },
     });
@@ -219,7 +219,7 @@ export class EventoDetailComponent implements OnInit {
           this.abrirDialogo(true);
         },
         error: (err) => {
-          console.error('Error al inscribirse:', err);
+          void 0;
           this.inscribiendo = false;
           this.abrirDialogo(false);
         },
@@ -235,9 +235,9 @@ export class EventoDetailComponent implements OnInit {
       next: (evento) => {
         this.evento = evento;
         this.getDeportistasInscriptos(this.evento.id);
-        console.log('Evento:', this.evento);
+        void 0;
       },
-      error: (error) => console.error('Error fetching event:', error),
+      error: (error) => void 0,
     });
   }
 
@@ -247,7 +247,7 @@ export class EventoDetailComponent implements OnInit {
         this.eventos = eventos;
       },
       error: (error: any) => {
-        console.error('Error fetching events:', error);
+        void 0;
       },
     });
   }
@@ -258,7 +258,7 @@ export class EventoDetailComponent implements OnInit {
         this.eventos = eventos;
         this.eventosDisponibles = eventos;
       },
-      error: (e) => console.error('Error fetching events:', e),
+      error: (e) => void 0,
     });
   }
 
@@ -269,7 +269,7 @@ export class EventoDetailComponent implements OnInit {
       next: (ev) => {
         this.evento = ev;
       },
-      error: (er) => console.error('Error actualizando evento:', er),
+      error: (er) => void 0,
     });
   }
 
@@ -408,10 +408,10 @@ export class EventoDetailComponent implements OnInit {
     this.eventServ.getDeportistasInscriptos(eventoId).subscribe({
       next: (usuarios: any[]) => {
         this.deportistasInscritos = usuarios;
-        console.log('Inscriptos:', usuarios);
+        void 0;
       },
       error: (error: any) => {
-        console.error('Error obteniendo inscriptos:', error);
+        void 0;
       },
     });
   }
@@ -428,7 +428,7 @@ export class EventoDetailComponent implements OnInit {
           this.getDeportistasInscriptos(this.evento.id);
         }
       },
-      error: (error) => console.error('Error fetching event:', error),
+      error: (error) => void 0,
     });
   }
 
@@ -457,7 +457,7 @@ export class EventoDetailComponent implements OnInit {
           panelClass: 'custom-dialog-panel',
         });
       },
-      error: (err) => console.error(err),
+      error: (err) => void 0,
     });
   }
 }

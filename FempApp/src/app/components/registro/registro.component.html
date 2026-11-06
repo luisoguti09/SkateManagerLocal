@@ -140,6 +140,12 @@
           </mat-form-field>
 
 
+          <mat-form-field *ngIf="esDeportista" appearance="outline" floatLabel="always">
+            <mat-label>CUIL de la deportista</mat-label>
+            <input matInput formControlName="cuil" inputmode="numeric" maxlength="13" required autocomplete="off">
+            <mat-hint>11 dígitos. Lo necesitamos para gestionar el seguro.</mat-hint>
+            <mat-error>Ingresá los 11 dígitos del CUIL, con o sin guiones.</mat-error>
+          </mat-form-field>
           <div *ngIf="errorMsg" class="error-message" role="alert">{{ errorMsg }}</div>
           <section>
             <button mat-raised-button color="primary" type="submit"

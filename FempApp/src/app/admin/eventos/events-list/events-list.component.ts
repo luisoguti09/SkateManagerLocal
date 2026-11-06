@@ -70,13 +70,7 @@ export class EventsListComponent implements OnInit {
           if (!Number.isNaN(parsed.getTime())) {
             fechaMostrable = parsed;
           } else {
-            console.warn('[EVENTO CON FECHA INVALIDA]', {
-              index,
-              id: e.id,
-              nombre,
-              fechaRaw,
-              evento: e
-            });
+            void 0;
           }
         }
 

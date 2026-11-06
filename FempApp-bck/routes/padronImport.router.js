@@ -176,7 +176,7 @@ router.post('/importar-clubes', upload.single('archivo'), async (req, res) => {
             resumen
         });
     } catch (error) {
-        console.error('[POST /padron-import/importar-clubes error]', error);
+        console.error("[FEMPA][padronImport.router.js] [POST /padron-import/importar-clubes error]");
 
         return res.status(500).json({
             error: 'No se pudo importar clubes desde el padrón',
@@ -461,7 +461,7 @@ router.post('/importar-padron', upload.single('archivo'), async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('[POST /padron-import/importar-padron error]', error);
+        console.error("[FEMPA][padronImport.router.js] [POST /padron-import/importar-padron error]");
 
         return res.status(500).json({
             error: 'No se pudo importar el padrón',

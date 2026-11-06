@@ -208,20 +208,7 @@ router.post(
         return texto.slice(0, 600);
       };
 
-      console.error('[MP_CHECKOUT_ERROR]', {
-        pagoId: pago.id,
-        cargoId: pago.cargoId,
-        nombre: limpiar(error?.name),
-        estado: limpiar(error?.status || error?.statusCode),
-        codigo: limpiar(error?.code || error?.error),
-        mensaje: limpiar(error?.message),
-        causas: Array.isArray(error?.cause)
-          ? error.cause.map((causa) => ({
-            codigo: limpiar(causa?.code),
-            descripcion: limpiar(causa?.description),
-          }))
-          : [],
-      });
+      console.error("[FEMPA][pagos.router.js] [MP_CHECKOUT_ERROR]");
 
       await pago.update({
         estadoPago: 'error_creacion',
@@ -271,19 +258,7 @@ router.post(
         signature.split(',').map((item) => item.trim().split('='))
       );
 
-      console.warn('[MP_WEBHOOK_FIRMA_RECHAZADA]', {
-        tieneSecreto: Boolean(process.env.MP_WEBHOOK_SECRET),
-        tieneFirma: Boolean(signature),
-        tieneRequestId: Boolean(req.headers['x-request-id']),
-        tieneDataIdEnQuery: Boolean(req.query['data.id']),
-        tipoDataIdEnQuery: typeof req.query['data.id'],
-        tieneDataIdAnidado: Boolean(req.query.data?.id),
-        tieneDataIdEnBody: Boolean(req.body?.data?.id),
-        tieneIdIPN: Boolean(req.query.id),
-        tieneTopicIPN: Boolean(req.query.topic),
-        timestampValido: /^\d+$/.test(parts.ts || ''),
-        formatoFirmaValido: /^[a-f0-9]{64}$/i.test(parts.v1 || '')
-      });
+      console.warn("[FEMPA][pagos.router.js] [MP_WEBHOOK_FIRMA_RECHAZADA]");
 
       R.fail(401, 'Firma inválida.');
     }
@@ -439,7 +414,7 @@ router.get('/', ...tesoreria, async (req, res) => {
 
     return res.json(pagos);
   } catch (error) {
-    console.error('[GET /pagos error]', error);
+    console.error("[FEMPA][pagos.router.js] [GET /pagos error]");
 
     return res
       .status(error.status || 500)
@@ -501,7 +476,7 @@ router.get('/resumen/evento/:eventoId', ...tesoreria, async (req, res) => {
 
     return res.json(resumen);
   } catch (error) {
-    console.error('[GET /pagos/resumen/evento/:eventoId error]', error);
+    console.error("[FEMPA][pagos.router.js] [GET /pagos/resumen/evento/:eventoId error]");
 
     return res.status(500).json({
       error: 'No se pudo obtener el resumen del evento',
@@ -552,7 +527,7 @@ router.get('/filtros/clubes', ...tesoreria, async (req, res) => {
 
     return res.json(Array.from(mapa.values()));
   } catch (error) {
-    console.error('[GET /pagos/filtros/clubes error]', error);
+    console.error("[FEMPA][pagos.router.js] [GET /pagos/filtros/clubes error]");
 
     return res.status(500).json({
       error: 'No se pudieron obtener los clubes para filtros',
