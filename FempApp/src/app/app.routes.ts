@@ -197,6 +197,13 @@ export const routes: Routes = [
     data: { roles: ['tesoreria'] },
   },
 
+  {
+    path: 'tesoreria/mercadopago',
+    loadComponent: () => import('./components/mercadopago-conexion/mercadopago-conexion.component').then(m => m.MercadopagoConexionComponent),
+    canActivate: [authGuard],
+    data: { roles: ['tesoreria'] },
+  },
+
   // Ruta comodín para rutas inválidas
   { path: '**', redirectTo: 'login' },
 ];

@@ -114,6 +114,7 @@ app.use(['/roles','/clubes'],(req,res,next)=>['GET','HEAD','OPTIONS'].includes(r
 app.use(['/asistencias','/perfiles-deportivos','/evaluaciones','/elementos','/componentes'],verifyToken);
 app.use(['/elementos','/componentes'],(req,res,next)=>['GET','HEAD'].includes(req.method)?next():requireRole('administrador','juez')(req,res,next));
 app.use('/pagos', pagosRouter);
+app.use('/mercadopago', require('./routes/mercadopago-oauth.router').router());
 app.use('/eventos', eventosRouter);
 app.use('/precios-participacion', preciosParticipacionRouter);
 app.use('/patinadores', require('./routes/patinadores.router'));
