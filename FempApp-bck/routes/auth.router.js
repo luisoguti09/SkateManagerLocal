@@ -85,6 +85,8 @@ router.post('/register', async (req, res) => {
     }
     const isTec = rolCanon === 'tecnico';
     const isDep = rolCanon === 'deportista';
+    const deporte=isDep?req.body.deporte:null;
+    if(isDep && !require('../services/deportes').deportes.includes(deporte))return res.status(400).json({error:'Elegí tu deporte.'});
     const cuil = isDep ? require('../services/cuil').exigirCuil(req.body.cuil) : null;
     // Toda alta pública requiere aprobación, incluso administradores.
 
@@ -96,6 +98,7 @@ router.post('/register', async (req, res) => {
       password,
       dni: dniNormalizado,
       cuil,
+      deporte,
       rol: rolCanon,
       rolId: rol.id,
       categoria: isDep ? (categoria ?? '') : '',

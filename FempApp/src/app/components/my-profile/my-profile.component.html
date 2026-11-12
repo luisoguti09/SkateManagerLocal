@@ -81,7 +81,8 @@
       </form>
     </mat-card>
 
-    <mat-card class="profile-card perfiles-card">
+    <section class="profile-card" *ngIf="usuario?.rol==='deportista'"><h2>Mi deporte</h2><label>Elegí el deporte del perfil<select [(ngModel)]="deporteSeleccionado" [disabled]="guardandoPerfil"><option>PATINAJE ARTÍSTICO</option><option>ROLLER FREESTYLE</option></select></label><app-freestyle-perfiles *ngIf="deporteSeleccionado==='ROLLER FREESTYLE'" [usuarioId]="usuario.id"></app-freestyle-perfiles></section>
+    <mat-card class="profile-card perfiles-card" *ngIf="usuario?.rol==='deportista' && deporteSeleccionado==='PATINAJE ARTÍSTICO'">
       <h2>Perfiles Deportivos</h2>
 
       <button type="button" mat-raised-button color="primary" class="add-profile-btn"

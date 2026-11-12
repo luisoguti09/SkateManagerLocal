@@ -2,6 +2,7 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const PerfilDeportivo = sequelize.define('PerfilDeportivo', {
+  deporte: { type: DataTypes.STRING(80), allowNull: false, defaultValue: 'PATINAJE ARTÍSTICO' },
   usuarioId: {
     type: DataTypes.INTEGER,
     allowNull: false,

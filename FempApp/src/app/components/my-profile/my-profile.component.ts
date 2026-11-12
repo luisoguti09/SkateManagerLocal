@@ -1,3 +1,4 @@
+import {FreestylePerfilesComponent} from './freestyle-perfiles.component';
 import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
@@ -40,7 +41,7 @@ import {
 @Component({
   selector: 'app-my-profile',
   standalone: true,
-  imports: [
+  imports: [FreestylePerfilesComponent,
     CommonModule,
     DatePipe,
     MatFormFieldModule,
@@ -137,11 +138,12 @@ export class MyProfileComponent implements OnInit {
     this.router.navigate(['/dashboard-deport']);
   }
 
+  deporteSeleccionado='PATINAJE ARTÍSTICO';
   ngOnInit(): void {
 
     this.usuario = this.authService.getUsuario();
-    this.cargarPerfilesDeportivos();
-    this.cargarClubes();
+    this.deporteSeleccionado=this.usuario?.deporte||'PATINAJE ARTÍSTICO';
+    if(this.usuario?.rol==='deportista'){this.cargarPerfilesDeportivos();this.cargarClubes();}
 
     this.initForm();
     if (this.usuario?.dni) {
@@ -464,7 +466,7 @@ export class MyProfileComponent implements OnInit {
     }
     this.perfilesPeticion = this.perfilesService.getByUsuario(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: data => {
-        this.perfilesDeportivos = [...data];
+        this.perfilesDeportivos = data.filter(p=>(p.deporte||'PATINAJE ARTÍSTICO')==='PATINAJE ARTÍSTICO');
         this.cargandoPerfiles = false;
         this.cd.markForCheck();
       },

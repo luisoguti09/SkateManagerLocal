@@ -757,3 +757,16 @@ test('tesorería: temporadas independientes con revisión, nombres e historial s
  assert.equal((await request('/licencias-config?temporada=xyz','tesoreria')).status,400);
  const csv=await request('/licencias-config/aranceles.csv?temporada=2028','tesoreria');assert.ok(csv.data.includes('Promocional'));assert.ok(csv.data.includes('150000'));
 });
+
+test('Freestyle HTTP: solo deportistas, perfiles aislados por deporte y cambio cruzado rechazado',async()=>{
+ await db.Usuario.create({id:1400,rol:'deportista',estado:'aprobado',aprobado:true});
+ const data={usuarioId:1400,deporte:'ROLLER FREESTYLE',disciplina:'STREET',categoria:'JUNIOR FEMENINO',temporada:'2026',origenCategoria:'CAP'};
+ assert.equal((await request('/perfiles-deportivos','tesoreria',{...data,usuarioId:3},'POST')).status,403);
+ assert.equal((await request('/perfiles-deportivos','administrador',{...data,usuarioId:3},'POST')).status,403);
+ assert.equal((await request('/perfiles-deportivos','deportista',{...data,divisional:'World Skate / Internacional'},'POST',1400)).status,400);
+ const r=await request('/perfiles-deportivos','deportista',data,'POST',1400);assert.equal(r.status,201);assert.equal(r.data.deporte,'ROLLER FREESTYLE');
+ assert.equal((await request('/perfiles-deportivos/'+r.data.id,'deportista',{disciplina:'Libre'},'PUT',1400)).status,400);
+ assert.equal((await request('/perfiles-deportivos/'+r.data.id,'deportista',{deporte:'PATINAJE ARTÍSTICO',disciplina:'Libre'},'PUT',1400)).status,409);
+ assert.equal((await request('/perfiles-deportivos/'+r.data.id,'deportista',{disciplina:'PARK (BOWL)',categoria:'PRO FEMENINO'},'PUT',1400)).status,200);
+ assert.equal((await request('/perfiles-deportivos/'+r.data.id,'deportista',{disciplina:'STREET'},'PUT',1200)).status,403);
+});

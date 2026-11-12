@@ -124,10 +124,10 @@ router.patch('/admin/usuarios/:id/documentacion',C.wrap(async(req,res)=>{
     const u=await C.Usuario.findByPk(req.params.id,{transaction:t,lock:t.LOCK.UPDATE});if(!u)C.R.fail(404,'Cuenta no encontrada.');
     if(Number(u.id)===req.auth.id)C.R.fail(400,'No podés revisar tus documentos.');
     if(Number(req.body.revision)!==u.revision)C.R.fail(409,'La solicitud cambió.');
-    if(req.body.aprobada && u.estado!=='aprobado')C.R.fail(409,'Aprobá la cuenta: esa decisión incluye la revisión documental.');
+    if(req.body.aprobada && !['pendiente','aprobado'].includes(u.estado))C.R.fail(409,'Esperá el reenvío de las correcciones antes de aprobar la documentación.');
     if(req.body.aprobada){if(u.estado==='pendiente' && !await C.presentada(u,t))C.R.fail(409,'La persona todavía no envió la solicitud.');await C.completa(u);for(const d of require('../services/documentos-vigencia').resumen(u)){if(u[d.campo]&&!d.vence)C.R.fail(400,'Falta la fecha de expedición: '+d.label);}}
     const campos=req.body.aprobada?[]:require('../services/documentos-permisos').observaciones(u,req.body.campos);
-    await u.update({documentacionAprobada:req.body.aprobada,camposCorregir:campos,correcciones:req.body.aprobada?null:motivo,revision:u.revision+1},{transaction:t});
+    await u.update({documentacionAprobada:req.body.aprobada,...(!req.body.aprobada&&u.estado==='pendiente'?{estado:'requiere_correcciones',aprobado:false}:{}),camposCorregir:campos,correcciones:req.body.aprobada?null:motivo,revision:u.revision+1},{transaction:t});
     await C.historial(u,req.auth.id,req.body.aprobada?'documentacion_aprobada':'documentacion_observada',motivo,t);
     await C.encolar(u,'documentacion',t);
   });res.json(await C.detalle(await C.Usuario.findByPk(req.params.id),true));

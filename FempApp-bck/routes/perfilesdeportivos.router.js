@@ -129,6 +129,8 @@ router.post('/', roles('deportista', 'administrador'), async (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
+    if(usuario.rol!=='deportista')return res.status(403).json({error:'Los perfiles deportivos corresponden exclusivamente a deportistas.'});
+    const deporte=require('../services/deportes').validar(req.body);
     const validacionClub = await validarClubYSede({ clubId, clubSedeId });
     if (!validacionClub.ok) {
       return res
@@ -138,6 +140,7 @@ router.post('/', roles('deportista', 'administrador'), async (req, res) => {
 
     const nuevoPerfil = await PerfilDeportivo.create({
       usuarioId,
+      deporte,
       disciplina,
       licencia: licencia ?? null,
       modalidad: modalidad ?? null,
@@ -160,6 +163,7 @@ router.post('/', roles('deportista', 'administrador'), async (req, res) => {
 
     return res.status(201).json(perfilCreado);
   } catch (error) {
+    if(error.status)return res.status(error.status).json({error:error.message});
     console.error("[FEMPA][perfilesdeportivos.router.js] Error al crear perfil deportivo:");
     return res.status(500).json({ error: 'Error al crear perfil deportivo' });
   }
@@ -193,6 +197,10 @@ router.put('/:id', roles('deportista', 'administrador'), async (req, res) => {
     )
       return res.status(403).json({ error: 'Perfil ajeno.' });
 
+    const usuario=await Usuario.findByPk(perfil.usuarioId);
+    if(!usuario||usuario.rol!=='deportista')return res.status(403).json({error:'Los perfiles deportivos corresponden exclusivamente a deportistas.'});
+    if(req.body.deporte && req.body.deporte!==(perfil.deporte||'PATINAJE ARTÍSTICO'))return res.status(409).json({error:'El deporte de un perfil existente no se cambia. Creá otro perfil.'});
+    require('../services/deportes').validar({...perfil.toJSON(),...req.body,deporte:perfil.deporte||'PATINAJE ARTÍSTICO'});
     const nextClubId = clubId ?? perfil.clubId;
     const nextClubSedeId = Object.prototype.hasOwnProperty.call(req.body, 'clubSedeId')
       ? clubSedeId
@@ -232,6 +240,7 @@ router.put('/:id', roles('deportista', 'administrador'), async (req, res) => {
 
     return res.status(200).json(perfilActualizado);
   } catch (error) {
+    if(error.status)return res.status(error.status).json({error:error.message});
     console.error("[FEMPA][perfilesdeportivos.router.js] Error al actualizar perfil deportivo:");
     return res
       .status(500)

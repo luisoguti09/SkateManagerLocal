@@ -76,6 +76,7 @@ export class RegistroComponent implements OnDestroy {
       confirmPass: ['', Validators.required],
       dni: ['', Validators.required],
       cuil: [''],
+      deporte: [''],
       rolId: [null, Validators.required],
       categoria: [{ value: '', disabled: true }],
       nivel: [{ value: '', disabled: true }],
@@ -141,6 +142,7 @@ export class RegistroComponent implements OnDestroy {
 
   get esDeportista(): boolean {return String(this.roles.find(r=>Number(r.id)===Number(this.form?.get('rolId')?.value))?.nombre || '').toLowerCase().trim()==='deportista';}
   private configurarPorRol(rolId: number): void {
+    const deporte=this.form.get('deporte')!;deporte.setValidators(this.esDeportista?[Validators.required]:[]);deporte.updateValueAndValidity({emitEvent:false});
     const cuil=this.form.get('cuil')!;
     cuil.setValidators(this.esDeportista ? [Validators.required,Validators.pattern(/^(?:[0-9]{11}|[0-9]{2}-[0-9]{8}-[0-9])$/)] : []);
     cuil.updateValueAndValidity({emitEvent:false});
@@ -275,6 +277,7 @@ export class RegistroComponent implements OnDestroy {
       password: raw.password,
       dni,
       cuil: this.esDeportista ? raw.cuil : null,
+      deporte: this.esDeportista ? raw.deporte : null,
       rolId,
       clubId: this.clubSeleccionado?.id ?? null,
       club: this.clubSeleccionado?.nombre ?? this.pers?.club ?? null,

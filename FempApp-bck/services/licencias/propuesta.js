@@ -18,7 +18,7 @@ function validar(c){
  for(let i=1;i<tramos.length;i++)if(tramos[i].desde<=tramos[i-1].hasta)throw new Error('Los periodos no pueden superponerse.');
  if(c.correoTesoreria!==undefined&&typeof c.correoTesoreria!=='boolean')throw new Error('Preferencia de correo inválida.');
  const avisoDias=c.avisoDias??7;if(!Number.isInteger(avisoDias)||avisoDias<0||avisoDias>90)throw new Error('El aviso debe ser entre 0 y 90 días antes.');
- return {temporada:c.temporada,criterio:'solicitud_nacional',accesoProvisional:c.accesoProvisional,avisoDias,correoTesoreria:c.correoTesoreria===true,tramos};
+ return {temporada:c.temporada,criterio:'solicitud_nacional',accesoProvisional:c.accesoProvisional,avisoDias:7,correoTesoreria:true,tramos};
 }
 function asignar(c,fechaNacional){
  const config=validar(c);if(!fecha(fechaNacional))throw new Error('Fecha nacional inválida.');

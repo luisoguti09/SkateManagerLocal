@@ -31,12 +31,12 @@
  <label>Fecha del cambio<input type="date" [(ngModel)]="fechaClub" [disabled]="busy"></label><p class="mini">El cambio se aplica al guardar. Registrá una fecha hasta hoy; no programa cambios futuros.</p>
  <button type="button" (click)="cambiarClub()" [disabled]="busy || !clubDestino || !fechaClub">Cambiar de club</button>
  </section>
- <section class="panel" *ngIf="u.estado==='aprobado'">
- <h2>Revisión de documentación</h2><p>Estado documental: <strong>{{u.documentacionAprobada?'Aprobada':'Pendiente de revisión'}}</strong>. Esta revisión conserva la cuenta aprobada.</p>
+ <section class="panel">
+ <h2>Revisión de documentación</h2><p *ngIf="u.estado!=='aprobado'">Podés revisar los documentos por separado cuando la solicitud esté enviada. Aprobar documentación no aprueba la cuenta; aprobar la cuenta incluye la documentación. Solicitar correcciones vuelve a habilitar el formulario.</p><p>Estado documental: <strong>{{u.documentacionAprobada?'Aprobada':'Pendiente de revisión'}}</strong>. Esta revisión no modifica el estado de la cuenta.</p>
  <p>Para solicitar una corrección, seleccioná los documentos e indicá qué debe corregir. El DNI se habilita únicamente para los lados seleccionados.</p>
  <div class="grid"><label class="check" *ngFor="let c of documentosCorregibles"><input type="checkbox" [(ngModel)]="seleccion[c.key]" [disabled]="busy">{{c.label}}</label></div>
  <label>Indicación para la persona<textarea [(ngModel)]="motivo" maxlength="2000" [disabled]="busy"></textarea></label>
- <div class="acciones"><button type="button" (click)="documentos(true)" [disabled]="busy || u.documentacionAprobada">Aprobar documentación</button><button type="button" class="secundario" (click)="documentos(false)" [disabled]="busy">Solicitar corrección documental</button></div>
+ <div class="acciones"><button type="button" (click)="documentos(true)" [disabled]="busy || u.documentacionAprobada || (u.estado!=='aprobado' && !(u.estado==='pendiente' && u.solicitudEnviada))">Aprobar documentación</button><button type="button" class="secundario" (click)="documentos(false)" [disabled]="busy">Solicitar corrección documental</button></div>
  </section>
 <section class="panel"><h2>Decisión de la Federación</h2><p *ngIf="u.estado==='pendiente' && !u.solicitudEnviada" class="observaciones">La persona todavía está completando la solicitud. No se puede aprobar hasta que la envíe.</p><form (ngSubmit)="decidir()"><label>Nuevo estado<select name="decision" [(ngModel)]="nuevoEstado"><option value="aprobado">Aprobada</option><option value="requiere_correcciones">Requiere correcciones</option><option value="bloqueado">Bloqueada</option><option value="pendiente">Devolver una cuenta bloqueada a revisión</option></select></label>
 <p>“Requiere correcciones” permite completar y reenviar la misma solicitud. “Bloqueada” suspende el acceso hasta que la Federación lo restablezca.</p>

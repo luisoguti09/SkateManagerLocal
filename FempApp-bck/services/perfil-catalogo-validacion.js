@@ -1,6 +1,7 @@
 'use strict';
 const K=require('./perfil-catalogo');
 function validar(p){
+ if(p.deporte==='ROLLER FREESTYLE'){require('./deportes').validar(p);return p;}
  const fail=msg=>{const e=new Error(msg);e.status=400;throw e;};
  if(!K.DISCIPLINAS.includes(p.disciplina))fail('Seleccioná una disciplina del catálogo.');
  if(!['CAP','PROMOS_FEMPA'].includes(p.origenCategoria))fail('Seleccioná un origen habilitado.');

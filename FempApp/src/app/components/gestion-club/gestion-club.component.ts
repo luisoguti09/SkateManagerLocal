@@ -16,11 +16,11 @@ import {environment} from '../../../environments/environment';
 <label>Deportistas del club<select [ngModel]="seleccion?.usuarioId||0" (ngModelChange)="elegir($event)" [disabled]="busy"><option [ngValue]="0">Seleccioná una deportista</option><option *ngFor="let d of deportistas" [ngValue]="d.usuarioId">{{etiqueta(d)}}</option></select></label></div><p *ngIf="!deportistas.length">No hay coincidencias.</p></section>
 <section *ngIf="seleccion"><span class="eyebrow">PERFILES DEPORTIVOS</span><h2>{{seleccion.nombre}}</h2><p>Los cambios quedan registrados con tu usuario. Las inscripciones existentes conservan sus datos hasta que se actualicen expresamente durante ABM.</p>
 <article *ngFor="let p of perfiles"><h3>{{p.disciplina}} · {{p.categoria}}</h3><ng-container *ngIf="editar; else lectura"><div class="grid">
-<label>Disciplina<select [(ngModel)]="p.disciplina" (ngModelChange)="dependencias(p,'disciplina')" [disabled]="busy"><option value="">Seleccioná</option><option *ngFor="let v of disciplinas" [value]="v">{{v}}</option></select></label>
-<label>Origen<select [(ngModel)]="p.origenCategoria" (ngModelChange)="dependencias(p,'origen')" [disabled]="busy"><option value="">Seleccioná</option><option value="CAP">CAP</option><option value="PROMOS_FEMPA">PROMOS FEMPA</option></select></label>
-<label>Licencia<select [(ngModel)]="p.licencia" [disabled]="busy"><option value="">Seleccioná</option><option *ngFor="let v of licencias" [value]="v">{{v}}</option></select></label>
-<label>Modalidad<select [(ngModel)]="p.modalidad" [disabled]="busy"><option value="">Seleccioná</option><option *ngFor="let v of modalidades(p)" [value]="v">{{v}}</option></select></label>
-<label>Divisional<select [(ngModel)]="p.divisional" (ngModelChange)="dependencias(p,'divisional')" [disabled]="busy"><option value="">Seleccioná</option><option *ngFor="let v of divisionales(p)" [value]="v">{{v}}</option></select></label>
+<label>Disciplina<select [(ngModel)]="p.disciplina" (ngModelChange)="dependencias(p,'disciplina')" [disabled]="busy"><option value="">Seleccioná</option><option *ngFor="let v of disciplinasPerfil(p)" [value]="v">{{v}}</option></select></label>
+<label *ngIf="p.deporte!=='ROLLER FREESTYLE'">Origen<select [(ngModel)]="p.origenCategoria" (ngModelChange)="dependencias(p,'origen')" [disabled]="busy"><option value="">Seleccioná</option><option value="CAP">CAP</option><option value="PROMOS_FEMPA">PROMOS FEMPA</option></select></label>
+<label *ngIf="p.deporte!=='ROLLER FREESTYLE'">Licencia<select [(ngModel)]="p.licencia" [disabled]="busy"><option value="">Seleccioná</option><option *ngFor="let v of licencias" [value]="v">{{v}}</option></select></label>
+<label *ngIf="p.deporte!=='ROLLER FREESTYLE'">Modalidad<select [(ngModel)]="p.modalidad" [disabled]="busy"><option value="">Seleccioná</option><option *ngFor="let v of modalidades(p)" [value]="v">{{v}}</option></select></label>
+<label *ngIf="p.deporte!=='ROLLER FREESTYLE'">Divisional<select [(ngModel)]="p.divisional" (ngModelChange)="dependencias(p,'divisional')" [disabled]="busy"><option value="">Seleccioná</option><option *ngFor="let v of divisionales(p)" [value]="v">{{v}}</option></select></label>
 <label>Categoría<select [(ngModel)]="p.categoria" [disabled]="busy||!categorias(p).length"><option value="">Seleccioná</option><option *ngFor="let v of categorias(p)" [value]="v">{{v}}</option></select></label>
 <label>Temporada<select [(ngModel)]="p.temporada" [disabled]="busy"><option value="">Seleccioná</option><option *ngFor="let v of temporadas(p)" [value]="v">{{v}}</option></select></label></div>
 <p *ngIf="!categorias(p).length" class="alert">Esta combinación aún no tiene categorías disponibles en el catálogo. Solicitá su revisión a Administración.</p>
@@ -33,13 +33,14 @@ import {environment} from '../../../environments/environment';
 export class GestionClubComponent implements OnInit{
  private route=inject(ActivatedRoute);private http=inject(HttpClient);private auth=inject(AuthService);private base=environment.SERVER_API.replace(/\/$/,'');
  panel:any=null;seleccion:any=null;perfiles:any[]=[];eventosAbm:any[]=[];eventoId=0;seleccionEvento=0;seleccionAnterior:number[]=[];elegidos:Record<number,boolean>={};buscar='';busy=false;error='';mensaje='';
+ disciplinasPerfil(p:any){return p.deporte==='ROLLER FREESTYLE'?['STREET','PARK (BOWL)']:DISCIPLINAS;}
  disciplinas=DISCIPLINAS;licencias=LICENCIAS;
  modalidades(p:any){return p.disciplina==='Danza'?['Individual','Parejas']:MODALIDADES;}
  divisionales(p:any){return p.origenCategoria==='PROMOS_FEMPA'?(p.disciplina==='Libre'?['Promos FEMPA']:[]):p.disciplina==='Danza'?Object.keys(CATEGORIAS_DANZA_2026):DIVISIONALES;}
- categorias(p:any){return categoriasPerfil(p.disciplina,p.origenCategoria,p.divisional);}
+ categorias(p:any){if(p.deporte==='ROLLER FREESTYLE')return ['PRO FEMENINO','PRO MASCULINO','JUNIOR FEMENINO','JUNIOR MASCULINO'];return categoriasPerfil(p.disciplina,p.origenCategoria,p.divisional);}
  temporadas(p:any){const y=new Date().getFullYear();return [...new Set([String(p.temporada||y),String(y-1),String(y),String(y+1)])].sort();}
- dependencias(p:any,campo:string){if(campo!=='divisional')p.divisional='';p.categoria='';if(!this.modalidades(p).includes(p.modalidad))p.modalidad='';}
- valido(p:any){return this.disciplinas.includes(p.disciplina)&&['CAP','PROMOS_FEMPA'].includes(p.origenCategoria)&&this.licencias.includes(p.licencia)&&this.modalidades(p).includes(p.modalidad)&&this.divisionales(p).includes(p.divisional)&&this.categorias(p).includes(p.categoria)&&/^(20|21)\d{2}$/.test(String(p.temporada));}
+ dependencias(p:any,campo:string){if(p.deporte==='ROLLER FREESTYLE'){p.categoria='';return;}if(campo!=='divisional')p.divisional='';p.categoria='';if(!this.modalidades(p).includes(p.modalidad))p.modalidad='';}
+ valido(p:any){if(p.deporte==='ROLLER FREESTYLE')return this.disciplinasPerfil(p).includes(p.disciplina)&&this.categorias(p).includes(p.categoria)&&/^(20|21)\d{2}$/.test(String(p.temporada));return this.disciplinas.includes(p.disciplina)&&['CAP','PROMOS_FEMPA'].includes(p.origenCategoria)&&this.licencias.includes(p.licencia)&&this.modalidades(p).includes(p.modalidad)&&this.divisionales(p).includes(p.divisional)&&this.categorias(p).includes(p.categoria)&&/^(20|21)\d{2}$/.test(String(p.temporada));}
  etiqueta(d:any){return d.nombre+' · '+d.dni;}
  elegir(id:number){const d=this.panel?.deportistas.find((x:any)=>Number(x.usuarioId)===Number(id));if(d)this.abrir(d);else this.seleccion=null;}
  autocompletar(){const d=this.panel?.deportistas.find((x:any)=>this.etiqueta(x)===this.buscar);if(d)this.abrir(d);}

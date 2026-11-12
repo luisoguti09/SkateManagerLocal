@@ -1,6 +1,7 @@
 import { ClubOption, ClubSedeOption } from './club-option.interface';
 
 export interface PerfilDeportivo {
+  deporte?: string;
   id: number;
   usuarioId: number;
   disciplina: string;
@@ -21,6 +22,7 @@ export interface PerfilDeportivo {
 }
 
 export interface CrearPerfilDeportivoDto {
+  deporte?: string;
   usuarioId: number;
   disciplina: string;
   origenCategoria?: string | null;

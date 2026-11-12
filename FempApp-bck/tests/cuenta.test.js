@@ -58,7 +58,7 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
  };
  try{
  await t.test('CUIL: registro obligatorio solo para deportista y validado en servidor',async()=>{
-  const datos={nombre:'CUIL demo',edad:20,email:'cuil@example.org',dni:'10000004',password:'UnaClave1234',rolId:1};
+  const datos={nombre:'CUIL demo',edad:20,email:'cuil@example.org',dni:'10000004',password:'UnaClave1234',rolId:1,deporte:'PATINAJE ARTÍSTICO'};
   assert.equal((await call('POST','/auth/register',null,datos)).status,400);
   assert.equal((await call('POST','/auth/register',null,{...datos,cuil:'20100000024'})).status,400);
   const r=await call('POST','/auth/register',null,{...datos,cuil:'20-10000002-5'});
@@ -154,6 +154,17 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
   user.solicitaLicenciaProvincial=true;assert.equal((await call('POST','/cuenta/mia/reenviar',user,{revision:user.revision})).status,400);
   process.env.REQUIRE_DNI_DOCUMENTS='false';assert.equal((await call('POST','/cuenta/mia/reenviar',user,{revision:user.revision})).status,200);assert.equal(user.estado,'pendiente');
   process.env.REQUIRE_DNI_DOCUMENTS='true';user.solicitaLicenciaProvincial=false;user.dniDorso=user.dniFrente;
+ });
+ await t.test('revisión documental opcional no aprueba una cuenta pendiente',async()=>{
+  const a=await U.create({nombre:'Docs pendientes',dni:'44445555',email:'docp@example.org',rol:'deportista',estado:'pendiente',aprobado:false,fotoPerfil:user.fotoPerfil,dniFrente:user.dniFrente,dniDorso:user.dniDorso});
+  const url='/cuenta/admin/usuarios/'+a.id+'/documentacion';
+  assert.equal((await call('PATCH',url,admin,{aprobada:true,revision:a.revision})).status,409);
+  await H.create({usuarioId:a.id,accion:'enviado'});
+  assert.equal((await call('PATCH',url,admin,{aprobada:true,revision:a.revision})).status,200);
+  assert.equal(a.documentacionAprobada,true);assert.equal(a.aprobado,false);assert.equal(a.estado,'pendiente');
+  assert.equal((await call('POST','/negocio',a)).status,403);
+  assert.equal((await call('PATCH',url,admin,{aprobada:false,revision:a.revision,campos:['dniFrente'],motivo:'El frente no es legible.'})).status,200);
+  assert.equal(a.estado,'requiere_correcciones');assert.deepEqual(a.camposCorregir,['dniFrente']);
  });
  await t.test('aprobar genera historial y aviso; habilita negocio',async()=>{
   const r=await call('PATCH',`/cuenta/admin/usuarios/${user.id}/estado`,admin,{estado:'aprobado',revision:user.revision,motivo:''});assert.equal(r.status,200);assert.equal(user.aprobado,true);assert.equal(user.documentacionAprobada,true);assert.equal(Q.rows.at(-1).tipo,'aprobado');assert.ok(H.rows.some(h=>h.usuarioId===user.id && h.estado==='aprobado'));

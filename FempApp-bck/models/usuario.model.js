@@ -7,6 +7,7 @@ const Role = require('./rol.model');
 const { v4: uuidv4 } = require('uuid');
 const Usuario = sequelize.define('Usuario', {
 
+  deporte: { type: DataTypes.STRING(80), allowNull: true },
   cuil: { type: DataTypes.STRING(11), allowNull: true },
   sessionVersion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   revision: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },

@@ -15,5 +15,5 @@ async function miembro(actorId, usuarioId, t, escritura=false) {
 function exigirAbm(ev) {
   if(R.etapa(ev)!=='abm' || ev.inscripcionesConfirmadasAt)R.fail(409,'La técnica puede editar únicamente durante ABM, antes de confirmar las inscripciones.');
 }
-function versionPerfil(p){return require('node:crypto').createHash('sha256').update(JSON.stringify(['usuarioId','disciplina','origenCategoria','licencia','modalidad','divisional','categoria','temporada','activa','clubId','clubSedeId'].map(k=>p[k]??null))).digest('hex');}
+function versionPerfil(p){return require('node:crypto').createHash('sha256').update(JSON.stringify(['usuarioId','deporte','disciplina','origenCategoria','licencia','modalidad','divisional','categoria','temporada','activa','clubId','clubSedeId'].map(k=>p[k]??null))).digest('hex');}
 module.exports={mismoClub,miembro,exigirAbm,versionPerfil};

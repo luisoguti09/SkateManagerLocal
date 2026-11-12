@@ -3,14 +3,12 @@ const crypto=require('node:crypto');
 const P=require('./propuesta');
 // Dos hitos por fecha y destinatario, independientes de la cantidad de reinicios.
 function pendientes(datos,hoy=P.hoyArgentina()){
- if(datos.correoTesoreria!==true)return [];
- return P.alertas(datos,hoy).map(a=>({...a,temporada:datos.temporada,etapa:a.dias<0?'vencido':'previo'}));
+ return P.alertas(datos,hoy).filter(a=>a.dias>=0).map(a=>({...a,temporada:datos.temporada,etapa:a.dias===0?'vencido':'previo'}));
 }
 function clave(usuarioId,a){return crypto.createHash('sha256').update(JSON.stringify([usuarioId,a.temporada,a.tipo,a.fecha,a.etapa])).digest('hex');}
 async function procesar({Config,Aviso,Usuario,encolar},hoy=P.hoyArgentina()){
  const rows=await Config.findAll({order:[['id','ASC']]});let cantidad=0;
  for(const row of rows){
-  if(row.datos.correoTesoreria!==true)continue;
   await Config.sequelize.transaction(async t=>{
    const actual=await Config.findByPk(row.id,{transaction:t,lock:t.LOCK.UPDATE});
    if(!actual)return;

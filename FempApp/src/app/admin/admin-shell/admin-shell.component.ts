@@ -58,7 +58,7 @@ export class AdminShellComponent {
   }
 
   back() {
-     this.location.back();
+     this.router.navigate(['/admin']);
      }
 
      logout() {

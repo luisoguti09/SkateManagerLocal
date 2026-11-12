@@ -46,5 +46,5 @@ function perfil(body) {
   }
   return data;
 }
-const safe = u => Object.fromEntries(['id','dni','cuil','nombre','edad','email','rol','rolId','club','categoria','nivel','estado','aprobado','domicilio','telefono','fechaNacimiento','fotoPerfil','documentacionAprobada','solicitaLicenciaProvincial','revision','correcciones','camposCorregir','rolSolicitado','qrJti','certificadoAntecedentesFecha','fichaMedicaFecha','wadaFecha','instagram','facebook','tiktok'].map(k=>[k,u[k]]));
+const safe = u => Object.fromEntries(['id','deporte','dni','cuil','nombre','edad','email','rol','rolId','club','categoria','nivel','estado','aprobado','domicilio','telefono','fechaNacimiento','fotoPerfil','documentacionAprobada','solicitaLicenciaProvincial','revision','correcciones','camposCorregir','rolSolicitado','qrJti','certificadoAntecedentesFecha','fichaMedicaFecha','wadaFecha','instagram','facebook','tiktok'].map(k=>[k,u[k]]));
 module.exports = { ESTADOS, CAMPOS, fail, passwordValida, hashToken, decision, perfil, safe };
