@@ -222,6 +222,37 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
   assert.equal((await enviar({...datos,revision:nuevo.revision,telefono:'2611234567'})).status,200);
   assert.equal(Q.rows.at(-1).tipo,'reenviado');
  });
+ await t.test('correcciones de CUIL y foto se guardan juntas para delegado, tecnica, tesoreria y admin',async()=>{
+  const original=await sharp({create:{width:20,height:20,channels:3,background:'#fff'}}).png().toBuffer();
+  const replacement=await sharp({create:{width:20,height:20,channels:3,background:'#00f'}}).png().toBuffer();
+  for(const rol of ['delegado','tecnico','tesoreria','administrador']){
+   const persona=await U.create({nombre:'Persona de prueba',edad:26,fechaNacimiento:'2000-01-01',club:'Giol',dni:'10000002',email:rol+'-correccion@example.org',rol,estado:'requiere_correcciones',camposCorregir:['cuil','fotoPerfil'],documentacionAprobada:true});
+   const docs={fotoPerfil:[{buffer:original,size:original.length}]};
+   if(rol==='tecnico')docs.certificadoAntecedentes=[{buffer:original,size:original.length}];
+   await F.guardar(persona.id,docs,persona.id);
+   const anterior=persona.fotoPerfil,revision=persona.revision;
+   const enviar=async cuil=>{
+    const f=new FormData();f.append('datos',JSON.stringify({nombre:persona.nombre,edad:26,club:'Giol',revision,cuil}));
+    f.append('fotoPerfil',new Blob([replacement],{type:'image/png'}),'reemplazo.png');
+    const r=await fetch(base+'/cuenta/mia/enviar',{method:'POST',headers:{Authorization:'Bearer '+token(persona)},body:f});
+    return{status:r.status,data:await r.json()};
+   };
+   const archivos=await fs.readdir(path.join(temp,'privado'));
+   const falta=await enviar('');assert.equal(falta.status,400);assert.match(falta.data.error,/cuil/i);
+   assert.equal(persona.fotoPerfil,anterior);assert.equal(persona.revision,revision);
+   assert.deepEqual(await fs.readdir(path.join(temp,'privado')),archivos);
+   const guardado=await enviar('20-10000002-5');assert.equal(guardado.status,200,JSON.stringify(guardado.data));
+   assert.equal(persona.cuil,'20100000025');assert.notEqual(persona.fotoPerfil,anterior);
+   assert.equal(await F.existe(anterior,'fotoPerfil'),false);assert.equal(await F.existe(persona.fotoPerfil,'fotoPerfil'),true);
+   assert.equal(persona.documentacionAprobada,false);assert.equal(persona.revision,revision+1);
+   const recargado=await call('GET','/cuenta/mia',persona);
+   assert.equal(recargado.data.cuil,'20100000025');assert.equal(recargado.data.documentos.fotoPerfil,true);
+   assert.equal(recargado.data.solicitudEnviada,true);assert.equal(recargado.data.estado,'pendiente');
+   const foto=await fetch(base+'/cuenta/'+persona.id+'/archivo/fotoPerfil',{headers:{Authorization:'Bearer '+token(persona)}});
+   assert.equal(foto.status,200);const bytes=Buffer.from(await foto.arrayBuffer());
+   const rgb=await sharp(bytes).removeAlpha().raw().toBuffer();assert.ok(rgb[2]>rgb[0]+100,'se descarga la foto azul nueva');
+  }
+ });
  await t.test('administrador no requiere DNI; aprobación no emite licencia ni pago',async()=>{
   const a=await U.create({nombre:'Admin nuevo',edad:22,dni:'11112222',email:'admin2@example.org',rol:'administrador',estado:'pendiente'});
   const imagen=await sharp({create:{width:20,height:20,channels:3,background:'#fff'}}).png().toBuffer();

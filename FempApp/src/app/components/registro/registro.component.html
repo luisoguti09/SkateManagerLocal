@@ -142,7 +142,7 @@
 
           <mat-form-field *ngIf="esDeportista" appearance="outline"><mat-label>Elegí tu deporte</mat-label><mat-select formControlName="deporte"><mat-option value="PATINAJE ARTÍSTICO">PATINAJE ARTÍSTICO</mat-option><mat-option value="ROLLER FREESTYLE">ROLLER FREESTYLE</mat-option></mat-select></mat-form-field>
 <mat-form-field *ngIf="esDeportista" appearance="outline" floatLabel="always">
-            <mat-label>CUIL de la deportista</mat-label>
+            <mat-label>CUIL</mat-label>
             <input matInput formControlName="cuil" inputmode="numeric" maxlength="13" required autocomplete="off">
             <mat-hint>11 dígitos. Lo necesitamos para gestionar el seguro.</mat-hint>
             <mat-error>Ingresá los 11 dígitos del CUIL, con o sin guiones.</mat-error>

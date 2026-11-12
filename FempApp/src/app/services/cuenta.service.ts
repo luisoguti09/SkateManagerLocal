@@ -4,7 +4,7 @@ import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 export const estados: Record<string,string> = {pendiente:'Pendiente de revisión',requiere_correcciones:'Requiere correcciones',aprobado:'Aprobada',bloqueado:'Bloqueada'};
 export const camposCuenta = [
- {key:'cuil',label:'CUIL de la deportista'}, {key:'nombre',label:'Nombre completo'}, {key:'edad',label:'Edad'}, {key:'club',label:'Club'},
+ {key:'cuil',label:'CUIL'}, {key:'nombre',label:'Nombre completo'}, {key:'edad',label:'Edad'}, {key:'club',label:'Club'},
  {key:'categoria',label:'Categoría'}, {key:'nivel',label:'Nivel'}, {key:'domicilio',label:'Domicilio'},
  {key:'telefono',label:'Teléfono'}, {key:'fechaNacimiento',label:'Fecha de nacimiento'},
  {key:'fotoPerfil',label:'Foto de perfil'}, {key:'dniFrente',label:'DNI · frente'}, {key:'dniDorso',label:'DNI · dorso'}, {key:'fichaMedica',label:'Ficha médica'}, {key:'certificadoWada',label:'Certificado WADA'}, {key:'certificadoAntecedentes',label:'Certificado de antecedentes penales'}

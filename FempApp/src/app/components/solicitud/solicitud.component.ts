@@ -90,7 +90,8 @@ export class SolicitudComponent implements OnInit,OnDestroy {
  get archivos(){return camposCuenta.filter(c=>this.u?.politicaDocumentos?.visibles?.includes(c.key));}
  get deportiva(){return ['deportista','tecnico','delegado'].includes(this.u?.rol);}
  get editable(){return this.u && (this.u.estado==='requiere_correcciones' || (this.u.estado==='pendiente' && !this.u.solicitudEnviada));}
- get campos(){return camposCuenta.filter(c=>(c.key!=='cuil' || this.u?.rol==='deportista') && !['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','certificadoWada','categoria','club'].includes(c.key) && (c.key!=='nivel' || this.u?.rol==='tecnico'));}
+ get cuilObligatorio(){return this.u?.rol==='deportista' || !!this.u?.camposCorregir?.includes('cuil');}
+ get campos(){return camposCuenta.filter(c=>!['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','certificadoWada','categoria','club'].includes(c.key) && (c.key!=='nivel' || this.u?.rol==='tecnico'));}
  get observacionesCampos(){return camposCuenta.filter(c=>c.key!=='categoria' && this.u?.camposCorregir?.includes(c.key));}
  get destino(){return ({administrador:'/admin',deportista:'/dashboard-deport',delegado:'/dashboard-prof',tecnico:'/dashboard-prof',juez:'/dashboard-juez',tesoreria:'/dashboard-tesoreria'} as Record<string,string>)[this.u?.rol] || '/login';}
  get tituloEstado(){return this.u?.etapaSolicitud || this.estados[this.u?.estado] || 'Mi solicitud';}
