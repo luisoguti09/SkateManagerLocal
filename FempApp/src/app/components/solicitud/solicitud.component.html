@@ -31,13 +31,18 @@
  <button type="button" class="secundario" *ngIf="u.documentos.certificadoAntecedentes" (click)="verArchivo('certificadoAntecedentes','Certificado de antecedentes penales')" [disabled]="busy">Ver mi certificado</button></div>
 </section>
 
+ <section class="panel" *ngIf="u.estado==='aprobado' && (u.camposCorregir?.includes('dniFrente') || u.camposCorregir?.includes('dniDorso'))">
+ <h2>Corregir DNI autorizado</h2><p>Administración habilitó los archivos indicados. El permiso se cierra al enviarlos; el número de DNI no cambia.</p>
+ <ng-container *ngFor="let k of ['dniFrente','dniDorso']"><label *ngIf="u.camposCorregir?.includes(k)">{{k==='dniFrente'?'DNI · frente':'DNI · dorso'}}<input type="file" accept="image/jpeg,image/png,image/webp" (change)="seleccionar($event,k)" [disabled]="busy"></label></ng-container>
+ <button type="button" (click)="corregirIdentidad()" [disabled]="busy">Enviar corrección de DNI</button>
+ </section>
  <section class="panel" *ngIf="u.rol==='deportista'">
-  <h2>Vigencia de mis documentos</h2>
+  <h2>Ficha médica y WADA</h2><p>Podés corregirlos o renovarlos aunque tu solicitud esté en revisión. Indicá la fecha que figura en el documento.</p>
   <p>La vigencia por fecha y la revisión de Administración son controles distintos. Revisión documental: <strong>{{u.documentacionAprobada?'Aprobada':'Pendiente'}}</strong>.</p>
   <div class="archivos"><div class="archivo" *ngFor="let d of u.vigencias">
    <h3>{{d.label}}</h3><p><strong>{{d.estado}}</strong></p>
    <p *ngIf="d.expedicion">Expedido: {{d.expedicion | date:'dd/MM/yyyy':'UTC'}}</p><p *ngIf="d.vence">Vence: {{d.vence | date:'dd/MM/yyyy':'UTC'}}</p>
-   <ng-container *ngIf="u.estado==='aprobado'">
+   <ng-container *ngIf="!editable && u.estado!=='bloqueado'">
     <label>Fecha de expedición<input type="date" [(ngModel)]="form[fechas[d.campo]]" [disabled]="busy"></label>
     <label>Cargar o reemplazar<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" (change)="seleccionar($event,d.campo)" [disabled]="busy"></label>
     <p class="mini">{{files[d.campo]?.name}} · PDF hasta 2 MB; imagen hasta 6 MB.</p>
@@ -66,7 +71,7 @@
  </section>
  <section class="panel" *ngIf="u.rol==='deportista'" aria-live="polite"><ng-container [ngTemplateOutlet]="consultaWada"></ng-container></section>
  <section class="panel"><h2>Foto y documentación</h2><p *ngIf="u.rol==='tecnico'" class="nota">Para solicitar una cuenta de técnica debés tener 18 años cumplidos y presentar el certificado de antecedentes penales. Solo vos y los administradores pueden consultar este archivo. Se admite imagen o PDF de hasta 2 MB para PDF.</p><p>{{u.rol==='tesoreria'?'Foto de perfil opcional.':'Foto de perfil obligatoria.'}} <span *ngIf="u.requiereDni">También se requieren frente y dorso del DNI.</span></p><p class="mini">Imágenes JPG, PNG o WebP de hasta 6 MB; se optimizan al guardarlas. {{u.rol==='deportista'?'Ficha médica y WADA: imagen o PDF de hasta 2 MB. Indicá la fecha del documento. La ficha vence a los 12 meses y WADA a los 2 años.':''}}</p>
-  <div class="archivos"><div class="archivo" *ngFor="let c of archivos"><label>{{c.label}}<input type="file" [accept]="['fichaMedica','certificadoAntecedentes','certificadoWada'].includes(c.key)?'image/jpeg,image/png,image/webp,application/pdf':'image/jpeg,image/png,image/webp'" (change)="seleccionar($event,c.key)" [disabled]="busy"></label><label *ngIf="fechas[c.key]">Fecha de expedición<input type="date" [name]="fechas[c.key]" [(ngModel)]="form[fechas[c.key]]" [disabled]="busy"></label><p class="mini">{{files[c.key] ? 'Seleccionado: '+files[c.key]?.name : u.documentos?.[c.key] ? 'Archivo ya cargado; no hace falta seleccionarlo otra vez.' : 'Sin archivo'}}</p><div class="acciones" *ngIf="u.documentos?.[c.key]"><button type="button" class="secundario" (click)="verArchivo(c.key,c.label)" [disabled]="busy || cargandoArchivo===c.key">Ver documento</button><button type="button" class="secundario" (click)="descargar(c.key)" [disabled]="busy">Descargar</button></div></div></div>
+  <div class="archivos"><div class="archivo" *ngFor="let c of archivos"><label>{{c.label}}<input type="file" [accept]="['fichaMedica','certificadoAntecedentes','certificadoWada'].includes(c.key)?'image/jpeg,image/png,image/webp,application/pdf':'image/jpeg,image/png,image/webp'" (change)="seleccionar($event,c.key)" [disabled]="busy || !puedeCargar(c.key)"></label><label *ngIf="fechas[c.key]">Fecha de expedición<input type="date" [name]="fechas[c.key]" [(ngModel)]="form[fechas[c.key]]" [disabled]="busy"></label><p class="mini">{{files[c.key] ? 'Seleccionado: '+files[c.key]?.name : u.documentos?.[c.key] ? 'Archivo ya cargado; no hace falta seleccionarlo otra vez.' : 'Sin archivo'}}</p><div class="acciones" *ngIf="u.documentos?.[c.key]"><button type="button" class="secundario" (click)="verArchivo(c.key,c.label)" [disabled]="busy || cargandoArchivo===c.key">Ver documento</button><button type="button" class="secundario" (click)="descargar(c.key)" [disabled]="busy">Descargar</button></div></div></div>
  </section>
  <section class="panel envio"><h2>Revisá y enviá</h2><p>El botón guarda los datos y documentos y presenta la solicitud en un único envío.</p><button type="submit" [disabled]="busy || solicitud.invalid || (deportiva && (cargandoClubes || !!errorClubes))">{{busy?'Enviando…':u.estado==='requiere_correcciones'?'Enviar correcciones':'Enviar solicitud'}}</button><p class="mini">Los cambios sin enviar se perderán si salís o actualizás el estado.</p></section>
  </form>

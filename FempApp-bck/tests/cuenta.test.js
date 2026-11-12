@@ -133,7 +133,7 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
  await H.create({usuarioId:user.id,accion:'enviado'});
  await t.test('solicitar correcciones exige motivo y campos',async()=>{
   const body={revision:user.revision,estado:'requiere_correcciones'};assert.equal((await call('PATCH',`/cuenta/admin/usuarios/${user.id}/estado`,admin,body)).status,400);
-  const r=await call('PATCH',`/cuenta/admin/usuarios/${user.id}/estado`,admin,{...body,motivo:'La foto no se ve correctamente.',campos:['fotoPerfil']});assert.equal(r.status,200);assert.equal(user.estado,'requiere_correcciones');assert.equal(Q.rows.at(-1).tipo,'requiere_correcciones');assert.ok(Q.rows.at(-1).payload);assert.ok(!Q.rows.at(-1).payload.includes(user.email));
+  const r=await call('PATCH',`/cuenta/admin/usuarios/${user.id}/estado`,admin,{...body,motivo:'La foto y el frente del DNI no se ven correctamente.',campos:['fotoPerfil','dniFrente']});assert.equal(r.status,200);assert.equal(user.estado,'requiere_correcciones');assert.equal(Q.rows.at(-1).tipo,'requiere_correcciones');assert.ok(Q.rows.at(-1).payload);assert.ok(!Q.rows.at(-1).payload.includes(user.email));
  });
  await t.test('revisión obsoleta no cambia el estado',async()=>{assert.equal((await call('PATCH',`/cuenta/admin/usuarios/${user.id}/estado`,admin,{revision:-1,estado:'bloqueado',motivo:'Suspensión de prueba.'})).status,409);});
  await t.test('reenviar requiere completar la foto',async()=>{assert.equal((await call('POST','/cuenta/mia/reenviar',user,{revision:user.revision})).status,400);});
@@ -288,6 +288,62 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
   a.fichaMedicaFecha=null;assert.equal((await C.detalle(a)).vigencias[0].estado,'Fecha pendiente');
   assert.equal((await renovar(a,{revision:a.revision,fichaMedicaFecha:fecha},'fichaMedica',null)).status,200);
   await F.borrar(a.fichaMedica,'fichaMedica');assert.equal((await C.detalle(a)).vigencias[0].estado,'Sin documento');
+ });
+ await t.test('documentos: reemplazo durante revisión, fechas protegidas y bloqueo de cuenta',async()=>{
+  const fecha=require('../services/documentos-vigencia').hoyArgentina();
+  const a=await U.create({nombre:'Pendiente documentos',email:'pd@example.org',dni:'11115555',rol:'deportista',estado:'pendiente',aprobado:false});
+  await H.create({usuarioId:a.id,accion:'enviado'});
+  const post=async(actor,datos,field='fichaMedica',file=true)=>{
+   const f=new FormData();f.append('datos',JSON.stringify(datos));if(file)f.append(field,new Blob(['%PDF-1.4\n%%EOF'],{type:'application/pdf'}),'doc.pdf');
+   const r=await fetch(base+'/cuenta/mia/documentos-vigencia',{method:'POST',headers:{Authorization:'Bearer '+token(actor)},body:f});return r.status;
+  };
+  assert.equal(await post(a,{revision:0,fichaMedicaFecha:fecha}),200);assert.equal(a.estado,'pendiente');assert.equal(a.aprobado,false);
+  assert.equal(await C.presentada(a),true);
+  assert.equal(await post(a,{revision:a.revision,fichaMedicaFecha:'2025-01-01'},'fichaMedica',false),400);
+  assert.equal(await post(a,{revision:a.revision,wadaFecha:fecha},'certificadoWada'),200);
+  assert.equal(await post(a,{revision:a.revision,fichaMedicaFecha:fecha},'dniFrente'),400);
+  a.estado='bloqueado';assert.equal(await post(a,{revision:a.revision,fichaMedicaFecha:fecha}),403);
+ });
+ await t.test('DNI: autorización específica, uso único, revisión y cuenta conservadas',async()=>{
+  const a=await U.create({nombre:'Identidad',email:'id@example.org',dni:'11116666',rol:'deportista',estado:'aprobado',aprobado:true,documentacionAprobada:true});
+  const png=await sharp({create:{width:30,height:30,channels:3,background:'#abc'}}).png().toBuffer();
+  const post=async(field,revision=a.revision,url='/cuenta/mia/identidad')=>{
+   const f=new FormData();f.append('revision',String(revision));f.append(field,new Blob([png],{type:'image/png'}),'dni.png');
+   const r=await fetch(base+url,{method:'POST',headers:{Authorization:'Bearer '+token(a)},body:f});return r.status;
+  };
+  assert.equal(await post('dniFrente'),403);
+  const revisar=(actor,campos)=>call('PATCH','/cuenta/admin/usuarios/'+a.id+'/documentacion',actor,{aprobada:false,motivo:'El frente está borroso.',campos,revision:a.revision});
+  assert.equal((await revisar(a,['dniFrente'])).status,403);
+  assert.equal((await revisar(admin,[])).status,400);
+  assert.equal((await revisar(admin,['club'])).status,400);
+  assert.equal((await revisar(admin,['dniFrente'])).status,200);assert.equal(a.estado,'aprobado');assert.equal(a.aprobado,true);
+  assert.equal(await post('dniDorso'),403);
+  assert.equal(await post('dniFrente',a.revision-1),409);
+  assert.equal(await post('dniFrente',a.revision,'/cuenta/mia/archivos'),403);
+  const crear=H.create,prevRevision=a.revision,prevFiles=await fs.readdir(path.join(temp,'privado'));
+  H.create=async()=>{throw new Error('audit failure');};
+  try{assert.equal(await post('dniFrente'),500);}finally{H.create=crear;}
+  assert.equal(a.revision,prevRevision);assert.deepEqual(a.camposCorregir,['dniFrente']);assert.deepEqual(await fs.readdir(path.join(temp,'privado')),prevFiles);
+  assert.equal(await post('dniFrente'),200);assert.equal(await F.existe(a.dniFrente,'dniFrente'),true);
+  assert.equal(a.dni,'11116666');assert.deepEqual(a.camposCorregir,[]);assert.equal(a.documentacionAprobada,false);assert.equal(a.estado,'aprobado');
+  assert.equal(await post('dniFrente'),403);
+  assert.ok(H.rows.some(h=>h.usuarioId===a.id&&h.accion==='identidad_corregida'));
+ });
+ await t.test('club: solo administración, fecha y revisión; conserva perfiles inactivos y audita',async()=>{
+  const fecha=require('../services/documentos-vigencia').hoyArgentina();
+  const a=await U.create({nombre:'Cambio club',rol:'deportista',estado:'aprobado',aprobado:true,club:'Giol'});
+  const destino=await Club.create({nombre:'Destino',activo:true});const inactivo=await Club.create({nombre:'Cerrado',activo:false});
+  const activo=await Perfiles.create({usuarioId:a.id,activa:true,club:'Giol',clubId:1,clubSedeId:10});
+  const viejo=await Perfiles.create({usuarioId:a.id,activa:false,club:'Giol',clubId:1});
+  const cambiar=(actor,body={})=>call('PATCH','/cuenta/admin/usuarios/'+a.id+'/club',actor,{clubId:destino.id,fecha,revision:a.revision,...body});
+  assert.equal((await cambiar(a)).status,403);assert.equal((await cambiar(admin,{fecha:'2099-01-01'})).status,400);
+  assert.equal((await cambiar(admin,{clubId:inactivo.id})).status,400);assert.equal((await cambiar(admin,{revision:-1})).status,409);
+  const crear=H.create;H.create=async()=>{throw new Error('audit failure');};
+  try{assert.equal((await cambiar(admin)).status,500);}finally{H.create=crear;}
+  assert.equal(a.club,'Giol');assert.equal(activo.clubId,1);
+  assert.equal((await cambiar(admin)).status,200);assert.equal(a.club,'Destino');assert.equal(activo.clubId,destino.id);assert.equal(activo.clubSedeId,null);assert.equal(viejo.club,'Giol');
+  assert.equal((await cambiar(admin)).status,409);
+  const h=H.rows.find(h=>h.usuarioId===a.id&&h.accion==='club_cambiado');assert.equal(h.actorId,admin.id);assert.equal(JSON.parse(h.motivo).fecha,fecha);
  });
  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));Module._load=load;await fs.rm(temp,{recursive:true,force:true});}
 });

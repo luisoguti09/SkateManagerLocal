@@ -60,6 +60,9 @@ async function guardar(usuarioId,files,actorId) {
       const u=await Usuario.findByPk(usuarioId,{transaction:t,lock:t.LOCK.UPDATE});
       if(!u || u.estado==='bloqueado')fail(403,'Cuenta no habilitada.');
       await editable(u,t);
+      const dni=require('./documentos-permisos');
+      if(u.estado==='aprobado' && dni.identidad.some(k=>files?.[k]?.length))fail(403,'Utilizá la corrección de DNI autorizada en Mi solicitud.');
+      dni.autorizarIdentidad(u,files,u.estado==='pendiente' && !await require('./cuenta').presentada(u,t));
       require('./cuenta-documentos').validarArchivos(u,files);
       for(const field of Object.keys(prepared))old[field]=u[field];
       await u.update({...prepared,documentacionAprobada:false,revision:u.revision+1},{transaction:t});

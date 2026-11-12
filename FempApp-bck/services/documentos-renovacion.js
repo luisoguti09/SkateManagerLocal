@@ -10,13 +10,14 @@ async function renovar(id,body,files){
  try{
   await C.Usuario.sequelize.transaction(async t=>{
    const u=await C.Usuario.findByPk(id,{transaction:t,lock:t.LOCK.UPDATE});
-   if(!u||u.rol!=='deportista'||u.estado!=='aprobado')C.R.fail(403,'La renovación corresponde a deportistas con cuenta aprobada.');
+   if(!u||u.rol!=='deportista'||!['aprobado','pendiente','requiere_correcciones'].includes(u.estado))C.R.fail(403,'La actualización corresponde a una cuenta de deportista habilitada.');
    if(!Number.isInteger(body.revision)||body.revision!==u.revision)C.R.fail(409,'La documentación cambió. Actualizá la pantalla.');
    V.validar(u,data,prepared);
+   for(const [campo,c] of Object.entries(V.campos))if(Object.hasOwn(data,c.fecha)&&u[c.fecha]&&data[c.fecha]!==u[c.fecha]&&!prepared[campo])C.R.fail(400,'Para cambiar una fecha ya registrada, adjuntá el documento correspondiente.');
    for(const [campo,c] of Object.entries(V.campos))if(Object.hasOwn(data,c.fecha)&&!prepared[campo]&&!await F.existe(u[campo],campo))C.R.fail(400,'Volvé a cargar el archivo de '+c.label+'.');
    for(const k of Object.keys(prepared))anteriores[k]=u[k];
    await u.update({...data,...prepared,documentacionAprobada:false,revision:u.revision+1},{transaction:t});
-   await C.historial(u,id,'documentos_renovados',null,t);
+   await C.historial(u,id,'documentos_renovados',Object.keys(data).join(', '),t);
   });
  }catch(e){await Promise.all(Object.entries(prepared).map(([k,v])=>F.borrar(v,k)));throw e;}
  await Promise.all(Object.entries(anteriores).map(([k,v])=>F.borrar(v,k)));

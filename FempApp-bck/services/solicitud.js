@@ -18,6 +18,7 @@ async function enviar(id,body,files) {
       if(await C.presentada(u,t))return;
       if(!Number.isInteger(body.revision) || body.revision!==u.revision)C.R.fail(409,'La solicitud cambió. Actualizá el estado antes de enviar.');
       require('./cuenta-documentos').validarArchivos(u,files);
+      require('./documentos-permisos').autorizarIdentidad(u,files,u.estado==='pendiente');
       const deportiva=C.deportiva(u);
       if(deportiva)data.cuil=require('./cuil').exigirCuil(data.cuil || u.cuil);
       if(deportiva || ['tecnico','delegado'].includes(u.rol)) {

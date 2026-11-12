@@ -47,6 +47,12 @@ export class RevisionCuentasComponent implements OnInit,OnDestroy{
  private api=inject(CuentaService);private router=inject(Router);
  estados=estados;get campos(){return camposCuenta.filter(c=>c.key!=='categoria' && (!['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','certificadoWada'].includes(c.key) || this.u?.politicaDocumentos?.visibles?.includes(c.key) || this.u?.documentos?.[c.key]));}
  get camposCorregibles(){return this.campos.filter(c=>!['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoAntecedentes','certificadoWada'].includes(c.key) || this.u?.politicaDocumentos?.visibles?.includes(c.key));}
+ clubDestino:number|null=null;fechaClub='';
+ get documentosCorregibles(){return this.campos.filter(c=>this.u?.politicaDocumentos?.visibles?.includes(c.key));}
+ cambiarClub(){
+  if(this.busy||!this.u)return;this.busy=true;this.error='';this.ok='';
+  this.api.cambiarClub(this.u.id,{clubId:this.clubDestino,fecha:this.fechaClub,revision:this.u.revision}).pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.u=u;this.clubDestino=null;this.fechaClub='';this.ok='Club actualizado. El cambio quedó registrado en el historial.';},error:e=>this.error=e.error?.error||'No se pudo cambiar el club.'});
+ }
  club='';clubes:{id:number;nombre:string}[]=[];errorClubes='';
  estado=this.router.url.includes('/todos')?'':'pendiente';q='';page=1;total=0;usuarios:any[]=[];u:any=null;busy=false;error='';ok='';motivo='';nuevoEstado='aprobado';seleccion:Record<string,boolean>={};
  private enfocar(selector:string){
@@ -60,7 +66,7 @@ export class RevisionCuentasComponent implements OnInit,OnDestroy{
  cargar(){if(this.busy)return;this.busy=true;this.error='';this.api.listar(this.estado,this.q,this.page,this.club).pipe(finalize(()=>this.busy=false)).subscribe({next:r=>{this.usuarios=r.usuarios;this.total=r.total;},error:e=>this.error=e.error?.error || 'No se pudo cargar el listado.'});}
  filtrar(){this.page=1;this.cargar();}
  pagina(delta:number){this.page+=delta;this.cargar();}
- abrir(id:number){if(this.busy)return;this.cerrarArchivo();this.busy=true;this.error='';this.ok='';this.api.detalle(id).pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.u=u;this.motivo='';this.seleccion={};this.nuevoEstado=u.estado==='bloqueado'?'pendiente':'aprobado';this.enfocar('[data-solicitud]');},error:e=>this.error=e.error?.error || 'No se pudo cargar la solicitud.'});}
+ abrir(id:number){if(this.busy)return;this.cerrarArchivo();this.busy=true;this.error='';this.ok='';this.api.detalle(id).pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.u=u;this.clubDestino=null;this.fechaClub='';this.motivo='';this.seleccion={};this.nuevoEstado=u.estado==='bloqueado'?'pendiente':'aprobado';this.enfocar('[data-solicitud]');},error:e=>this.error=e.error?.error || 'No se pudo cargar la solicitud.'});}
  decidir(){
   if(this.busy || !this.u)return;
   this.busy=true;this.error='';this.ok='';
@@ -81,7 +87,7 @@ export class RevisionCuentasComponent implements OnInit,OnDestroy{
    error:e=>{this.error=e.error?.error || 'No se pudo guardar la decisión.';this.enfocar('.error');}
   });
  }
- documentos(aprobada:boolean){if(this.busy)return;this.busy=true;this.error='';this.ok='';this.api.documentos(this.u.id,{aprobada,motivo:this.motivo,revision:this.u.revision}).pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.u=u;this.ok='Revisión documental guardada.';},error:e=>this.error=e.error?.error || 'No se pudo revisar la documentación.'});}
+ documentos(aprobada:boolean){if(this.busy)return;this.busy=true;this.error='';this.ok='';this.api.documentos(this.u.id,{aprobada,motivo:this.motivo,campos:Object.keys(this.seleccion).filter(k=>this.seleccion[k]),revision:this.u.revision}).pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.u=u;this.seleccion={};this.motivo='';this.ok='Revisión documental guardada.';},error:e=>this.error=e.error?.error || 'No se pudo revisar la documentación.'});}
  descargar(key:string){this.api.descargar(this.u.id,key).subscribe({next:b=>guardarArchivo(b,key),error:()=>this.error='No se pudo descargar el archivo.'});}
  reintentar(id:number){if(this.busy)return;this.busy=true;this.api.reintentar(id).pipe(finalize(()=>this.busy=false)).subscribe({next:()=>{this.ok='Correo programado para reintento. Actualizá el detalle para consultar el resultado.';},error:e=>this.error=e.error?.error || 'No se pudo reintentar.'});}
 }

@@ -22,6 +22,9 @@ router.post('/mia/documentos-vigencia',limite('renovacion-documental',10,3600000
  let data;try{data=JSON.parse(req.body.datos);}catch{C.R.fail(400,'Datos inválidos.');}
  res.json(await require('../services/documentos-renovacion').renovar(req.auth.id,data,req.files));
 }));
+router.post('/mia/identidad',limite('corregir-identidad',10,3600000,req=>req.auth.id),F.recibir,C.wrap(async(req,res)=>{
+ res.json(await require('../services/identidad-correccion').corregir(req.auth.id,Number(req.body.revision),req.files));
+}));
 router.get('/mia/requisito-wada',C.wrap(async(req,res)=>{
  const V=require('../services/edad-deportiva');let temporada;try{temporada=V.temporadaValida(req.query.temporada);}catch{C.R.fail(400,'Seleccioná una temporada válida.');}
  const P=require('../models/perfildeportivo.model');
@@ -98,6 +101,9 @@ router.get('/admin/usuarios',C.wrap(async(req,res)=>{
 router.get('/admin/usuarios/:id',C.wrap(async(req,res)=>{
   const u=await C.Usuario.findByPk(req.params.id);if(!u)C.R.fail(404,'Cuenta no encontrada.');res.json(await C.detalle(u,true));
 }));
+router.patch('/admin/usuarios/:id/club',C.wrap(async(req,res)=>{
+ res.json(await require('../services/cambio-club').cambiar(req.auth.id,Number(req.params.id),req.body));
+}));
 router.patch('/admin/usuarios/:id/estado',C.wrap(async(req,res)=>{
   await C.Usuario.sequelize.transaction(async t=>{
     const u=await C.Usuario.findByPk(req.params.id,{transaction:t,lock:t.LOCK.UPDATE});if(!u)C.R.fail(404,'Cuenta no encontrada.');
@@ -120,7 +126,8 @@ router.patch('/admin/usuarios/:id/documentacion',C.wrap(async(req,res)=>{
     if(Number(req.body.revision)!==u.revision)C.R.fail(409,'La solicitud cambió.');
     if(req.body.aprobada && u.estado!=='aprobado')C.R.fail(409,'Aprobá la cuenta: esa decisión incluye la revisión documental.');
     if(req.body.aprobada){if(u.estado==='pendiente' && !await C.presentada(u,t))C.R.fail(409,'La persona todavía no envió la solicitud.');await C.completa(u);for(const d of require('../services/documentos-vigencia').resumen(u)){if(u[d.campo]&&!d.vence)C.R.fail(400,'Falta la fecha de expedición: '+d.label);}}
-    await u.update({documentacionAprobada:req.body.aprobada,revision:u.revision+1},{transaction:t});
+    const campos=req.body.aprobada?[]:require('../services/documentos-permisos').observaciones(u,req.body.campos);
+    await u.update({documentacionAprobada:req.body.aprobada,camposCorregir:campos,correcciones:req.body.aprobada?null:motivo,revision:u.revision+1},{transaction:t});
     await C.historial(u,req.auth.id,req.body.aprobada?'documentacion_aprobada':'documentacion_observada',motivo,t);
     await C.encolar(u,'documentacion',t);
   });res.json(await C.detalle(await C.Usuario.findByPk(req.params.id),true));

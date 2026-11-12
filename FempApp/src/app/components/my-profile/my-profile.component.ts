@@ -555,6 +555,8 @@ export class MyProfileComponent implements OnInit {
     }
   }
 
+  abrirDocumentos(){this.router.navigate(['/mi-solicitud']);}
+
   guardar(): void {
     const payload: PerfilEditable = {
       dni: this.usuario.dni,

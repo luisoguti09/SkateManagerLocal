@@ -13,6 +13,7 @@
       <input type="file" id="fileInput" #fileInput (change)="onFileSelected($event)" hidden>
     </div>
 
+    <div class="profile-card" *ngIf="usuario?.rol==='deportista'"><h2>Mis documentos</h2><p>Corregí o renová tu ficha médica y certificado WADA desde Mi solicitud.</p><button mat-raised-button type="button" (click)="abrirDocumentos()">Abrir mis documentos</button></div>
     <!-- Card Mis Datos -->
     <mat-card class="profile-card">
       <h2>Mis Datos</h2>

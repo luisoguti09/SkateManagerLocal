@@ -70,13 +70,22 @@ export class SolicitudComponent implements OnInit,OnDestroy {
   });
  }
 
+ puedeCargar(campo:string){return !['dniFrente','dniDorso'].includes(campo)||(this.u?.estado==='pendiente'&&!this.u?.solicitudEnviada)||this.u?.camposCorregir?.includes(campo);}
+ corregirIdentidad(){
+  if(this.busy)return;
+  const f=new FormData();f.append('revision',String(this.u.revision));let n=0;
+  for(const k of ['dniFrente','dniDorso'])if(this.files[k]&&this.puedeCargar(k)){f.append(k,this.files[k]!);n++;}
+  if(!n){this.error='Seleccioná el documento autorizado.';return;}
+  this.busy=true;this.error='';this.ok='';this.cerrarArchivo();
+  this.api.corregirIdentidad(f).pipe(finalize(()=>{this.busy=false;this.vista.markForCheck();})).subscribe({next:u=>{this.set(u);this.files={};this.ok='DNI enviado a revisión. El permiso para reemplazar ese archivo quedó cerrado.';},error:e=>this.error=e.error?.error||'No se pudo guardar la corrección.'});
+ }
  renovarDocumento(campo:string){
   if(this.busy||!this.fechas[campo])return;
   const fecha=this.form[this.fechas[campo]];if(!fecha){this.error='Ingresá la fecha de expedición.';return;}
   const f=new FormData();f.append('datos',JSON.stringify({revision:this.u.revision,[this.fechas[campo]]:fecha}));
   const file=this.files[campo];if(file)f.append(campo,file);
   this.busy=true;this.error='';this.ok='';this.cerrarArchivo();
-  this.api.renovarDocumentos(f).pipe(finalize(()=>{this.busy=false;this.vista.markForCheck();})).subscribe({next:u=>{this.set(u);this.files={};this.ok='Documento actualizado. La revisión documental queda pendiente; tu cuenta continúa aprobada.';},error:e=>this.error=e.error?.error||'No se pudo guardar. Actualizá y reintentá.'});
+  this.api.renovarDocumentos(f).pipe(finalize(()=>{this.busy=false;this.vista.markForCheck();})).subscribe({next:u=>{this.set(u);this.files={};this.ok='Documento actualizado. Queda pendiente de revisión documental; se conserva el estado de tu cuenta.';},error:e=>this.error=e.error?.error||'No se pudo guardar. Actualizá y reintentá.'});
  }
  get archivos(){return camposCuenta.filter(c=>this.u?.politicaDocumentos?.visibles?.includes(c.key));}
  get deportiva(){return ['deportista','tecnico','delegado'].includes(this.u?.rol);}
