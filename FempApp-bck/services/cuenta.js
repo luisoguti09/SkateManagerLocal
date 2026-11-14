@@ -27,6 +27,7 @@ async function completa(u) {
   for(const d of require('./documentos-vigencia').resumen(u)){if(d.expedicion && d.vence && d.dias<0)R.fail(400,'Renová el documento vencido: '+d.label);}
   if(!u.nombre || !u.email || !u.dni) R.fail(400,'Completá los datos de la cuenta.');
   for(const k of u.camposCorregir || []) {
+    if(k==='certificadoAntecedentes' && u.rol==='tecnico' && !u[k])continue;
     if(k==='categoria' || (k==='nivel' && u.rol!=='tecnico'))continue;
     if(F.campos.includes(k)){if(!politica(u).visibles.includes(k))continue;if(!await F.existe(u[k],k))R.fail(400,'Completá el documento solicitado: '+k);}
     else if(!String(u[k] ?? '').trim())R.fail(400,'Completá el dato solicitado: '+k);
@@ -35,7 +36,6 @@ async function completa(u) {
     const edad=require('./cuenta-documentos').edadCumplida(u.fechaNacimiento);
     if(edad===null)R.fail(400,'Completá una fecha de nacimiento válida para determinar la documentación requerida.');
     if(edad<18)R.fail(400,'Para solicitar una cuenta de técnica debés tener 18 años cumplidos.');
-    if(!await F.existe(u.certificadoAntecedentes,'certificadoAntecedentes'))R.fail(400,'Cargá el certificado de antecedentes penales solicitado por la Federación.');
   }
   if(politica(u).obligatorios.includes('fotoPerfil') && !await F.existe(u.fotoPerfil,'fotoPerfil')) R.fail(400,'Cargá tu foto de perfil.');
   if(deportiva(u) && dniRequerido() && (!await F.existe(u.dniFrente,'dniFrente') || !await F.existe(u.dniDorso,'dniDorso'))) R.fail(400,'La licencia provincial requiere frente y dorso del DNI.');

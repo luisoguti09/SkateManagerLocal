@@ -9,7 +9,7 @@ function politica(u){
  const visibles=u.rol==='deportista'?['fotoPerfil','dniFrente','dniDorso','fichaMedica','certificadoWada']:['fotoPerfil'];
  const obligatorios=u.rol==='tesoreria'?[]:['fotoPerfil'];
  if(u.rol==='deportista' && dniRequerido())obligatorios.push('dniFrente','dniDorso');
- if(u.rol==='tecnico'){visibles.push('certificadoAntecedentes');obligatorios.push('certificadoAntecedentes');}
+ if(u.rol==='tecnico'){visibles.push('certificadoAntecedentes');}
  return {visibles,obligatorios};
 }
 function validarArchivos(u,files){
