@@ -86,7 +86,7 @@ router.post('/register', async (req, res) => {
     const isTec = rolCanon === 'tecnico';
     const isDep = rolCanon === 'deportista';
     const deporte=isDep?req.body.deporte:null;
-    if(isDep && !require('../services/deportes').deportes.includes(deporte))return res.status(400).json({error:'Elegí tu deporte.'});
+    if(isDep){try{await require('../services/deportes-catalogo').production().registro(deporte);}catch(e){return res.status(e.status||503).json({error:e.status?e.message:'No se pudo consultar el catálogo de deportes.'});}}
     const cuil = isDep ? require('../services/cuil').exigirCuil(req.body.cuil) : null;
     // Toda alta pública requiere aprobación, incluso administradores.
 

@@ -1,4 +1,6 @@
-import {FreestylePerfilesComponent} from './freestyle-perfiles.component';
+import {OtrosDeportesComponent} from './otros-deportes.component';
+import {DeportesCatalogoService,DeporteCatalogo} from '../../services/deportes-catalogo.service';
+
 import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
@@ -41,7 +43,7 @@ import {
 @Component({
   selector: 'app-my-profile',
   standalone: true,
-  imports: [FreestylePerfilesComponent,
+  imports: [OtrosDeportesComponent,
     CommonModule,
     DatePipe,
     MatFormFieldModule,
@@ -138,8 +140,14 @@ export class MyProfileComponent implements OnInit {
     this.router.navigate(['/dashboard-deport']);
   }
 
+  private catalogoDeportes=inject(DeportesCatalogoService);
+  adminDeportes=false;
+ abrirCatalogo(){window.location.assign('/deportes/administracion');}
+ deportesDisponibles:DeporteCatalogo[]=[];errorCatalogo='';
   deporteSeleccionado='PATINAJE ARTÍSTICO';
   ngOnInit(): void {
+    this.catalogoDeportes.acceso().subscribe({next:a=>this.adminDeportes=a.general||a.deportes.length>0,error:()=>this.adminDeportes=false});
+    this.catalogoDeportes.listar().subscribe({next:ds=>this.deportesDisponibles=ds,error:()=>this.errorCatalogo='No se pudo cargar el catálogo de deportes. Actualizá la página.'});
 
     this.usuario = this.authService.getUsuario();
     this.deporteSeleccionado=this.usuario?.deporte||'PATINAJE ARTÍSTICO';

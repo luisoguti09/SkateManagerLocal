@@ -140,7 +140,7 @@
           </mat-form-field>
 
 
-          <mat-form-field *ngIf="esDeportista" appearance="outline"><mat-label>Elegí tu deporte</mat-label><mat-select formControlName="deporte"><mat-option value="PATINAJE ARTÍSTICO">PATINAJE ARTÍSTICO</mat-option><mat-option value="ROLLER FREESTYLE">ROLLER FREESTYLE</mat-option></mat-select></mat-form-field>
+          <p *ngIf="esDeportista && errorDeportes" role="alert">{{errorDeportes}}</p><mat-form-field *ngIf="esDeportista" appearance="outline"><mat-label>Elegí tu deporte</mat-label><mat-select formControlName="deporte"><mat-option *ngFor="let d of deportes" [value]="d.nombre">{{d.nombre}}</mat-option></mat-select></mat-form-field>
 <mat-form-field *ngIf="esDeportista" appearance="outline" floatLabel="always">
             <mat-label>CUIL</mat-label>
             <input matInput formControlName="cuil" inputmode="numeric" maxlength="13" required autocomplete="off">

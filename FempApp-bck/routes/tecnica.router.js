@@ -81,7 +81,8 @@ router.patch('/deportistas/:id/perfiles/:perfilId',requireRole('tecnico'),C.wrap
   const p=await db.PerfilDeportivo.findByPk(R.id(req.params.perfilId),{transaction:t,lock:t.LOCK.UPDATE});
   if(!p || Number(p.usuarioId)!==Number(req.params.id))R.fail(403,'Perfil ajeno.');
   if(!req.body.version || G.versionPerfil(p)!==req.body.version)R.fail(409,'El perfil cambió. Actualizá antes de guardar.');
-  require('../services/perfil-catalogo-validacion').validar({...p.toJSON(),...cambios});
+  if(!p.deporte||p.deporte==='PATINAJE ARTÍSTICO')require('../services/perfil-catalogo-validacion').validar({...p.toJSON(),...cambios});
+  else await require('../services/deportes-catalogo').production().perfil({...p.toJSON(),...cambios});
   const antes=Object.fromEntries(permitidos.map(k=>[k,p[k]]));
   await p.update(cambios,{transaction:t});
   await C.historial(deportista,req.auth.id,'perfil_tecnica',JSON.stringify({perfilId:p.id,antes,despues:Object.fromEntries(permitidos.map(k=>[k,p[k]]))}),t);

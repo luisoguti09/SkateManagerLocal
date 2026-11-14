@@ -127,6 +127,8 @@ app.use('/usuarios', require('./routes/usuarios.router'));
 app.use('/auth', require('./routes/auth.router'));
 app.use('/cuenta', require('./routes/cuenta.router'));
 app.use('/tecnica', require('./routes/tecnica.router'));
+app.use('/licencias-becas',require('./routes/licencias-becas.router'));
+app.use('/deportes-catalogo',require('./routes/deportes-catalogo.router'));
 app.use('/licencias-config',require('./routes/licencias-config.router'));
 app.use('/asistencias', require('./routes/asistencias.router'));
 app.use('/perfiles-deportivos', perfilesDeportivosRouter);

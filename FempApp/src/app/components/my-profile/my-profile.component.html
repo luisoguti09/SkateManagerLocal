@@ -14,6 +14,7 @@
     </div>
 
     <div class="profile-card" *ngIf="usuario?.rol==='deportista'"><h2>Mis documentos</h2><p>Corregí o renová tu ficha médica y certificado WADA desde Mi solicitud.</p><button mat-raised-button type="button" (click)="abrirDocumentos()">Abrir mis documentos</button></div>
+    <div class="profile-card" *ngIf="adminDeportes"><button mat-raised-button type="button" (click)="abrirCatalogo()">Administrar deportes y categorías</button></div>
     <!-- Card Mis Datos -->
     <mat-card class="profile-card">
       <h2>Mis Datos</h2>
@@ -81,7 +82,7 @@
       </form>
     </mat-card>
 
-    <section class="profile-card" *ngIf="usuario?.rol==='deportista'"><h2>Mi deporte</h2><label>Elegí el deporte del perfil<select [(ngModel)]="deporteSeleccionado" [disabled]="guardandoPerfil"><option>PATINAJE ARTÍSTICO</option><option>ROLLER FREESTYLE</option></select></label><app-freestyle-perfiles *ngIf="deporteSeleccionado==='ROLLER FREESTYLE'" [usuarioId]="usuario.id"></app-freestyle-perfiles></section>
+    <section class="profile-card" *ngIf="usuario?.rol==='deportista'"><h2>Mi deporte</h2><label>Elegí el deporte del perfil<select [(ngModel)]="deporteSeleccionado" [disabled]="guardandoPerfil"><option *ngFor="let d of deportesDisponibles" [value]="d.nombre">{{d.nombre}}</option></select></label><p *ngIf="errorCatalogo" role="alert">{{errorCatalogo}}</p><app-otros-deportes *ngIf="deporteSeleccionado && deporteSeleccionado!=='PATINAJE ARTÍSTICO'" [usuarioId]="usuario.id" [deporte]="deporteSeleccionado"></app-otros-deportes></section>
     <mat-card class="profile-card perfiles-card" *ngIf="usuario?.rol==='deportista' && deporteSeleccionado==='PATINAJE ARTÍSTICO'">
       <h2>Perfiles Deportivos</h2>
 

@@ -123,6 +123,8 @@ db.sequelize = {
   },
 };
 require.cache[require.resolve('../models')] = { exports: db };
+// El catálogo ahora es persistente; este fixture representa la semilla Freestyle.
+require.cache[require.resolve('../models/deportecatalogo.model')]={exports:{Catalogo:{findByPk:async()=>null,findAll:async()=>[]},Historial:{}}};
 require.cache[require.resolve('../models/usuario.model')] = { exports: db.Usuario };
 let preferenceCalls = 0;
 let latestPayment;

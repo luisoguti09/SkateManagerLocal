@@ -130,7 +130,7 @@ router.post('/', roles('deportista', 'administrador'), async (req, res) => {
     }
 
     if(usuario.rol!=='deportista')return res.status(403).json({error:'Los perfiles deportivos corresponden exclusivamente a deportistas.'});
-    const deporte=require('../services/deportes').validar(req.body);
+    const deporte=await require('../services/deportes-catalogo').production().perfil(req.body);
     const validacionClub = await validarClubYSede({ clubId, clubSedeId });
     if (!validacionClub.ok) {
       return res
@@ -200,7 +200,7 @@ router.put('/:id', roles('deportista', 'administrador'), async (req, res) => {
     const usuario=await Usuario.findByPk(perfil.usuarioId);
     if(!usuario||usuario.rol!=='deportista')return res.status(403).json({error:'Los perfiles deportivos corresponden exclusivamente a deportistas.'});
     if(req.body.deporte && req.body.deporte!==(perfil.deporte||'PATINAJE ARTÍSTICO'))return res.status(409).json({error:'El deporte de un perfil existente no se cambia. Creá otro perfil.'});
-    require('../services/deportes').validar({...perfil.toJSON(),...req.body,deporte:perfil.deporte||'PATINAJE ARTÍSTICO'});
+    await require('../services/deportes-catalogo').production().perfil({...perfil.toJSON(),...req.body,deporte:perfil.deporte||'PATINAJE ARTÍSTICO'});
     const nextClubId = clubId ?? perfil.clubId;
     const nextClubSedeId = Object.prototype.hasOwnProperty.call(req.body, 'clubSedeId')
       ? clubSedeId

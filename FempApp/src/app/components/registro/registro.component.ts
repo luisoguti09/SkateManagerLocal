@@ -1,3 +1,4 @@
+import {DeportesCatalogoService,DeporteCatalogo} from '../../services/deportes-catalogo.service';
 import { Component, inject, OnDestroy } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
@@ -30,6 +31,8 @@ import { ClubOption } from '../../interfaces/club-option.interface';
   styleUrl: './registro.component.scss'
 })
 export class RegistroComponent implements OnDestroy {
+  private catalogo=inject(DeportesCatalogoService);
+  deportes:DeporteCatalogo[]=[];errorDeportes='';
   mostrarPassword = false;
   mostrarConfirmacion = false;
   public form!: FormGroup;
@@ -68,6 +71,7 @@ export class RegistroComponent implements OnDestroy {
   }
 
   ngOnInit() {
+    this.catalogo.listar().pipe(takeUntil(this.destroy$)).subscribe({next:ds=>this.deportes=ds,error:()=>this.errorDeportes='No se pudo cargar el catálogo. Actualizá la página antes de registrarte.'});
     this.form = this.fb.group({
       nombre: ['', Validators.required],
       edad: [null, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],

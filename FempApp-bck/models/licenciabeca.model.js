@@ -1,0 +1,5 @@
+'use strict';
+const {DataTypes:D}=require('sequelize'),db=require('../config/database');
+const Beca=db.define('LicenciaBeca',{id:{type:D.INTEGER,autoIncrement:true,primaryKey:true},usuarioId:{type:D.INTEGER,allowNull:false},temporada:{type:D.INTEGER,allowNull:false},porcentajeInscripciones:{type:D.INTEGER,allowNull:false,defaultValue:0},todosEventos:{type:D.BOOLEAN,allowNull:false,defaultValue:false},eventos:{type:D.JSON,allowNull:false,defaultValue:[]},porcentaje:{type:D.INTEGER,allowNull:false},activa:{type:D.BOOLEAN,allowNull:false,defaultValue:true},alcance:{type:D.STRING(40),allowNull:false,defaultValue:'licencia_anual'},revision:{type:D.INTEGER,allowNull:false,defaultValue:0}},{tableName:'licencias_becas',indexes:[{unique:true,fields:['usuarioId','temporada'],name:'uq_beca_usuario_temporada'}]});
+const Historial=db.define('LicenciaBecaHistorial',{becaId:{type:D.INTEGER,allowNull:false},actorId:{type:D.INTEGER,allowNull:false},antes:D.JSON,despues:{type:D.JSON,allowNull:false},motivo:{type:D.STRING(500),allowNull:false}},{tableName:'licencias_becas_historial'});
+module.exports={Beca,Historial};
