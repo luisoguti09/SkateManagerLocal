@@ -141,7 +141,8 @@ export class MyProfileComponent implements OnInit {
   }
 
   private catalogoDeportes=inject(DeportesCatalogoService);
-  adminDeportes=false;
+  abrirLicencia(){window.location.assign('/licencia');}
+ adminDeportes=false;
  abrirCatalogo(){window.location.assign('/deportes/administracion');}
  deportesDisponibles:DeporteCatalogo[]=[];errorCatalogo='';
   deporteSeleccionado='PATINAJE ARTÍSTICO';

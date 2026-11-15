@@ -1,6 +1,6 @@
 <main>
  <nav class="areas" aria-label="Tesorería"><a routerLink="/dashboard-tesoreria">← Mi panorama</a><a routerLink="/tesoreria/aranceles">Eventos y aranceles</a><span aria-current="page">Licencias provinciales</span><a routerLink="/perfil">Mi perfil</a></nav>
- <header><span class="eyebrow">TESORERÍA</span><h1>Licencias provinciales</h1><p>Deportistas, periodos y aranceles, en un mismo lugar.</p><small class="estado">Configuración · cobro de licencias pendiente de activación</small></header>
+ <header><span class="eyebrow">TESORERÍA</span><h1>Licencias provinciales</h1><p>Deportistas, periodos y aranceles, en un mismo lugar.</p><small class="estado">Configuración de aranceles · activación y pagos en Cobro de licencias</small><p><a routerLink="/tesoreria/licencias">Abrir Cobro de licencias</a></p></header>
  <div class="layout"><aside class="menu" aria-label="Secciones de licencias">
   <button *ngIf="editar" (click)="seccion='deportistas'" [class.activo]="seccion==='deportistas'">Deportistas</button>
   <button (click)="seccion='periodos'" [class.activo]="seccion==='periodos'">Periodos y valores</button>

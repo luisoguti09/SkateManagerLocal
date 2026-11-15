@@ -11,7 +11,7 @@ router.get('/temporadas',wrap(async(req,res)=>res.json((await Config.findAll({at
 router.get('/',wrap(async(req,res)=>{
  const year=temporada(req),row=await Config.findByPk(year);
  const datos=row?P.validar(row.datos):year===2027?P.validar(P.inicial):{temporada:year,criterio:'solicitud_nacional',accesoProvisional:true,avisoDias:7,correoTesoreria:false,tramos:[]};
- res.json({revision:row?.revision??0,datos,avisos:datos.tramos.length?P.alertas(datos):[],estado:'borrador',cobrosHabilitados:false,correoOperativo:process.env.MAIL_ENABLED==='true'});
+ res.json({revision:row?.revision??0,datos,avisos:datos.tramos.length?P.alertas(datos):[],estado:'configuracion',cobrosHabilitados:process.env.MP_LICENCIAS_ENABLED==='true',correoOperativo:process.env.MAIL_ENABLED==='true'});
 }));
 router.put('/',requireRole('tesoreria'),wrap(async(req,res)=>{
  const year=temporada(req);let datos;try{datos=P.validar(req.body.datos);if(datos.temporada!==year)throw new Error('La temporada no coincide.');}catch(e){return res.status(400).json({error:e.message});}
@@ -24,7 +24,7 @@ router.put('/',requireRole('tesoreria'),wrap(async(req,res)=>{
   await row.update({datos,revision},{transaction:t});
   await Audit.create({actorId:req.auth.id,revision,antes,despues:datos,motivo:req.body.motivo.trim()},{transaction:t});
  });
- res.json({mensaje:'Propuesta guardada con auditoría. Todavía no habilita cobros.'});
+ res.json({mensaje:'Configuración guardada con auditoría. Se aplicará a las nuevas cotizaciones cuando el cobro esté habilitado.'});
 }));
 router.get('/historial',wrap(async(req,res)=>{const year=temporada(req);res.json((await Audit.findAll({order:[['id','DESC']]})).filter(r=>r.despues?.temporada===year).slice(0,100));}));
 function cell(value){let text=String(value??'');if(/^[\s]*[=+@-]/.test(text))text="'"+text;return '"'+text.replace(/"/g,'""')+'"';}

@@ -1,0 +1,7 @@
+'use strict';
+const {DataTypes:D}=require('sequelize'),db=require('../config/database');
+const Licencia=db.define('LicenciaAnual',{id:{type:D.INTEGER,primaryKey:true,autoIncrement:true},usuarioId:{type:D.INTEGER,allowNull:false},temporada:{type:D.INTEGER,allowNull:false},fechaNacional:D.DATEONLY,estado:{type:D.STRING(40),allowNull:false,defaultValue:'solicitada'},revision:{type:D.INTEGER,allowNull:false,defaultValue:0},exencion:D.JSON},{tableName:'licencias_anuales',indexes:[{unique:true,fields:['usuarioId','temporada'],name:'uq_licencia_persona_temporada'}]});
+const Intento=db.define('LicenciaIntento',{id:{type:D.STRING(36),primaryKey:true},licenciaId:{type:D.INTEGER,allowNull:false,unique:true},cotizacion:{type:D.JSON,allowNull:false},estado:{type:D.STRING(40),allowNull:false},preferenceId:D.STRING,checkoutUrl:D.TEXT,vence:{type:D.DATE,allowNull:false}},{tableName:'licencias_intentos'});
+const Operacion=db.define('LicenciaOperacion',{paymentId:{type:D.STRING(30),primaryKey:true},licenciaId:{type:D.INTEGER,allowNull:false},intentoId:{type:D.STRING(36),allowNull:false},datos:{type:D.JSON,allowNull:false},webhook:{type:D.BOOLEAN,allowNull:false,defaultValue:false}},{tableName:'licencias_operaciones'});
+const Historial=db.define('LicenciaHistorial',{licenciaId:{type:D.INTEGER,allowNull:false},actorId:D.INTEGER,accion:{type:D.STRING(50),allowNull:false},datos:{type:D.JSON,allowNull:false}},{tableName:'licencias_historial'});
+module.exports={Licencia,Intento,Operacion,Historial};
