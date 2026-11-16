@@ -19,7 +19,7 @@ test('HTTP anual: roles reales, precio no manipulable, firma obligatoria y webho
  assert.equal((await request('/checkout',99,{temporada:2027})).status,403);
  assert.equal((await request('/solicitar',1,{temporada:2027})).status,200);
  const body={usuarioId:1,temporada:2027,fechaNacional:'2026-11-10',revision:0,motivo:'Fecha verificada'};
- assert.equal((await request('/fecha-nacional',1,body,'PUT')).status,403);assert.equal((await request('/fecha-nacional',99,body,'PUT')).status,200);
+ assert.equal((await request('/fecha-nacional',1,body,'PUT')).status,403);assert.equal((await request('/fecha-nacional',99,body,'PUT')).status,410);
  assert.equal((await request('/checkout',1,{temporada:2027,usuarioId:99,importe:1,porcentaje:100})).status,200);
  assert.equal(f.tables.Intento[0].cotizacion.totalCentavos,13000000);
  assert.equal((await request('/webhook?data.id=100',null,{type:'payment'})).status,401);assert.equal(gets,0);

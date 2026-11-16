@@ -42,7 +42,7 @@ function alertas(c,hoy=hoyArgentina()){
  const config=validar(c);if(!fecha(hoy))throw new Error('Fecha inválida.');
  const avisos=[];
  config.tramos.forEach((t,i)=>{
-  for(const [tipo,limite] of [['solicitud nacional',t.hasta],['pago',t.vencimiento],...(t.descuento.activo?[['descuento',t.descuento.hasta]]:[])]){
+  for(const [tipo,limite] of [['periodo de arancel',t.hasta],['pago',t.vencimiento],...(t.descuento.activo?[['descuento',t.descuento.hasta]]:[])]){
    const dias=Math.round((Date.parse(limite+'T12:00:00Z')-Date.parse(hoy+'T12:00:00Z'))/86400000);
    if(dias<=config.avisoDias)avisos.push({tramo:i+1,nombre:t.nombre,tipo,fecha:limite,estado:dias<0?'vencido':dias===0?'vence_hoy':'por_vencer',dias});
   }
@@ -56,4 +56,15 @@ function cotizar(c,fechaNacional,fechaPago){
  const descuentoCentavos=Math.round(t.importeCentavos*porcentaje/100);
  return {...t,porcentajeDescuento:porcentaje,descuentoCentavos,totalCentavos:t.importeCentavos-descuentoCentavos};
 }
-module.exports={inicial,validar,asignar,acceso,ajuste,alertas,cotizar,hoyArgentina};
+// Checkout provincial: fecha del servidor; nunca fecha nacional ni fecha enviada por cliente.
+function cotizarActual(c,hoy){
+ const config=validar(c);
+ if(!fecha(hoy))throw new Error('Fecha de cotización inválida.');
+ const t=config.tramos.find(t=>hoy>=t.desde&&hoy<=t.hasta)
+  ||config.tramos.filter(t=>t.desde<=hoy).at(-1);
+ if(!t)throw new Error('Todavía no comenzó un periodo de arancel. Consultá a Tesorería.');
+ const d=t.descuento,porcentaje=d.activo&&hoy>=d.desde&&hoy<=d.hasta?d.porcentaje:0;
+ const importeCentavos=t.importe*100,descuentoCentavos=Math.round(importeCentavos*porcentaje/100);
+ return {...t,criterio:'inicio_pago_provincial',fechaCotizacion:hoy,importeCentavos,porcentajeDescuento:porcentaje,descuentoCentavos,totalCentavos:importeCentavos-descuentoCentavos};
+}
+module.exports={cotizarActual,inicial,validar,asignar,acceso,ajuste,alertas,cotizar,hoyArgentina};

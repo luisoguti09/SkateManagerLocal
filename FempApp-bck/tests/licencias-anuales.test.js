@@ -17,9 +17,9 @@ function fixture(){
  const payment=(extra={})=>({id:100,external_reference:tables.Intento[0].id,collector_id:1847379019,live_mode:true,currency_id:'ARS',transaction_amount:tables.Intento[0].cotizacion.totalCentavos/100,transaction_amount_refunded:0,status:'approved',date_last_updated:'2026-11-14T18:10:00Z',date_approved:'2026-11-14T18:10:00Z',...extra});
  return{service,m,tables,u,env,cfg,assign,payment,provider,get calls(){return called;},set benefit(b){benefit=b;},set fail(b){providerFail=b;},set payments(p){payments=p;},set time(t){time=t;}};
 }
-test('licencia anual: solicitud idempotente, fecha solo verificada, precio del servidor, doble clic y webhook',async()=>{
+test('licencia anual: solicitud idempotente sin fecha nacional, precio del servidor, doble clic y webhook',async()=>{
  const f=fixture();await f.service.solicitar(1,2027);await f.service.solicitar(1,2027);assert.equal(f.tables.Licencia.length,1);
- await assert.rejects(()=>f.service.checkout(1,2027),e=>e.status===409);await f.assign();
+ assert.equal((await f.service.detalle(1,2027)).cotizacion.totalCentavos,13000000);
  const results=await Promise.allSettled([f.service.checkout(1,2027),f.service.checkout(1,2027)]);assert.ok(results.some(r=>r.status==='fulfilled'));assert.equal(f.calls,1);assert.equal(f.tables.Intento.length,1);assert.equal(f.tables.Intento[0].cotizacion.totalCentavos,13000000);
  await f.service.conciliar(f.payment(),true);await f.service.conciliar(f.payment(),true);assert.equal(f.tables.Operacion.length,1);assert.equal(f.tables.Operacion[0].webhook,true);assert.equal((await f.service.detalle(1,2027)).habilitada,true);
  await assert.rejects(()=>f.service.checkout(1,2027),e=>e.status===409);assert.equal(f.calls,1);
@@ -59,4 +59,15 @@ test('checkout vencido se renueva con la misma preferencia solo si no hay pago y
  const f=fixture();await f.assign();await f.service.checkout(1,2027);const id=f.tables.Intento[0].id;f.time=Date.parse('2026-11-14T17:00:00-03:00');let renews=0;f.provider.renovar=async()=>renews++;
  await f.service.checkout(1,2027);assert.equal(renews,1);assert.equal(f.calls,1);assert.equal(f.tables.Intento[0].id,id);
  f.time=Date.parse('2026-11-14T19:00:00-03:00');f.cfg.datos.tramos[0].importe=150000;await assert.rejects(()=>f.service.checkout(1,2027),e=>e.status===409);assert.equal(renews,1);
+});
+
+test('arancel actual: ignora fecha nacional, usa día argentino y aplica beca 95%',async()=>{
+ const f=fixture();f.cfg.datos=structuredClone(require('../services/licencias/propuesta').inicial);
+ await f.service.solicitar(1,2027);f.tables.Licencia[0].fechaNacional='2026-11-25';
+ f.benefit={id:1,usuarioId:1,temporada:2027,porcentaje:95,activa:true,alcance:'licencia_anual'};
+ f.time=Date.parse('2026-11-25T02:30:00Z');
+ assert.equal((await f.service.detalle(1,2027)).cotizacion.totalCentavos,575000);
+ f.time=Date.parse('2026-11-25T03:01:00Z');
+ assert.equal((await f.service.detalle(1,2027)).cotizacion.totalCentavos,650000);
+ await f.service.checkout(1,2027);assert.equal(f.tables.Intento[0].cotizacion.totalCentavos,650000);
 });

@@ -14,8 +14,7 @@ function service({Licencia,Intento,Operacion,Historial,Usuario,Config,Beca,provi
  async function cotizacion(l,b,t){
   const config=await Config.findByPk(l.temporada,t?{transaction:t,lock:t.LOCK.UPDATE}:{});
   if(!config)fail(409,'Tesorería debe guardar los periodos de esta temporada.');
-  if(!l.fechaNacional)fail(409,'Tesorería debe verificar la fecha de solicitud nacional para asignar el arancel.');
-  let q;try{q=P.cotizar(config.datos,l.fechaNacional,fecha());}catch(e){fail(409,e.message);}
+  let q;try{q=P.cotizarActual(config.datos,fecha());}catch(e){fail(409,e.message);}
   const benefit=B.aplicar(q.totalCentavos,b,l.usuarioId,l.temporada);
   return {...q,...benefit,importeArancelCentavos:q.importeCentavos,configRevision:config.revision,cotizadoAt:new Date(now()).toISOString(),moneda:'ARS',comisionCentavos:0};
  }

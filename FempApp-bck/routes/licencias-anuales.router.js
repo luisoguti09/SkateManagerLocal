@@ -31,7 +31,7 @@ function router({models=require('../models/licenciaanual.model'),Usuario=require
   }return result;
  }
  r.get('/tesoreria',wrap(async(req,res)=>res.json(await listar(req))));
- r.put('/fecha-nacional',requireRole('tesoreria'),wrap(async(req,res)=>res.json(await s.asignar(req.body,req.auth.id))));
+ r.put('/fecha-nacional',requireRole('tesoreria'),wrap(async(req,res)=>res.status(410).json({error:'La fecha nacional ya no se utiliza para el cobro provincial.'})));
  r.post('/comprobar/:usuarioId',requireRole('tesoreria'),wrap(async(req,res)=>{const id=Number(req.params.usuarioId);if(!Number.isSafeInteger(id)||id<=0)fail(400,'Deportista inválida.');res.json(await s.comprobar(id,year(req)));}));
  r.get('/exportar.csv',requireRole('tesoreria'),wrap(async(req,res)=>{
   const rows=await listar(req,false),cell=v=>'"'+(/^[\s]*[=+@-]/.test(String(v??''))?"'":'')+String(v??'').replace(/"/g,'""')+'"';
