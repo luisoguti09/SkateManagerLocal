@@ -7,22 +7,22 @@ import {finalize} from 'rxjs';
 import {AuthService} from '../../services/auth.service';
 import {environment} from '../../../environments/environment';
 @Component({standalone:true,imports:[CommonModule,FormsModule,RouterLink],template:`
-<main><a routerLink="/perfil">← Mi perfil</a><h1>{{gestion?'Licencias · Tesorería':'Mi licencia provincial FEMPA'}}</h1>
+<main><a [routerLink]="gestion?'/dashboard-tesoreria':'/perfil'">{{gestion?'← Tesorería':'Mi perfil'}}</a><h1>{{gestion?'Cobros anuales · Tesorería':(datos?.cotizacion?.concepto || 'Mi pago anual FEMPA')}}</h1><a *ngIf="!gestion && datos && !datos.requierePago" [routerLink]="dashboard">Ir a mi panel →</a><button *ngIf="!gestion" (click)="salir()">Cerrar sesión</button>
 <p *ngIf="error" role="alert" class="alerta">{{error}}</p><p *ngIf="mensaje" role="status">{{mensaje}}</p>
 <label>Temporada<input type="number" [(ngModel)]="temporada" min="2020" max="2100" [disabled]="busy"></label><button (click)="cargar()" [disabled]="busy">Consultar temporada</button>
-<ng-container *ngIf="!gestion && datos"><h2>Temporada consultada: {{datos.temporada}}</h2><p>Una licencia por persona y temporada, aunque tengas varios perfiles deportivos. No incluye inscripciones a eventos.</p>
-<p>Estado: <strong>{{estado(datos.licencia?.estado)}}</strong></p><p *ngIf="datos.habilitada">Licencia habilitada por pago verificado o exención vigente.</p>
-<p *ngIf="!datos.documentosAprobadosVigentes">Antes de pagar, la cuenta y los documentos deben estar aprobados y vigentes. Revisá Mi solicitud.</p><p *ngIf="!datos.cobrosHabilitados">El cobro todavía no está abierto para tu cuenta.</p><p *ngIf="datos.aviso">{{datos.aviso}}</p>
-<div *ngIf="datos.cotizacion as q"><p>Arancel: {{q.importeArancelCentavos/100|currency:'ARS':'symbol':'1.2-2'}}</p><p>Descuento del periodo: {{q.descuentoCentavos/100|currency:'ARS':'symbol':'1.2-2'}}</p><p>Beca de licencia: {{q.porcentaje}}% · {{q.beneficioCentavos/100|currency:'ARS':'symbol':'1.2-2'}}</p><h2>Total: {{q.totalCentavos/100|currency:'ARS':'symbol':'1.2-2'}}</h2><p>Sin comisión adicional de plataforma.</p></div>
-<button *ngIf="!datos.licencia" (click)="accion('solicitar')" [disabled]="busy">Solicitar licencia</button>
-<button *ngIf="datos.licencia && !datos.habilitada" (click)="pagar()" [disabled]="busy||!datos.documentosAprobadosVigentes||!datos.cobrosHabilitados||!datos.cotizacion">{{datos.cotizacion?.exento?'Aplicar exención':'Ir a Mercado Pago'}}</button>
+<ng-container *ngIf="!gestion && datos"><h2>Temporada consultada: {{datos.temporada}}</h2><p>Un pago anual por persona y temporada, según su rol. No incluye inscripciones a eventos.</p>
+<p>Estado: <strong>{{estado(datos.licencia?.estado)}}</strong></p><p *ngIf="datos.habilitada">Pago anual confirmado o exención vigente.</p>
+<p *ngIf="!datos.cuentaAprobada">Tu cuenta necesita aprobación para pagar.</p><p *ngIf="!datos.cobrosHabilitados">El cobro todavía no está abierto para tu cuenta.</p><p *ngIf="datos.aviso">{{datos.aviso}}</p>
+<div *ngIf="datos.cotizacion as q"><p>Arancel: {{q.importeArancelCentavos/100|currency:'ARS':'symbol':'1.2-2'}}</p><p>Descuento del periodo: {{q.descuentoCentavos/100|currency:'ARS':'symbol':'1.2-2'}}</p><p>Beca anual: {{q.porcentaje}}% · {{q.beneficioCentavos/100|currency:'ARS':'symbol':'1.2-2'}}</p><h2>Total: {{q.totalCentavos/100|currency:'ARS':'symbol':'1.2-2'}}</h2></div>
+
+<button *ngIf="!datos.habilitada" (click)="pagar()" [disabled]="busy||!datos.cuentaAprobada||!datos.cobrosHabilitados||!datos.cotizacion">{{datos.cotizacion?.exento?'Aplicar exención':'Ir a Mercado Pago'}}</button>
 <button *ngIf="datos.licencia" (click)="accion('comprobar')" [disabled]="busy">Comprobar estado del pago</button>
 <p *ngIf="datos.intento">El checkout vence: {{datos.intento.vence|date:'dd/MM/yyyy HH:mm'}}. Volver de Mercado Pago no acredita por sí solo el pago.</p>
 </ng-container>
 <ng-container *ngIf="gestion"><a routerLink="/licencias/configuracion">Configurar periodos y aranceles</a> · <a routerLink="/tesoreria/becas">Becas y exenciones</a>
-<p *ngIf="preparacion">Temporada habilitada: {{preparacion.temporada}} · Cuenta MP verificada: {{preparacion.connected?'Sí':'No'}} · Cobro: {{preparacion.habilitado?'habilitado':'cerrado'}} · {{preparacion.pilotoUsuarioId?'Solo deportista ID '+preparacion.pilotoUsuarioId:'Sin restricción de piloto'}}. {{preparacion.mensaje}}</p>
+<p *ngIf="preparacion">Temporada habilitada: {{preparacion.temporada}} · Cuenta MP verificada: {{preparacion.connected?'Sí':'No'}} · Cobro: {{preparacion.habilitado?'habilitado':'cerrado'}} · {{preparacion.pilotoUsuarioId?'Prueba restringida':'Sin restricción de piloto'}}. {{preparacion.mensaje}}</p>
 <form (ngSubmit)="cargar()"><label>Nombre o DNI<input name="buscar" [(ngModel)]="buscar" maxlength="100" [disabled]="busy"></label><button [disabled]="busy">Buscar</button></form><p>Hasta 200 resultados. Usá nombre o DNI para acotar. La exportación respeta la búsqueda y la temporada consultadas.</p><button *ngIf="tesorero" (click)="exportar()" [disabled]="busy||!consulta">Exportar importes y fechas</button>
-<article *ngFor="let u of usuarios"><h3>{{u.nombre}} · DNI {{u.dni}} · ID {{u.id}}</h3><p>{{u.club}} · {{estado(u.licencia?.estado)}} · Documentación {{u.documentos?'vigente y aprobada':'pendiente'}}</p><p *ngIf="u.cotizacion">Total cotizado: {{u.cotizacion.totalCentavos/100|currency:'ARS':'symbol':'1.2-2'}} · Beca: {{u.cotizacion.porcentaje}}%</p>
+<article *ngFor="let u of usuarios"><h3>{{u.nombre}} · DNI {{u.dni}} · {{u.rol}}</h3><p>{{u.club}} · {{estado(u.licencia?.estado)}}</p><p *ngIf="u.cotizacion">Total cotizado: {{u.cotizacion.totalCentavos/100|currency:'ARS':'symbol':'1.2-2'}} · Beca: {{u.cotizacion.porcentaje}}%</p>
 <p *ngFor="let o of u.operaciones">Pago {{o.paymentId}} · {{o.estado}} · {{o.importeCentavos/100|currency:'ARS':'symbol':'1.2-2'}} · {{o.fechaAprobacion|date:'dd/MM/yyyy HH:mm'}} · Webhook: {{o.webhook?'recibido':'no recibido'}}</p>
 <button *ngIf="tesorero&&u.licencia" (click)="comprobar(u.id)" [disabled]="busy">Consultar pago en Mercado Pago</button>
 </article>
@@ -31,6 +31,8 @@ import {environment} from '../../../environments/environment';
 export class LicenciaAnualComponent{
  private http=inject(HttpClient);private auth=inject(AuthService);private route=inject(ActivatedRoute);private base=environment.SERVER_API.replace(/\/$/,'')+'/licencias-anuales';
  gestion=this.route.snapshot.data['gestion']===true;tesorero=this.auth.getUsuario()?.rol==='tesoreria';temporada=Number(this.route.snapshot.queryParamMap.get('temporada'))||2027;datos:any;usuarios:any[]=[];preparacion:any;buscar='';consulta='';busy=false;error='';mensaje='';form:any;seleccionada:any;
+ get dashboard(){return this.auth.getUsuario()?.rol==='deportista'?'/dashboard-deport':'/dashboard-prof';}
+ salir(){this.auth.logout();}
  private get opts(){return{headers:{Authorization:'Bearer '+this.auth.getToken()}};}
  constructor(){if(!this.gestion&&this.route.snapshot.queryParamMap.has('payment_id'))this.accion('comprobar');else this.cargar();}
  estado(s:string){return ({solicitada:'Pendiente de cobro',pendiente:'Pago pendiente',conciliada:'Pago confirmado',exenta:'Exención aplicada',requiere_revision:'Requiere revisión',pago_duplicado:'Pagos duplicados: revisar',en_proceso:'Pago en proceso',sin_pago_aprobado:'Sin pago aprobado'} as any)[s]||'Sin solicitar';}

@@ -38,3 +38,5 @@ test('CSV anual: exclusivo de Tesorería, fechas/importes verificados y nombres 
  assert.equal((await request('/exportar.csv?temporada=2027',98)).status,403);
  const r=await request('/exportar.csv?temporada=2027',99);assert.equal(r.status,200);assert.ok(r.data.includes("'=1+1"));assert.ok(r.data.includes('2026-11-14T18:10:00Z'));assert.ok(r.data.includes('130000'));assert.ok(r.data.includes('conciliada'));
 });
+
+test('HTTP: técnicas y delegados consultan su pago, pendientes quedan fuera',async()=>{for(const rol of ['tecnico','delegado']){f.u.rol=rol;assert.equal((await request('/mia?temporada=2027',1)).status,200);}f.u.rol='deportista';f.u.estado='pendiente';assert.equal((await request('/checkout',1,{temporada:2027})).status,403);f.u.estado='aprobado';});

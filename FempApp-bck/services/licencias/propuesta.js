@@ -18,7 +18,8 @@ function validar(c){
  for(let i=1;i<tramos.length;i++)if(tramos[i].desde<=tramos[i-1].hasta)throw new Error('Los periodos no pueden superponerse.');
  if(c.correoTesoreria!==undefined&&typeof c.correoTesoreria!=='boolean')throw new Error('Preferencia de correo inválida.');
  const avisoDias=c.avisoDias??7;if(!Number.isInteger(avisoDias)||avisoDias<0||avisoDias>90)throw new Error('El aviso debe ser entre 0 y 90 días antes.');
- return {temporada:c.temporada,criterio:'solicitud_nacional',accesoProvisional:c.accesoProvisional,avisoDias:7,correoTesoreria:true,tramos};
+ const arancelesRoles={};for(const rol of ['delegado','tecnico']){const n=c.arancelesRoles?.[rol];if(n!==undefined&&n!==null&&(!Number.isSafeInteger(n)||n<=0||n>100000000))throw new Error('El importe por rol debe ser un número entero positivo o quedar vacío.');if(n!=null)arancelesRoles[rol]=n;}
+ return {...(Object.keys(arancelesRoles).length?{arancelesRoles}:{}),temporada:c.temporada,criterio:'solicitud_nacional',accesoProvisional:c.accesoProvisional,avisoDias:7,correoTesoreria:true,tramos};
 }
 function asignar(c,fechaNacional){
  const config=validar(c);if(!fecha(fechaNacional))throw new Error('Fecha nacional inválida.');
@@ -57,14 +58,17 @@ function cotizar(c,fechaNacional,fechaPago){
  return {...t,porcentajeDescuento:porcentaje,descuentoCentavos,totalCentavos:t.importeCentavos-descuentoCentavos};
 }
 // Checkout provincial: fecha del servidor; nunca fecha nacional ni fecha enviada por cliente.
-function cotizarActual(c,hoy){
+function cotizarActual(c,hoy,rol='deportista'){
+ if(!['deportista','delegado','tecnico'].includes(rol))throw new Error('Rol sin cobro anual.');
  const config=validar(c);
  if(!fecha(hoy))throw new Error('Fecha de cotización inválida.');
  const t=config.tramos.find(t=>hoy>=t.desde&&hoy<=t.hasta)
   ||config.tramos.filter(t=>t.desde<=hoy).at(-1);
  if(!t)throw new Error('Todavía no comenzó un periodo de arancel. Consultá a Tesorería.');
- const d=t.descuento,porcentaje=d.activo&&hoy>=d.desde&&hoy<=d.hasta?d.porcentaje:0;
- const importeCentavos=t.importe*100,descuentoCentavos=Math.round(importeCentavos*porcentaje/100);
- return {...t,criterio:'inicio_pago_provincial',fechaCotizacion:hoy,importeCentavos,porcentajeDescuento:porcentaje,descuentoCentavos,totalCentavos:importeCentavos-descuentoCentavos};
+ const importe=rol==='deportista'?t.importe:config.arancelesRoles?.[rol];
+ if(!importe)throw new Error('Tesorería todavía no configuró el importe anual de tu rol.');
+ const d=t.descuento,porcentaje=rol==='deportista'&&d.activo&&hoy>=d.desde&&hoy<=d.hasta?d.porcentaje:0;
+ const importeCentavos=importe*100,descuentoCentavos=Math.round(importeCentavos*porcentaje/100);
+ return {...t,importe,rol,concepto:rol==='delegado'?'Cuota anual de delegado':rol==='tecnico'?'Licencia provincial técnica':'Licencia provincial',criterio:'inicio_pago_provincial',fechaCotizacion:hoy,importeCentavos,porcentajeDescuento:porcentaje,descuentoCentavos,totalCentavos:importeCentavos-descuentoCentavos};
 }
 module.exports={cotizarActual,inicial,validar,asignar,acceso,ajuste,alertas,cotizar,hoyArgentina};

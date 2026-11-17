@@ -33,8 +33,8 @@ test('beca parcial y promoción se calculan antes de MP; el intento conserva el 
  const f=fixture();f.cfg.datos.tramos[0].descuento={activo:true,porcentaje:10,desde:'2026-11-01',hasta:'2026-12-01'};f.benefit={id:1,usuarioId:1,temporada:2027,porcentaje:50,activa:true,alcance:'licencia_anual',revision:1};await f.assign();await f.service.checkout(1,2027);assert.equal(f.tables.Intento[0].cotizacion.totalCentavos,5850000);
  f.cfg.datos.tramos[0].importe=200000;await f.service.checkout(1,2027);assert.equal(f.calls,1);assert.equal(f.tables.Intento[0].cotizacion.totalCentavos,5850000);
 });
-test('cuenta/documentos vencidos, piloto y llave de cobro bloquean antes de crear',async()=>{
- const f=fixture();await f.assign();for(const change of [{documentacionAprobada:false},{estado:'bloqueado'},{fichaMedicaFecha:'2024-01-01'},{wadaFecha:null}]){const orig={...f.u};Object.assign(f.u,change);await assert.rejects(()=>f.service.checkout(1,2027));Object.assign(f.u,orig);}
+test('cuenta no aprobada, piloto y llave de cobro bloquean antes de crear',async()=>{
+ const f=fixture();await f.assign();for(const change of [{aprobado:false},{estado:'bloqueado'},{estado:'pendiente'}]){const orig={...f.u};Object.assign(f.u,change);await assert.rejects(()=>f.service.checkout(1,2027));Object.assign(f.u,orig);}
  f.env.MP_LICENCIAS_ENABLED='false';await assert.rejects(()=>f.service.checkout(1,2027));f.env.MP_LICENCIAS_ENABLED='true';f.env.MP_LICENCIAS_PILOTO_USUARIO_ID='2';await assert.rejects(()=>f.service.checkout(1,2027));assert.equal(f.calls,0);assert.equal(f.tables.Intento.length,0);
 });
 test('timeout conserva reserva: reintentar no genera un segundo checkout',async()=>{
@@ -70,4 +70,17 @@ test('arancel actual: ignora fecha nacional, usa día argentino y aplica beca 95
  f.time=Date.parse('2026-11-25T03:01:00Z');
  assert.equal((await f.service.detalle(1,2027)).cotizacion.totalCentavos,650000);
  await f.service.checkout(1,2027);assert.equal(f.tables.Intento[0].cotizacion.totalCentavos,650000);
+});
+
+test('aprobación de cuenta basta sin documentos y sin solicitud previa para cotizar',async()=>{
+ const f=fixture();Object.assign(f.u,{documentacionAprobada:false,fichaMedicaFecha:null,wadaFecha:null});const d=await f.service.detalle(1,2027);assert.equal(d.requierePago,true);assert.equal(d.licencia,null);assert.equal(d.cotizacion.totalCentavos,13000000);await f.service.solicitar(1,2027);await f.service.checkout(1,2027);await f.service.conciliar(f.payment(),true);assert.equal((await f.service.detalle(1,2027)).habilitada,true);assert.equal((await f.service.detalle(1,2027)).requierePago,false);
+});
+test('cierre, piloto y rol sin arancel no atrapan al usuario en pago',async()=>{
+ const f=fixture();f.env.MP_LICENCIAS_ENABLED='false';assert.equal((await f.service.detalle(1,2027)).requierePago,false);f.env.MP_LICENCIAS_ENABLED='true';f.env.MP_LICENCIAS_PILOTO_USUARIO_ID='2';assert.equal((await f.service.detalle(1,2027)).requierePago,false);f.env.MP_LICENCIAS_PILOTO_USUARIO_ID='1';f.u.rol='delegado';assert.equal((await f.service.detalle(1,2027)).cotizacion,null);assert.equal((await f.service.detalle(1,2027)).requierePago,false);await f.service.solicitar(1,2027);await assert.rejects(()=>f.service.checkout(1,2027));assert.equal(f.calls,0);
+});
+test('delegados y técnicas tienen su importe y pueden recibir exención anual',async()=>{
+ for(const rol of ['delegado','tecnico']){const f=fixture();f.u.rol=rol;f.u.documentacionAprobada=false;f.cfg.datos.arancelesRoles={delegado:20000,tecnico:30000};assert.equal((await f.service.detalle(1,2027)).cotizacion.totalCentavos,rol==='delegado'?2000000:3000000);f.benefit={id:1,usuarioId:1,temporada:2027,porcentaje:100,porcentajeInscripciones:0,activa:true,alcance:'licencia_anual',revision:1};await f.service.solicitar(1,2027);assert.equal((await f.service.checkout(1,2027)).exenta,true);assert.equal(f.calls,0);assert.equal((await f.service.detalle(1,2027)).requierePago,false);}
+});
+test('rol sin precio no hereda precio deportivo y no usa promoción deportiva',()=>{
+ const P=require('../services/licencias/propuesta');for(const n of [0,-1,1.5,'30000'])assert.throws(()=>P.validar({...P.inicial,arancelesRoles:{delegado:n}}));const c=structuredClone(P.inicial);c.arancelesRoles={delegado:20000};c.tramos[0].descuento={activo:true,porcentaje:50,desde:'2026-11-05',hasta:'2026-11-24'};assert.equal(P.cotizarActual(c,'2026-11-17','delegado').totalCentavos,2000000);
 });

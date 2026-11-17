@@ -12,22 +12,22 @@ function router({models=require('../models/licenciaanual.model'),Usuario=require
   await s.conciliar(payment,true);res.json({recibido:true});
  }));
  r.use(verifyToken);
- const year=req=>A.temporada(req.query.temporada??req.body?.temporada??2027);
- r.get('/mia',requireRole('deportista'),wrap(async(req,res)=>res.json(await s.detalle(req.auth.id,year(req)))));
- r.post('/solicitar',requireRole('deportista'),wrap(async(req,res)=>{await s.solicitar(req.auth.id,year(req));res.json(await s.detalle(req.auth.id,year(req)));}));
- r.post('/checkout',requireRole('deportista'),wrap(async(req,res)=>res.json(await s.checkout(req.auth.id,year(req)))));
- r.post('/comprobar',requireRole('deportista'),wrap(async(req,res)=>res.json(await s.comprobar(req.auth.id,year(req)))));
+ const year=req=>A.temporada(req.query.temporada??req.body?.temporada??env.MP_LICENCIAS_TEMPORADA??2027);
+ r.get('/mia',requireRole('deportista','delegado','tecnico'),wrap(async(req,res)=>res.json(await s.detalle(req.auth.id,year(req)))));
+ r.post('/solicitar',requireRole('deportista','delegado','tecnico'),wrap(async(req,res)=>{await s.solicitar(req.auth.id,year(req));res.json(await s.detalle(req.auth.id,year(req)));}));
+ r.post('/checkout',requireRole('deportista','delegado','tecnico'),wrap(async(req,res)=>res.json(await (await s.solicitar(req.auth.id,year(req)),await s.checkout(req.auth.id,year(req))))));
+ r.post('/comprobar',requireRole('deportista','delegado','tecnico'),wrap(async(req,res)=>res.json(await s.comprobar(req.auth.id,year(req)))));
  r.use(requireRole('tesoreria','administrador'));
  r.get('/preparacion',wrap(async(_req,res)=>{
   let connection;try{connection=await provider.verificar();}catch(e){connection={connected:false,message:e.status?e.message:'No se pudo verificar Mercado Pago.'};}
   res.json({connected:connection.connected===true,mensaje:connection.message||'',habilitado:env.MP_LICENCIAS_ENABLED==='true',pilotoUsuarioId:env.MP_LICENCIAS_PILOTO_USUARIO_ID||null,temporada:Number(env.MP_LICENCIAS_TEMPORADA||2027)});
  }));
  async function listar(req,limitar=true){const temporada=year(req),buscar=String(req.query.buscar||'').trim();if(buscar.length>100)fail(400,'Búsqueda demasiado larga.');
-  const usuarios=await Usuario.findAll({where:{rol:'deportista',...(buscar?{[Op.or]:[{nombre:{[Op.like]:'%'+buscar+'%'}},{dni:{[Op.like]:'%'+buscar+'%'}}]}:{})},attributes:['id','nombre','dni','club','estado','aprobado','documentacionAprobada','fichaMedica','fichaMedicaFecha','certificadoWada','wadaFecha'],order:[['nombre','ASC']],...(limitar?{limit:200}:{})});
+  const usuarios=await Usuario.findAll({where:{rol:{[Op.in]:['deportista','delegado','tecnico']},...(buscar?{[Op.or]:[{nombre:{[Op.like]:'%'+buscar+'%'}},{dni:{[Op.like]:'%'+buscar+'%'}}]}:{})},attributes:['id','rol','nombre','dni','club','estado','aprobado','documentacionAprobada','fichaMedica','fichaMedicaFecha','certificadoWada','wadaFecha'],order:[['nombre','ASC']],...(limitar?{limit:200}:{})});
   const ls=await models.Licencia.findAll({where:{temporada,usuarioId:{[Op.in]:usuarios.map(u=>u.id)}}});const result=[];
   const intentos=await models.Intento.findAll({where:{licenciaId:{[Op.in]:ls.map(l=>l.id)}}}),operaciones=await models.Operacion.findAll({where:{licenciaId:{[Op.in]:ls.map(l=>l.id)}}});
   for(const u of usuarios){const l=ls.find(x=>x.usuarioId===u.id),i=l?intentos.find(i=>i.licenciaId===l.id):null,ops=l?operaciones.filter(o=>o.licenciaId===l.id):[];
-   result.push({id:u.id,nombre:u.nombre,dni:u.dni,club:u.club,documentos:A.documentos({...u.toJSON(),rol:'deportista'},require('../services/documentos-vigencia').hoyArgentina()),licencia:l?.toJSON()||null,cotizacion:i?.cotizacion||l?.exencion||null,intentoEstado:i?.estado||null,operaciones:ops.map(o=>({paymentId:o.paymentId,webhook:o.webhook,...o.datos}))});
+   result.push({id:u.id,rol:u.rol,nombre:u.nombre,dni:u.dni,club:u.club,documentos:A.documentos({...u.toJSON(),rol:'deportista'},require('../services/documentos-vigencia').hoyArgentina()),licencia:l?.toJSON()||null,cotizacion:i?.cotizacion||l?.exencion||null,intentoEstado:i?.estado||null,operaciones:ops.map(o=>({paymentId:o.paymentId,webhook:o.webhook,...o.datos}))});
   }return result;
  }
  r.get('/tesoreria',wrap(async(req,res)=>res.json(await listar(req))));

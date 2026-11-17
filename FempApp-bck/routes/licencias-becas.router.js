@@ -8,7 +8,7 @@ router.use(verifyToken,requireRole('tesoreria'));router.use((_req,res,next)=>{re
 function year(req){const n=Number(req.query.temporada);if(!Number.isInteger(n)||n<2020||n>2100)fail(400,'Temporada inválida.');return n;}
 router.get('/',wrap(async(req,res)=>{
  const temporada=year(req),buscar=String(req.query.buscar||'').trim();if(buscar.length<2||buscar.length>80)fail(400,'Ingresá al menos dos caracteres del nombre o DNI.');
- const usuarios=await Usuario.findAll({where:{rol:'deportista',[Op.or]:[{dni:{[Op.like]:'%'+buscar+'%'}},{nombre:{[Op.like]:'%'+buscar+'%'}}]},attributes:['id','nombre','dni','club','estado'],limit:100,order:[['nombre','ASC']]});
+ const usuarios=await Usuario.findAll({where:{rol:{[Op.in]:['deportista','delegado','tecnico']},[Op.or]:[{dni:{[Op.like]:'%'+buscar+'%'}},{nombre:{[Op.like]:'%'+buscar+'%'}}]},attributes:['id','rol','nombre','dni','club','estado'],limit:100,order:[['nombre','ASC']]});
  const becas=await Beca.findAll({where:{temporada,usuarioId:{[Op.in]:usuarios.map(u=>u.id)}}});
  res.json(usuarios.map(u=>({...u.toJSON(),beca:becas.find(b=>b.usuarioId===u.id)?.toJSON()||null})));
 }));

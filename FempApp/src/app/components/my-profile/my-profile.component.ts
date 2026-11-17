@@ -137,7 +137,7 @@ export class MyProfileComponent implements OnInit {
   get dentroDelPanel(): boolean { return this.router.url.startsWith('/dashboard-deport/'); }
 
   volver() {
-    this.router.navigate(['/dashboard-deport']);
+    const rol=this.usuario?.rol;this.router.navigate([rol==='administrador'?'/admin':rol==='tesoreria'?'/dashboard-tesoreria':['delegado','tecnico'].includes(rol||'')?'/dashboard-prof':rol==='juez'?'/dashboard-juez':'/dashboard-deport']);
   }
 
   private catalogoDeportes=inject(DeportesCatalogoService);

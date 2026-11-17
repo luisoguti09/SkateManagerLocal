@@ -76,7 +76,7 @@ export const routes: Routes = [
       ),
   },
   { path: 'dashboard-admin', redirectTo: 'admin', pathMatch: 'full' }, // canActivate: [authGuard] },
-  {path:'licencia',canActivate:[authGuard],data:{roles:['deportista']},loadComponent:()=>import('./components/licencias-config/licencia-anual.component').then(m=>m.LicenciaAnualComponent)},
+  {path:'licencia',canActivate:[authGuard],data:{roles:['deportista','delegado','tecnico']},loadComponent:()=>import('./components/licencias-config/licencia-anual.component').then(m=>m.LicenciaAnualComponent)},
   {path:'tesoreria/licencias',canActivate:[authGuard],data:{roles:['tesoreria','administrador'],gestion:true},loadComponent:()=>import('./components/licencias-config/licencia-anual.component').then(m=>m.LicenciaAnualComponent)},
   {path:'tesoreria/becas',canActivate:[authGuard],data:{roles:['tesoreria']},loadComponent:()=>import('./components/licencias-config/licencias-becas.component').then(m=>m.LicenciasBecasComponent)},
   {path:'deportes/administracion',canActivate:[authGuard],loadComponent:()=>import('./admin/deportes-catalogo.component').then(m=>m.DeportesCatalogoComponent)},

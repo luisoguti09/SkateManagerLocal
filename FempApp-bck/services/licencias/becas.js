@@ -37,7 +37,7 @@ function service({Beca,Historial,Usuario}){
   return Beca.sequelize.transaction(async transaction=>{
    // Lock the user even on first assignment, so concurrent inserts serialize.
    const user=await Usuario.findByPk(data.usuarioId,{transaction,lock:transaction.LOCK.UPDATE});
-   if(!user||user.rol!=='deportista')fail(404,'Deportista no encontrado.');
+   if(!user||!['deportista','delegado','tecnico'].includes(user.rol))fail(404,'Cuenta no encontrada.');
    const row=await Beca.findOne({where:{usuarioId:data.usuarioId,temporada:data.temporada},transaction,lock:transaction.LOCK.UPDATE});
    if((row?.revision||0)!==body.revision)fail(409,'El beneficio cambió. Actualizá antes de guardar.');
    const antes=row?.toJSON()||null,despues={...data,revision:(row?.revision||0)+1};

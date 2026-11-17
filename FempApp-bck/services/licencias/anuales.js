@@ -2,6 +2,7 @@
 const {randomUUID}=require('node:crypto');
 const {fail}=require('../cuenta-reglas'),P=require('./propuesta'),B=require('./becas'),R=require('./cobro-reglas'),V=require('../documentos-vigencia');
 function temporada(value){const n=Number(value);if(!Number.isInteger(n)||n<2020||n>2100)fail(400,'Temporada inválida.');return n;}
+function cuentaAprobada(u){return ['deportista','delegado','tecnico'].includes(u?.rol)&&u.estado==='aprobado'&&u.aprobado===true;}
 function documentos(u,hoy){return u?.rol==='deportista'&&u.estado==='aprobado'&&u.aprobado===true&&u.documentacionAprobada===true&&V.resumen(u,hoy).every(d=>d.vence&&d.dias>=0);}
 function permisoCobro(env,usuarioId,year){if(year!==Number(env.MP_LICENCIAS_TEMPORADA||2027))fail(403,'El cobro de esta temporada no está abierto.');if(env.MP_LICENCIAS_ENABLED!=='true')fail(503,'El cobro de licencias todavía no está habilitado.');if(env.MP_LICENCIAS_PILOTO_USUARIO_ID&&String(usuarioId)!==env.MP_LICENCIAS_PILOTO_USUARIO_ID)fail(403,'El cobro está en verificación inicial. Tesorería avisará cuando se habilite.');}
 function exentaVigente(l,b){return l.estado==='exenta'&&b?.activa===true&&b.porcentaje===100&&b.usuarioId===l.usuarioId&&b.temporada===l.temporada&&b.id===l.exencion?.becaId;}
@@ -9,12 +10,12 @@ function service({Licencia,Intento,Operacion,Historial,Usuario,Config,Beca,provi
  const fecha=()=>V.hoyArgentina(new Date(now()));
  const transaction=fn=>Licencia.sequelize.transaction(fn);
  const audit=(l,actorId,accion,datos,t)=>Historial.create({licenciaId:l.id,actorId,accion,datos},{transaction:t});
- async function usuario(id,t){const u=await Usuario.findByPk(id,t?{transaction:t,lock:t.LOCK.UPDATE}:{});if(!u||u.rol!=='deportista')fail(404,'Deportista no encontrado.');return u;}
+ async function usuario(id,t){const u=await Usuario.findByPk(id,t?{transaction:t,lock:t.LOCK.UPDATE}:{});if(!u||!['deportista','delegado','tecnico'].includes(u.rol))fail(404,'Cuenta no encontrada para cobro anual.');return u;}
  const beca=(id,year,t)=>Beca.findOne({where:{usuarioId:id,temporada:year},...(t?{transaction:t,lock:t.LOCK.UPDATE}:{})});
  async function cotizacion(l,b,t){
   const config=await Config.findByPk(l.temporada,t?{transaction:t,lock:t.LOCK.UPDATE}:{});
   if(!config)fail(409,'Tesorería debe guardar los periodos de esta temporada.');
-  let q;try{q=P.cotizarActual(config.datos,fecha());}catch(e){fail(409,e.message);}
+  let q;try{q=P.cotizarActual(config.datos,fecha(),(await usuario(l.usuarioId,t)).rol);}catch(e){fail(409,e.message);}
   const benefit=B.aplicar(q.totalCentavos,b,l.usuarioId,l.temporada);
   return {...q,...benefit,importeArancelCentavos:q.importeCentavos,configRevision:config.revision,cotizadoAt:new Date(now()).toISOString(),moneda:'ARS',comisionCentavos:0};
  }
@@ -35,16 +36,17 @@ function service({Licencia,Intento,Operacion,Historial,Usuario,Config,Beca,provi
   });
  }
  async function detalle(id,year){year=temporada(year);const u=await usuario(id),l=await Licencia.findOne({where:{usuarioId:id,temporada:year}}),b=await beca(id,year);
-  const result={temporada:year,documentosAprobadosVigentes:documentos(u,fecha()),cobrosHabilitados:year===Number(env.MP_LICENCIAS_TEMPORADA||2027)&&env.MP_LICENCIAS_ENABLED==='true'&&(!env.MP_LICENCIAS_PILOTO_USUARIO_ID||env.MP_LICENCIAS_PILOTO_USUARIO_ID===String(id)),licencia:l?.toJSON()||null,habilitada:false,cotizacion:null,aviso:''};
-  if(!l)return result;
-  result.habilitada=result.documentosAprobadosVigentes&&(l.estado==='conciliada'||exentaVigente(l,b));
+  const result={temporada:year,cuentaAprobada:cuentaAprobada(u),rol:u.rol,documentosAprobadosVigentes:documentos(u,fecha()),cobrosHabilitados:year===Number(env.MP_LICENCIAS_TEMPORADA||2027)&&env.MP_LICENCIAS_ENABLED==='true'&&(!env.MP_LICENCIAS_PILOTO_USUARIO_ID||env.MP_LICENCIAS_PILOTO_USUARIO_ID===String(id)),licencia:l?.toJSON()||null,habilitada:false,cotizacion:null,aviso:''};
+  if(!l){try{result.cotizacion=await cotizacion({usuarioId:id,temporada:year},b);}catch(e){result.aviso=e.message;}result.requierePago=result.cuentaAprobada&&result.cobrosHabilitados&&!!result.cotizacion;return result;}
+  result.habilitada=result.cuentaAprobada&&(l.estado==='conciliada'||exentaVigente(l,b));
   if(l.estado==='exenta'&&!exentaVigente(l,b))result.aviso='La exención ya no está vigente. Consultá a Tesorería.';
   const i=await Intento.findOne({where:{licenciaId:l.id}});if(i){result.cotizacion=i.cotizacion;result.intento={estado:i.estado,vence:i.vence,checkoutDisponible:!!i.checkoutUrl&&new Date(i.vence).getTime()>now()};}
   else try{result.cotizacion=await cotizacion(l,b);}catch(e){result.aviso=e.message;}
+  result.requierePago=result.cuentaAprobada&&result.cobrosHabilitados&&!result.habilitada&&(!!result.cotizacion||!!result.intento);
   return result;
  }
  async function checkout(id,year){year=temporada(year);permisoCobro(env,id,year);
-  const prepared=await transaction(async t=>{const u=await usuario(id,t);if(!documentos(u,fecha()))fail(409,'La cuenta y la documentación deben estar aprobadas y vigentes antes de pagar.');
+  const prepared=await transaction(async t=>{const u=await usuario(id,t);if(!cuentaAprobada(u))fail(409,'La cuenta debe estar aprobada antes de pagar.');
    const l=await Licencia.findOne({where:{usuarioId:id,temporada:year},transaction:t,lock:t.LOCK.UPDATE});if(!l)fail(409,'Primero solicitá tu licencia.');
    if(['conciliada','requiere_revision','pago_duplicado'].includes(l.estado))fail(409,'La licencia ya está pagada o requiere revisión; no se creará otro cobro.');
    const b=await beca(id,year,t);if(exentaVigente(l,b))return{exenta:true};
@@ -97,4 +99,4 @@ function service({Licencia,Intento,Operacion,Historial,Usuario,Config,Beca,provi
  }
  return{solicitar,asignar,detalle,checkout,conciliar,comprobar};
 }
-module.exports={service,temporada,documentos,permisoCobro,exentaVigente};
+module.exports={cuentaAprobada,service,temporada,documentos,permisoCobro,exentaVigente};

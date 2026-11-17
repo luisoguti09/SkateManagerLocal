@@ -3,7 +3,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const {service:catalogo,validarDatos}=require('../services/deportes-catalogo');
 const {service:becas,aplicar,validar}=require('../services/licencias/becas');
 function fixture(){
- const rows=[],audits=[],users=[{id:1,rol:'deportista'},{id:2,rol:'tecnico'}];let tail=Promise.resolve();
+ const rows=[],audits=[],users=[{id:1,rol:'deportista'},{id:2,rol:'tecnico'},{id:3,rol:'administrador'},{id:4,rol:'delegado'}];let tail=Promise.resolve();
  const model={async findByPk(nombre){return rows.find(r=>r.nombre===nombre);},async findOne(o){return rows.find(r=>Object.entries(o.where).every(([k,v])=>r[k]===v));},async findAll(){return rows;},async create(data){const row={id:rows.length+1,...data,toJSON(){const {update,toJSON,...d}=this;return structuredClone(d);},async update(d){Object.assign(this,d);return this;}};rows.push(row);return row;},sequelize:{async transaction(fn){const previous=tail;let release;tail=new Promise(r=>release=r);await previous;const before=rows.map(r=>r.toJSON()),auditBefore=audits.length;try{return await fn({LOCK:{UPDATE:'UPDATE'}});}catch(e){rows.length=0;for(const r of before)await model.create(r);audits.length=auditBefore;throw e;}finally{release();}}}};
  return{model,rows,audits,Historial:{async create(d){audits.push(d);}},Usuario:{async findByPk(id){return users.find(u=>u.id===id);}}};
 }
@@ -29,7 +29,7 @@ test('beca: temporada y persona independientes; modificar, revocar y auditar',as
  const data={usuarioId:1,temporada:2027,porcentaje:100,activa:true,alcance:'licencia_anual',revision:0,motivo:'Exención autorizada'};
  const b=await s.guardar(data,9);assert.equal(b.revision,1);assert.equal(f.audits[0].antes,null);
  assert.equal(aplicar(13000000,b,1,2027).totalCentavos,0);assert.equal(aplicar(13000000,b,1,2027).exento,true);
- await assert.rejects(()=>s.guardar({...data,usuarioId:2},9),e=>e.status===404);
+ await assert.rejects(()=>s.guardar({...data,usuarioId:3},9),e=>e.status===404);
  await assert.rejects(()=>s.guardar(data,9),e=>e.status===409);
  await s.guardar({...data,revision:1,porcentaje:25},9);assert.equal(aplicar(13000000,f.rows[0],1,2027).totalCentavos,9750000);
  await s.guardar({...data,revision:2,activa:false},9);assert.equal(aplicar(13000000,f.rows[0],1,2027).totalCentavos,13000000);
@@ -97,4 +97,8 @@ test('permisos deportivos: asignación, aislamiento, revocación, revisión y au
  await assert.rejects(()=>p.guardar(d,9),e=>e.status===409);
  await assert.rejects(()=>p.guardar({...d,revision:1,deportes:['PATINAJE ARTÍSTICO']},9));
  await p.guardar({...d,revision:1,deportes:[]},9);assert.equal((await p.acceso({id:7,rol:'tecnico'})).deportes.length,0);assert.equal(f.audits.length,2);
+});
+
+test('becas: técnicas y delegados reciben beneficio anual buscados por cuenta',async()=>{
+ const f=fixture(),s=becas({Beca:f.model,Historial:f.Historial,Usuario:f.Usuario});for(const usuarioId of [2,4]){const b=await s.guardar({usuarioId,temporada:2027,porcentaje:100,porcentajeInscripciones:0,activa:true,alcance:'licencia_anual',revision:0,motivo:'Licencia nacional vigente'},9);assert.equal(aplicar(3000000,b,usuarioId,2027).exento,true);assert.equal(b.porcentajeInscripciones,0);}
 });

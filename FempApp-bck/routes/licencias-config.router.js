@@ -46,7 +46,7 @@ router.get('/cotejo.csv',requireRole('tesoreria'),wrap(async(req,res)=>{
 router.get('/aranceles.csv',wrap(async(req,res)=>{
  const year=temporada(req),row=await Config.findByPk(year);if(!row&&year!==2027)return res.status(404).json({error:'Guardá los periodos de esta temporada antes de exportar.'});const c=P.validar(row?.datos||P.inicial);
  csv(res,'aranceles-licencias-'+year+'.csv',[
- ['Temporada','Periodo','Revisión','Arancel desde','Arancel hasta inclusive','Importe base ARS','Vencimiento pago','Descuento porcentaje','Descuento desde','Descuento hasta','Estado'],
- ...c.tramos.map(t=>[c.temporada,t.nombre,row?.revision??0,t.desde,t.hasta,t.importe,t.vencimiento,t.descuento.activo?t.descuento.porcentaje:0,t.descuento.desde,t.descuento.hasta,'Propuesta; no acredita pagos'])]);
+ ['Temporada','Periodo','Revisión','Arancel desde','Arancel hasta inclusive','Importe base ARS','Vencimiento pago','Descuento porcentaje','Descuento desde','Descuento hasta','Estado','Cuota delegado ARS','Licencia técnica ARS'],
+ ...c.tramos.map(t=>[c.temporada,t.nombre,row?.revision??0,t.desde,t.hasta,t.importe,t.vencimiento,t.descuento.activo?t.descuento.porcentaje:0,t.descuento.desde,t.descuento.hasta,'Configuración',c.arancelesRoles?.delegado??'',c.arancelesRoles?.tecnico??''])]);
 }));
 module.exports=router;

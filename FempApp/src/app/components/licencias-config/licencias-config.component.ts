@@ -15,7 +15,7 @@ export class LicenciasConfigComponent implements OnInit{
  ngOnInit(){this.cargar();if(this.editar)this.buscarCotejo();else this.seccion='periodos';}
  fallo(e:any){this.busy=false;this.error=e.error?.error||'No se pudo completar la operación. Reintentá.';}
  cargar(){const id=++this.cargaId;this.busy=true;this.error='';this.datos=null;this.historial=[];this.avisos=[];
-  this.http.get<any>(this.url+'?temporada='+this.temporada,this.opts).subscribe({next:r=>{if(id!==this.cargaId)return;this.datos=r.datos;this.revision=r.revision;this.avisos=r.avisos||[];this.correoOperativo=r.correoOperativo;this.busy=false;},error:e=>{if(id===this.cargaId)this.fallo(e);}});
+  this.http.get<any>(this.url+'?temporada='+this.temporada,this.opts).subscribe({next:r=>{if(id!==this.cargaId)return;this.datos=r.datos;this.datos.arancelesRoles ||= {delegado:null,tecnico:null};this.revision=r.revision;this.avisos=r.avisos||[];this.correoOperativo=r.correoOperativo;this.busy=false;},error:e=>{if(id===this.cargaId)this.fallo(e);}});
   this.http.get<any[]>(this.url+'/historial?temporada='+this.temporada,this.opts).subscribe({next:r=>{if(id===this.cargaId)this.historial=r;},error:e=>{if(id===this.cargaId)this.fallo(e);}});
   this.http.get<number[]>(this.url+'/temporadas',this.opts).subscribe({next:r=>this.temporadas=[...new Set([2027,this.temporada,...r])].sort((a,b)=>b-a),error:()=>{}});
  }

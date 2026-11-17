@@ -15,7 +15,7 @@ function api({env=process.env,fetcher=globalThis.fetch,receptor=require('../merc
  }
  return{config,async verificar(){config();return receptor.verify();},
   async crear(intento,temporada){const c=config();const url=c.front+'/licencia?temporada='+temporada;
-   const result=await request('/checkout/preferences','POST',{items:[{id:intento.id,title:'Licencia provincial FEMPA '+temporada,quantity:1,unit_price:intento.cotizacion.totalCentavos/100,currency_id:'ARS'}],external_reference:intento.id,back_urls:{success:url,failure:url,pending:url},auto_return:'approved',notification_url:c.back+'/licencias-anuales/webhook?source_news=webhooks',expires:true,expiration_date_to:new Date(intento.vence).toISOString(),statement_descriptor:'FEMPA'});
+   const result=await request('/checkout/preferences','POST',{items:[{id:intento.id,title:(intento.cotizacion.concepto||'Licencia provincial')+' FEMPA '+temporada,quantity:1,unit_price:intento.cotizacion.totalCentavos/100,currency_id:'ARS'}],external_reference:intento.id,back_urls:{success:url,failure:url,pending:url},auto_return:'approved',notification_url:c.back+'/licencias-anuales/webhook?source_news=webhooks',expires:true,expiration_date_to:new Date(intento.vence).toISOString(),statement_descriptor:'FEMPA'});
    let u;try{u=new URL(result.init_point);}catch{fail(502,'Checkout inválido. Solicitud conservada para revisión.');}
    if(u.protocol!=='https:'||u.hostname!=='www.mercadopago.com.ar'||!result.id)fail(502,'Checkout no reconocido. Solicitud conservada para revisión.');
    return{id:String(result.id),url:u.href};
