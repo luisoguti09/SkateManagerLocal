@@ -20,7 +20,7 @@ function router({models=require('../models/licenciaanual.model'),Usuario=require
  r.use(requireRole('tesoreria','administrador'));
  r.get('/preparacion',wrap(async(_req,res)=>{
   let connection;try{connection=await provider.verificar();}catch(e){connection={connected:false,message:e.status?e.message:'No se pudo verificar Mercado Pago.'};}
-  res.json({connected:connection.connected===true,mensaje:connection.message||'',habilitado:env.MP_LICENCIAS_ENABLED==='true',pilotoUsuarioId:env.MP_LICENCIAS_PILOTO_USUARIO_ID||null,temporada:Number(env.MP_LICENCIAS_TEMPORADA||2027)});
+  res.json({connected:connection.connected===true,mensaje:connection.message||'',habilitado:String(env.MP_LICENCIAS_ENABLED||'').trim().toLowerCase()==='true',pilotoUsuarioId:String(env.MP_LICENCIAS_PILOTO_USUARIO_ID||'').trim()||null,temporada:Number(env.MP_LICENCIAS_TEMPORADA||2027)});
  }));
  async function listar(req,limitar=true){const temporada=year(req),buscar=String(req.query.buscar||'').trim();if(buscar.length>100)fail(400,'Búsqueda demasiado larga.');
   const usuarios=await Usuario.findAll({where:{rol:{[Op.in]:['deportista','delegado','tecnico']},...(buscar?{[Op.or]:[{nombre:{[Op.like]:'%'+buscar+'%'}},{dni:{[Op.like]:'%'+buscar+'%'}}]}:{})},attributes:['id','rol','nombre','dni','club','estado','aprobado','documentacionAprobada','fichaMedica','fichaMedicaFecha','certificadoWada','wadaFecha'],order:[['nombre','ASC']],...(limitar?{limit:200}:{})});

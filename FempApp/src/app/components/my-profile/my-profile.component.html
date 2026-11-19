@@ -15,7 +15,7 @@
 
     <div class="profile-card" *ngIf="usuario?.rol==='deportista'"><h2>Mis documentos</h2><p>Corregí o renová tu ficha médica y certificado WADA desde Mi solicitud.</p><button mat-raised-button type="button" (click)="abrirDocumentos()">Abrir mis documentos</button></div>
     <div class="profile-card" *ngIf="adminDeportes"><button mat-raised-button type="button" (click)="abrirCatalogo()">Administrar deportes y categorías</button></div>
-    <div class="profile-card" *ngIf="['deportista','delegado','tecnico'].includes(usuario?.rol || '')"><button mat-raised-button type="button" (click)="abrirLicencia()">Mi pago anual · Importe y estado</button></div>
+    <div class="profile-card" *ngIf="['deportista','delegado','tecnico'].includes(usuario?.rol || '')"><button mat-raised-button type="button" (click)="abrirLicencia()">{{usuario?.rol==='delegado'?'Pago de cuota anual de delegado':'Pago de Licencia Provincial'}}</button></div>
     <!-- Card Mis Datos -->
     <mat-card class="profile-card">
       <h2>Mis Datos</h2>

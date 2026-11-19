@@ -10,8 +10,9 @@
                 <mat-icon>event</mat-icon><span>Eventos</span>
             </a>
             <a mat-list-item routerLink="/admin/usuarios/pendientes" routerLinkActive="active" (click)="closeOnNav()">
-                <mat-icon>hourglass_top</mat-icon><span>Solicitudes por revisar</span>
+                <mat-icon>hourglass_top</mat-icon><span>Pendientes · En revisión</span>
             </a>
+            <a mat-list-item routerLink="/admin/usuarios/por-completar" routerLinkActive="active" (click)="closeOnNav()"><mat-icon>edit_note</mat-icon><span>Por completar</span></a>
             <a mat-list-item routerLink="/admin/usuarios/todos" routerLinkActive="active" (click)="closeOnNav()">
                 <mat-icon>group</mat-icon><span>Usuarios y documentación</span>
             </a>

@@ -119,6 +119,7 @@ export const routes: Routes = [
             (c) => c.RevisionCuentasComponent,
           ),
       },
+      {path:'usuarios/por-completar',loadComponent:()=>import('./admin/users/revision-cuentas/revision-cuentas.component').then(c=>c.RevisionCuentasComponent)},
       {
         path: 'usuarios/todos',
         loadComponent: () =>

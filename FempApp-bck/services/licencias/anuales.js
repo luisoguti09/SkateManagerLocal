@@ -4,7 +4,8 @@ const {fail}=require('../cuenta-reglas'),P=require('./propuesta'),B=require('./b
 function temporada(value){const n=Number(value);if(!Number.isInteger(n)||n<2020||n>2100)fail(400,'Temporada inválida.');return n;}
 function cuentaAprobada(u){return ['deportista','delegado','tecnico'].includes(u?.rol)&&u.estado==='aprobado'&&u.aprobado===true;}
 function documentos(u,hoy){return u?.rol==='deportista'&&u.estado==='aprobado'&&u.aprobado===true&&u.documentacionAprobada===true&&V.resumen(u,hoy).every(d=>d.vence&&d.dias>=0);}
-function permisoCobro(env,usuarioId,year){if(year!==Number(env.MP_LICENCIAS_TEMPORADA||2027))fail(403,'El cobro de esta temporada no está abierto.');if(env.MP_LICENCIAS_ENABLED!=='true')fail(503,'El cobro de licencias todavía no está habilitado.');if(env.MP_LICENCIAS_PILOTO_USUARIO_ID&&String(usuarioId)!==env.MP_LICENCIAS_PILOTO_USUARIO_ID)fail(403,'El cobro está en verificación inicial. Tesorería avisará cuando se habilite.');}
+function motivoCierre(env,id,year){if(year!==Number(env.MP_LICENCIAS_TEMPORADA||2027))return 'temporada';if(String(env.MP_LICENCIAS_ENABLED||'').trim().toLowerCase()!=='true')return 'cerrado';const piloto=String(env.MP_LICENCIAS_PILOTO_USUARIO_ID||'').trim();return piloto&&String(id)!==piloto?'piloto':null;}
+function permisoCobro(env,usuarioId,year){if(year!==Number(env.MP_LICENCIAS_TEMPORADA||2027))fail(403,'El cobro de esta temporada no está abierto.');if(String(env.MP_LICENCIAS_ENABLED||'').trim().toLowerCase()!=='true')fail(503,'El cobro de licencias todavía no está habilitado.');if(String(env.MP_LICENCIAS_PILOTO_USUARIO_ID||'').trim()&&String(usuarioId)!==String(env.MP_LICENCIAS_PILOTO_USUARIO_ID).trim())fail(403,'El cobro está en verificación inicial. Tesorería avisará cuando se habilite.');}
 function exentaVigente(l,b){return l.estado==='exenta'&&b?.activa===true&&b.porcentaje===100&&b.usuarioId===l.usuarioId&&b.temporada===l.temporada&&b.id===l.exencion?.becaId;}
 function service({Licencia,Intento,Operacion,Historial,Usuario,Config,Beca,provider,env=process.env,now=Date.now}){
  const fecha=()=>V.hoyArgentina(new Date(now()));
@@ -36,7 +37,7 @@ function service({Licencia,Intento,Operacion,Historial,Usuario,Config,Beca,provi
   });
  }
  async function detalle(id,year){year=temporada(year);const u=await usuario(id),l=await Licencia.findOne({where:{usuarioId:id,temporada:year}}),b=await beca(id,year);
-  const result={temporada:year,cuentaAprobada:cuentaAprobada(u),rol:u.rol,documentosAprobadosVigentes:documentos(u,fecha()),cobrosHabilitados:year===Number(env.MP_LICENCIAS_TEMPORADA||2027)&&env.MP_LICENCIAS_ENABLED==='true'&&(!env.MP_LICENCIAS_PILOTO_USUARIO_ID||env.MP_LICENCIAS_PILOTO_USUARIO_ID===String(id)),licencia:l?.toJSON()||null,habilitada:false,cotizacion:null,aviso:''};
+  const result={temporada:year,cuentaAprobada:cuentaAprobada(u),rol:u.rol,documentosAprobadosVigentes:documentos(u,fecha()),motivoCierre:motivoCierre(env,id,year),cobrosHabilitados:!motivoCierre(env,id,year),licencia:l?.toJSON()||null,habilitada:false,cotizacion:null,aviso:''};
   if(!l){try{result.cotizacion=await cotizacion({usuarioId:id,temporada:year},b);}catch(e){result.aviso=e.message;}result.requierePago=result.cuentaAprobada&&result.cobrosHabilitados&&!!result.cotizacion;return result;}
   result.habilitada=result.cuentaAprobada&&(l.estado==='conciliada'||exentaVigente(l,b));
   if(l.estado==='exenta'&&!exentaVigente(l,b))result.aviso='La exención ya no está vigente. Consultá a Tesorería.';
@@ -99,4 +100,4 @@ function service({Licencia,Intento,Operacion,Historial,Usuario,Config,Beca,provi
  }
  return{solicitar,asignar,detalle,checkout,conciliar,comprobar};
 }
-module.exports={cuentaAprobada,service,temporada,documentos,permisoCobro,exentaVigente};
+module.exports={motivoCierre,cuentaAprobada,service,temporada,documentos,permisoCobro,exentaVigente};

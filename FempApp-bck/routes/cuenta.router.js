@@ -91,6 +91,7 @@ router.use('/admin',verifyToken,requireRole('administrador'));
 router.get('/admin/usuarios',C.wrap(async(req,res)=>{
   const where={};
   if(req.query.estado){if(!C.R.ESTADOS.includes(req.query.estado))C.R.fail(400,'Estado inválido.');where.estado=req.query.estado;}
+  await require('../services/cuenta-listado').filtrarEtapa(where,req.query.etapa,C.Historial);
   if(req.query.q){const q=String(req.query.q).slice(0,100);where[Op.or]=['nombre','dni','email'].map(k=>({[k]:{[Op.like]:`%${q}%`}}));}
   if(req.query.club){if(typeof req.query.club!=='string' || req.query.club.length>255)C.R.fail(400,'Club inválido.');where.club=req.query.club;}
   const page=Math.max(1,Number.parseInt(req.query.page,10)||1);
