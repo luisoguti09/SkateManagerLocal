@@ -88,6 +88,7 @@ router.get('/:id/archivo/:campo',C.wrap(async(req,res)=>{
   res.download(p,`${field}.${p.endsWith('.pdf')?'pdf':'jpg'}`,e=>{if(e&&!res.headersSent)res.status(404).end();});
 }));
 router.use('/admin',verifyToken,requireRole('administrador'));
+router.patch('/admin/usuarios/:id/nombre',C.wrap(async(req,res)=>{res.json(await require('../services/nombres').corregir(C,req.auth.id,Number(req.params.id),req.body));}));
 router.get('/admin/usuarios',C.wrap(async(req,res)=>{
   const where={};
   if(req.query.estado){if(!C.R.ESTADOS.includes(req.query.estado))C.R.fail(400,'Estado inválido.');where.estado=req.query.estado;}
@@ -95,7 +96,7 @@ router.get('/admin/usuarios',C.wrap(async(req,res)=>{
   if(req.query.q){const q=String(req.query.q).slice(0,100);where[Op.or]=['nombre','dni','email'].map(k=>({[k]:{[Op.like]:`%${q}%`}}));}
   if(req.query.club){if(typeof req.query.club!=='string' || req.query.club.length>255)C.R.fail(400,'Club inválido.');where.club=req.query.club;}
   const page=Math.max(1,Number.parseInt(req.query.page,10)||1);
-  const result=await C.Usuario.findAndCountAll({where,attributes:['id','nombre','dni','email','estado','rol','club','revision','createdAt'],order:[['id','DESC']],limit:50,offset:(page-1)*50});
+  const result=await C.Usuario.findAndCountAll({where,attributes:['id','nombre','apellido','nombres','dni','email','estado','rol','club','revision','createdAt'],order:[[require('sequelize').fn('COALESCE',require('sequelize').col('apellido'),require('sequelize').col('nombre')),'ASC'],['nombres','ASC'],['id','ASC']],limit:50,offset:(page-1)*50});
   const usuarios=await Promise.all(result.rows.map(async u=>({...u.toJSON(),etapaSolicitud:u.estado==='pendiente'?(await C.presentada(u)?'En revisión':'Por completar'):null})));
   res.json({usuarios,total:result.count,page});
 }));

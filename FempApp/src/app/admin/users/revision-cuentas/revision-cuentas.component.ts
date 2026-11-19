@@ -1,3 +1,4 @@
+import {AuthService} from '../../../services/auth.service';
 import {Component,OnInit,OnDestroy,inject,ChangeDetectorRef,ElementRef} from '@angular/core';
 import {DomSanitizer,SafeResourceUrl} from '@angular/platform-browser';
 import {Subscription} from 'rxjs';
@@ -8,6 +9,10 @@ import {finalize,switchMap,catchError,EMPTY} from 'rxjs';
 import {CuentaService,estados,camposCuenta,guardarArchivo} from '../../../services/cuenta.service';
 @Component({selector:'app-revision-cuentas',standalone:true,imports:[CommonModule,FormsModule],templateUrl:'./revision-cuentas.component.html',styleUrls:['./revision-cuentas.component.scss']})
 export class RevisionCuentasComponent implements OnInit,OnDestroy{
+ private auth=inject(AuthService);
+ get puedeCorregirNombre(){return Number(this.auth.getUsuario()?.id)===38&&this.auth.hasRole('administrador');}
+ apellidoEditar='';nombresEditar='';
+ guardarNombre(){if(this.busy||!this.u)return;this.busy=true;this.error='';this.ok='';this.api.corregirNombre(this.u.id,{apellido:this.apellidoEditar,nombres:this.nombresEditar,revision:this.u.revision}).pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.u=u;this.ok='Nombre actualizado.';},error:e=>this.error=e.error?.error||'No se pudo guardar el nombre.'});}
  private sanitizer=inject(DomSanitizer);
  vistaArchivo: {key:string;label:string;url:string;pdf:SafeResourceUrl|null}|null=null;
  cargandoArchivo='';errorArchivo='';
@@ -51,12 +56,14 @@ export class RevisionCuentasComponent implements OnInit,OnDestroy{
  get documentosCorregibles(){return this.campos.filter(c=>this.u?.politicaDocumentos?.visibles?.includes(c.key));}
  cambiarClub(){
   if(this.busy||!this.u)return;this.busy=true;this.error='';this.ok='';
-  this.api.cambiarClub(this.u.id,{clubId:this.clubDestino,fecha:this.fechaClub,revision:this.u.revision}).pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.u=u;this.clubDestino=null;this.fechaClub='';this.ok='Club actualizado. El cambio quedó registrado en el historial.';},error:e=>this.error=e.error?.error||'No se pudo cambiar el club.'});
+  this.api.cambiarClub(this.u.id,{clubId:this.clubDestino,fecha:this.fechaClub,revision:this.u.revision}).pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.u=u;this.apellidoEditar=u.apellido||'';this.nombresEditar=u.nombres||'';this.clubDestino=null;this.fechaClub='';this.ok='Club actualizado. El cambio quedó registrado en el historial.';},error:e=>this.error=e.error?.error||'No se pudo cambiar el club.'});
  }
  club='';clubes:{id:number;nombre:string}[]=[];errorClubes='';
- get etapa(){return this.router.url.includes('/por-completar')?'por_completar':this.router.url.includes('/pendientes')?'en_revision':'';}
+ filtro=this.router.url.includes('/por-completar')?'por_completar':this.router.url.includes('/todos')?'todos':'en_revision';
+ get etapa(){return ['en_revision','por_completar'].includes(this.filtro)?this.filtro:'';}
+ get estado(){return this.etapa?'pendiente':this.filtro==='todos'?'':this.filtro;}
  get titulo(){return this.etapa==='por_completar'?'Por completar':this.etapa==='en_revision'?'Pendientes · En revisión':'Usuarios y documentación';}
- estado=this.router.url.includes('/todos')?'':'pendiente';q='';page=1;total=0;usuarios:any[]=[];u:any=null;busy=false;error='';ok='';motivo='';nuevoEstado='aprobado';seleccion:Record<string,boolean>={};
+ q='';page=1;total=0;usuarios:any[]=[];u:any=null;busy=false;error='';ok='';motivo='';nuevoEstado='aprobado';seleccion:Record<string,boolean>={};
  private enfocar(selector:string){
   this.vista.detectChanges();
   const elemento=this.host.nativeElement.querySelector(selector) as HTMLElement | null;
@@ -68,7 +75,7 @@ export class RevisionCuentasComponent implements OnInit,OnDestroy{
  cargar(){if(this.busy)return;this.busy=true;this.error='';this.api.listar(this.estado,this.q,this.page,this.club,this.etapa).pipe(finalize(()=>this.busy=false)).subscribe({next:r=>{this.usuarios=r.usuarios;this.total=r.total;},error:e=>this.error=e.error?.error || 'No se pudo cargar el listado.'});}
  filtrar(){this.page=1;this.cargar();}
  pagina(delta:number){this.page+=delta;this.cargar();}
- abrir(id:number){if(this.busy)return;this.cerrarArchivo();this.busy=true;this.error='';this.ok='';this.api.detalle(id).pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.u=u;this.clubDestino=null;this.fechaClub='';this.motivo='';this.seleccion={};this.nuevoEstado=u.estado==='bloqueado'?'pendiente':'aprobado';this.enfocar('[data-solicitud]');},error:e=>this.error=e.error?.error || 'No se pudo cargar la solicitud.'});}
+ abrir(id:number){if(this.busy)return;this.cerrarArchivo();this.busy=true;this.error='';this.ok='';this.api.detalle(id).pipe(finalize(()=>this.busy=false)).subscribe({next:u=>{this.u=u;this.apellidoEditar=u.apellido||'';this.nombresEditar=u.nombres||'';this.clubDestino=null;this.fechaClub='';this.motivo='';this.seleccion={};this.nuevoEstado=u.estado==='bloqueado'?'pendiente':'aprobado';this.enfocar('[data-solicitud]');},error:e=>this.error=e.error?.error || 'No se pudo cargar la solicitud.'});}
  decidir(){
   if(this.busy || !this.u)return;
   this.busy=true;this.error='';this.ok='';

@@ -1,4 +1,4 @@
-import {Component,OnInit,inject} from '@angular/core';
+import {ChangeDetectorRef,ElementRef,Component,OnInit,inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {RouterLink} from '@angular/router';
@@ -9,6 +9,8 @@ import {environment} from '../../../environments/environment';
 export class LicenciasConfigComponent implements OnInit{
  private http=inject(HttpClient);private auth=inject(AuthService);private url=environment.SERVER_API.replace(/\/$/,'')+'/licencias-config';
  datos:any=null;revision=0;motivo='';historial:any[]=[];busy=false;error='';mensaje='';avisos:any[]=[];
+ private vista=inject(ChangeDetectorRef);private host=inject(ElementRef);
+ private enfocarCotejo(){this.vista.detectChanges();const e=this.host.nativeElement.querySelector('[data-cotejo]');e?.focus({preventScroll:true});e?.scrollIntoView({block:'start',behavior:'smooth'});}
  buscar='';club='';estado='aprobado';clubes:string[]=[];registros:any[]=[];cargandoCotejo=false;cotejoListo=false;aplicados='';errorCotejo='';
  temporada=2027;nuevaTemporada=new Date().getFullYear()+1;temporadas:number[]=[2027];seccion='deportistas';correoOperativo=false;private cargaId=0;
  get editar(){return this.auth.getUsuario()?.rol==='tesoreria';}get opts(){return{headers:{Authorization:'Bearer '+this.auth.getToken()}};}
@@ -23,7 +25,7 @@ export class LicenciasConfigComponent implements OnInit{
  crearTemporada(){if(!Number.isInteger(this.nuevaTemporada)||this.nuevaTemporada<2020||this.nuevaTemporada>2100)return;this.temporada=this.nuevaTemporada;this.seccion='periodos';this.cambiarTemporada();}
  parametros(){return new URLSearchParams({buscar:this.buscar.trim(),club:this.club,estado:this.estado}).toString();}
  get filtrosCambiados(){return this.parametros()!==this.aplicados;}
- buscarCotejo(){if(this.cargandoCotejo)return;this.cargandoCotejo=true;this.cotejoListo=false;this.errorCotejo='';const q=this.parametros();this.http.get<any>(this.url+'/cotejo?'+q,this.opts).subscribe({next:r=>{this.registros=r.registros;this.clubes=r.clubes;this.aplicados=q;this.cotejoListo=true;this.cargandoCotejo=false;},error:e=>{this.cargandoCotejo=false;this.errorCotejo=e.error?.error||'No se pudo cargar el padrón. Reintentá la búsqueda.';}});}
+ buscarCotejo(){if(this.cargandoCotejo)return;this.cargandoCotejo=true;this.cotejoListo=false;this.errorCotejo='';const q=this.parametros();this.http.get<any>(this.url+'/cotejo?'+q,this.opts).subscribe({next:r=>{this.registros=r.registros;this.clubes=r.clubes;this.aplicados=q;this.cotejoListo=true;this.cargandoCotejo=false;if(this.buscar.trim())this.enfocarCotejo();},error:e=>{this.cargandoCotejo=false;this.errorCotejo=e.error?.error||'No se pudo cargar el padrón. Reintentá la búsqueda.';}});}
  descargar(ruta:string,nombre:string){this.http.get(this.url+'/'+ruta,{...this.opts,responseType:'blob'}).subscribe({next:blob=>{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=nombre;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);},error:e=>this.fallo(e)});}
  exportar(){if(!this.cotejoListo||this.filtrosCambiados)return;this.descargar('cotejo.csv?'+this.aplicados,'cotejo-deportistas.csv');}
  exportarAranceles(){this.descargar('aranceles.csv?temporada='+this.temporada,'aranceles-licencias-'+this.temporada+'.csv');}

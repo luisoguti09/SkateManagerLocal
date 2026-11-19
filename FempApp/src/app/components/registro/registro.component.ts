@@ -73,7 +73,8 @@ export class RegistroComponent implements OnDestroy {
   ngOnInit() {
     this.catalogo.listar().pipe(takeUntil(this.destroy$)).subscribe({next:ds=>this.deportes=ds,error:()=>this.errorDeportes='No se pudo cargar el catálogo. Actualizá la página antes de registrarte.'});
     this.form = this.fb.group({
-      nombre: ['', Validators.required],
+      nombre: [''],
+      apellido: ['',Validators.required],nombres: ['',Validators.required],
       edad: [null, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=[\s\S]*[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])(?=[\s\S]*[0-9])[\s\S]*$/), (control: AbstractControl) => new TextEncoder().encode(control.value || '').length > 72 ? {passwordBytes: true} : null]],
@@ -212,7 +213,7 @@ export class RegistroComponent implements OnDestroy {
     this.empadronada = '';
     this.clubSeleccionado = null;
     this.clubSearchControl.setValue(null);
-    this.form.patchValue({ nombre: '', edad: null, clubId: null, categoria: '', nivel: '' });
+    this.form.patchValue({ apellido:'',nombres:'',nombre: '', edad: null, clubId: null, categoria: '', nivel: '' });
   }
 
   buscar(): void {
@@ -275,7 +276,8 @@ export class RegistroComponent implements OnDestroy {
     }
     const rolId = Number(raw.rolId);
     const payload = {
-      nombre: this.form.get('nombre')!.value,
+      apellido:String(raw.apellido||'').trim(),nombres:String(raw.nombres||'').trim(),
+      nombre: String(raw.apellido||'').trim()+' '+String(raw.nombres||'').trim(),
       edad: Number(raw.edad),
       email: this.form.get('email')!.value,
       password: raw.password,

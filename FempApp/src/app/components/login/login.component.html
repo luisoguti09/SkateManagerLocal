@@ -18,7 +18,7 @@
         </ng-template>
         <button mat-raised-button color="primary" type="button" (click)="volverAlIngreso()">Volver al ingreso</button>
       </section>
-      <ng-template #ingreso>
+      <ng-template #ingreso><p *ngIf="retornoPago">Ingresá para consultar el estado de tu licencia.</p>
         <form [formGroup]="form" class="login-form" (ngSubmit)="login()" [attr.aria-busy]="cargando">
           <mat-form-field class="example-full-width">
             <mat-label>Email</mat-label>

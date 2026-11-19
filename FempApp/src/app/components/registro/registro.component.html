@@ -59,11 +59,9 @@
       <div *ngIf="empadronada != ''">
         <!-- Edad declarada: no se inventa a partir de la existencia en padrón. -->
         <form [formGroup]="form" class="reg-form">
-          <mat-form-field class="example-full-width" appearance="outline" floatLabel="always">
-            <mat-label>Nombre y apellido</mat-label>
-            <input id="nombre" type="text" matInput formControlName="nombre" [readonly]="cargando">
-            <mat-error *ngIf="form.get('nombre')?.invalid">Ingresá nombre y apellido.</mat-error>
-          </mat-form-field>
+          <p *ngIf="pers?.apellidoYNombre">En el padrón: <strong>{{pers?.apellidoYNombre}}</strong>. Confirmá los apellidos y nombres por separado.</p>
+          <mat-form-field appearance="outline"><mat-label>Apellidos</mat-label><input matInput formControlName="apellido" maxlength="120" autocomplete="family-name" [readonly]="cargando"><mat-error>Ingresá los apellidos.</mat-error></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Nombres</mat-label><input matInput formControlName="nombres" maxlength="120" autocomplete="given-name" [readonly]="cargando"><mat-error>Ingresá los nombres.</mat-error></mat-form-field>
           <mat-form-field class="example-full-width" appearance="outline" floatLabel="always">
             <mat-label for="edad">Edad</mat-label>
             <input id="edad" type="number" matInput formControlName="edad" min="0" step="1" [readonly]="cargando">

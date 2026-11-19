@@ -17,6 +17,7 @@ export class CuentaService {
  enviar(files:FormData){return this.http.post<any>(this.base+'/mia/enviar',files,this.opts);}
  renovarCertificado(files:FormData){return this.http.post<any>(this.base+'/mia/certificado-antecedentes',files,this.opts);}
  corregirIdentidad(files:FormData){return this.http.post<any>(this.base+'/mia/identidad',files,this.opts);}
+ corregirNombre(id:number,data:any){return this.http.patch<any>(this.base+'/admin/usuarios/'+id+'/nombre',data,this.opts);}
  cambiarClub(id:number,data:any){return this.http.patch<any>(this.base+'/admin/usuarios/'+id+'/club',data,this.opts);}
  renovarDocumentos(files:FormData){return this.http.post<any>(this.base+'/mia/documentos-vigencia',files,this.opts);}
  previsualizarWada(temporada:number,fechaNacimiento:string){return this.http.post<any>(this.base+'/mia/requisito-wada/preview',{temporada,fechaNacimiento},this.opts);}

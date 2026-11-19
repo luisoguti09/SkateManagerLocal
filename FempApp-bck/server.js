@@ -148,6 +148,7 @@ app.get('/', (req, res) => {
 // No comenzar a atender con un esquema incompleto.
 async function start() {
   await db.sequelize.authenticate();
+  await require('./services/nombres-esquema').preparar(db.sequelize);
   await db.Usuario.findOne({attributes:['id','sessionVersion','revision','camposCorregir','solicitaLicenciaProvincial']});
   await db.CuentaCorreo.count();await db.CuentaHistorial.count();await db.CuentaReset.count();
   require('./services/cuenta-correo').start();

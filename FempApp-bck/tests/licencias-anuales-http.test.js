@@ -40,3 +40,11 @@ test('CSV anual: exclusivo de Tesorería, fechas/importes verificados y nombres 
 });
 
 test('HTTP: técnicas y delegados consultan su pago, pendientes quedan fuera',async()=>{for(const rol of ['tecnico','delegado']){f.u.rol=rol;assert.equal((await request('/mia?temporada=2027',1)).status,200);}f.u.rol='deportista';f.u.estado='pendiente';assert.equal((await request('/checkout',1,{temporada:2027})).status,403);f.u.estado='aprobado';});
+
+test('Tesorería filtra pagos confirmados y exporta el mismo conjunto',async()=>{
+ const r=await request('/movimientos?temporada=2027&estadoPago=confirmados',99);assert.equal(r.status,200);assert.equal(r.data.total,1);assert.equal(r.data.resumen.totalCentavos,13000000);assert.equal(r.data.usuarios[0].licencia.estado,'conciliada');
+ const none=await request('/movimientos?temporada=2027&estadoPago=pendientes',99);assert.equal(none.data.total,0);
+ assert.equal((await request('/movimientos?temporada=2027&estadoPago=invalido',99)).status,400);
+ assert.equal((await request('/movimientos?temporada=2027',1)).status,403);
+ const csv=await request('/exportar.csv?temporada=2027&estadoPago=pendientes',99);assert.equal(csv.status,200);assert.equal(csv.data.includes('130000'),false);
+});

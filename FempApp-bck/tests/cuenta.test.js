@@ -390,5 +390,10 @@ test('Flujo de cuentas, permisos, archivos y correo',async t=>{
   assert.equal((await cambiar(admin)).status,409);
   const h=H.rows.find(h=>h.usuarioId===a.id&&h.accion==='club_cambiado');assert.equal(h.actorId,admin.id);assert.equal(JSON.parse(h.motivo).fecha,fecha);
  });
+ await t.test('registro con apellidos compuestos conserva campos separados y nombre completo',async()=>{
+  const datos={apellido:'de la Cruz',nombres:'Ana María',nombre:'IGNORAR',edad:25,email:'separado@example.org',dni:'99887766',password:'UnaClave1234',rolId:2};
+  const r=await call('POST','/auth/register',null,datos);assert.equal(r.status,201);const u=U.rows.find(x=>x.dni==='99887766');assert.equal(u.apellido,'de la Cruz');assert.equal(u.nombres,'Ana María');assert.equal(u.nombre,'de la Cruz Ana María');
+  const bad=await call('POST','/auth/register',null,{...datos,email:'bad@example.org',dni:'99887765',nombres:''});assert.equal(bad.status,400);
+ });
  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));Module._load=load;await fs.rm(temp,{recursive:true,force:true});}
 });

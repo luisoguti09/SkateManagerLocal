@@ -26,3 +26,5 @@ test('pendientes no pagan y el rol no obtiene rutas ajenas',async()=>{
 });
 
 test('mis datos pendientes abre perfil independiente, sin cargar el dashboard',async()=>{assert.equal((await guard().go('/dashboard-deport/mis-datos')).path,'/perfil');assert.equal(await guard({requierePago:false}).go('/dashboard-deport/mis-datos'),true);});
+
+test('retorno sin sesión conserva destino de pago sin aceptar URL externa',async()=>{const r=await guard({logged:false}).go('/licencia?temporada=2027&payment_id=1');assert.equal(r.path,'/login');assert.equal(r.query.volver,'licencia');assert.equal(r.query.temporada,2027);const other=await guard({logged:false}).go('/admin');assert.equal(other.query,undefined);});

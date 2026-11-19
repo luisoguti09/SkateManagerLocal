@@ -1,5 +1,7 @@
+import {HttpClient} from '@angular/common/http';
+import {environment} from '../../../environments/environment';
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, inject, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -187,6 +189,13 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
     this.dataSource.sort = value ?? null;
   }
 
+  private http=inject(HttpClient);licencias:any=null;errorLicencias='';cargandoLicencias=false;temporadaLicencias=2027;private solicitudLicencias?:Subscription;
+  cargarLicencias(){this.solicitudLicencias?.unsubscribe();this.cargandoLicencias=true;this.errorLicencias='';this.licencias=null;this.solicitudLicencias=this.http.get<any>(environment.SERVER_API.replace(/\/$/,'')+'/licencias-anuales/resumen',{params:{temporada:this.temporadaLicencias},headers:{Authorization:'Bearer '+this.auth.getToken()}}).subscribe({next:r=>{this.licencias=r;this.cargandoLicencias=false;},error:()=>{this.errorLicencias='No se pudieron consultar los pagos de licencias.';this.cargandoLicencias=false;}});}
+  anchoMes(c:number){return Math.max(0,c/Math.max(1,...(this.licencias?.porMes||[]).map((m:any)=>m.centavos))*100);}
+  get cobradoEventos(){return this.pagos.filter(p=>p.estadoPago==='approved'&&p.estadoConciliacion==='ok').reduce((s,p)=>s+Number(p.montoTotal||0),0);}
+  get pendienteEventos(){return this.pagos.filter(p=>['pendiente','pending','in_process','authorized'].includes(p.estadoPago)).reduce((s,p)=>s+Number(p.montoTotal||0),0);}
+  private host=inject(ElementRef);private vista=inject(ChangeDetectorRef);
+  private enfocarResultados(){this.vista.detectChanges();const e=this.host.nativeElement.querySelector('[data-pagos]');e?.focus({preventScroll:true});e?.scrollIntoView({block:'start',behavior:'smooth'});}
   constructor(
     private pagosService: PagosService,
     private eventosService: EventosService,
@@ -194,12 +203,14 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.cargarLicencias();
     this.cargarEventos();
     this.cargarClubes();
     this.cargarPagos();
   }
 
   ngOnDestroy(): void {
+    this.solicitudLicencias?.unsubscribe();
     this.solicitudPagos?.unsubscribe();
     this.solicitudClubes?.unsubscribe();
     this.solicitudEventos?.unsubscribe();
@@ -247,6 +258,7 @@ export class DashboardTesoreriaComponent implements OnInit, OnDestroy {
           this.filtrosAplicados = { ...filtrosLimpios };
           this.pagosCargados = true;
           this.cargando = false;
+          if(filtrosLimpios.buscar)this.enfocarResultados();
         },
         error: (error: any) => {
           void 0;

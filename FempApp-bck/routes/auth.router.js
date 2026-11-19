@@ -41,7 +41,8 @@ router.post('/register', async (req, res) => {
   try {
     const { password, dni, edad, rolId, categoria, nivel, club } = req.body;
     const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
-    const nombre = typeof req.body.nombre === 'string' ? req.body.nombre.trim() : '';
+    const separados=('apellido' in req.body || 'nombres' in req.body)?require('../services/nombres').validar(req.body):null;
+    const nombre = separados?separados.nombre:(typeof req.body.nombre === 'string' ? req.body.nombre.trim() : '');
     const dniNormalizado = String(dni || '').replace(/\D/g, '');
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 ||
@@ -93,6 +94,7 @@ router.post('/register', async (req, res) => {
     const nuevo = await Usuario.sequelize.transaction(async t => {
     const u = await Usuario.create({
       nombre,
+      ...(separados||{}),
       edad: Number(edad),
       email,
       password,

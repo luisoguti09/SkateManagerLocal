@@ -27,6 +27,7 @@ export class LoginComponent {
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required]
   });
+  retornoPago=this.route.snapshot.queryParamMap.get('volver')==='licencia';
   mostrarPassword = false;
   cargando = false;
   errorMsg = '';
@@ -59,6 +60,7 @@ export class LoginComponent {
     ).subscribe({
       next: () => {
         if (this.auth.getUsuario()?.estado !== 'aprobado') { void this.router.navigate(['/mi-solicitud']); return; }
+        if(this.route.snapshot.queryParamMap.get('volver')==='licencia'&&['deportista','delegado','tecnico'].includes(this.auth.getRolNombre()||'')){const year=Number(this.route.snapshot.queryParamMap.get('temporada'));void this.router.navigate(['/licencia'],{queryParams:{temporada:Number.isInteger(year)&&year>=2020&&year<=2100?year:2027,retorno:'pago'}});return;}
         const destinos: Record<string, string> = {
           administrador: '/dashboard-admin', delegado: '/dashboard-prof', tecnico: '/dashboard-prof', juez: '/dashboard-juez',
           deportista: '/dashboard-deport', tesoreria: '/dashboard-tesoreria'

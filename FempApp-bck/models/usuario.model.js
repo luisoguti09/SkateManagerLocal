@@ -14,6 +14,8 @@ const Usuario = sequelize.define('Usuario', {
   correcciones: { type: DataTypes.TEXT, allowNull: true },
   camposCorregir: { type: DataTypes.JSON, allowNull: true },
   solicitaLicenciaProvincial: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  apellido: {type: DataTypes.STRING(120), allowNull:true},
+  nombres: {type: DataTypes.STRING(120), allowNull:true},
   nombre: {
     type: DataTypes.STRING,
     allowNull: false
@@ -130,6 +132,8 @@ rolSolicitado: {
 },
 
 });
+
+Usuario.beforeUpdate(u=>{if(u.changed('nombre')&&!u.changed('apellido')&&!u.changed('nombres')&&u.nombre!==[u.apellido,u.nombres].filter(Boolean).join(' ')){u.apellido=null;u.nombres=null;}});
 
 // Hash de la contraseña antes de guardar
 Usuario.beforeCreate(async (usuario) => {

@@ -23,13 +23,16 @@ function router({models=require('../models/licenciaanual.model'),Usuario=require
   res.json({connected:connection.connected===true,mensaje:connection.message||'',habilitado:String(env.MP_LICENCIAS_ENABLED||'').trim().toLowerCase()==='true',pilotoUsuarioId:String(env.MP_LICENCIAS_PILOTO_USUARIO_ID||'').trim()||null,temporada:Number(env.MP_LICENCIAS_TEMPORADA||2027)});
  }));
  async function listar(req,limitar=true){const temporada=year(req),buscar=String(req.query.buscar||'').trim();if(buscar.length>100)fail(400,'Búsqueda demasiado larga.');
-  const usuarios=await Usuario.findAll({where:{rol:{[Op.in]:['deportista','delegado','tecnico']},...(buscar?{[Op.or]:[{nombre:{[Op.like]:'%'+buscar+'%'}},{dni:{[Op.like]:'%'+buscar+'%'}}]}:{})},attributes:['id','rol','nombre','dni','club','estado','aprobado','documentacionAprobada','fichaMedica','fichaMedicaFecha','certificadoWada','wadaFecha'],order:[['nombre','ASC']],...(limitar?{limit:200}:{})});
+  const usuarios=await Usuario.findAll({where:{rol:{[Op.in]:['deportista','delegado','tecnico']},...(buscar?{[Op.or]:[{nombre:{[Op.like]:'%'+buscar+'%'}},{dni:{[Op.like]:'%'+buscar+'%'}}]}:{})},attributes:['id','rol','nombre','dni','club','estado','aprobado','documentacionAprobada','fichaMedica','fichaMedicaFecha','certificadoWada','wadaFecha'],order:[['nombre','ASC']]});
   const ls=await models.Licencia.findAll({where:{temporada,usuarioId:{[Op.in]:usuarios.map(u=>u.id)}}});const result=[];
   const intentos=await models.Intento.findAll({where:{licenciaId:{[Op.in]:ls.map(l=>l.id)}}}),operaciones=await models.Operacion.findAll({where:{licenciaId:{[Op.in]:ls.map(l=>l.id)}}});
   for(const u of usuarios){const l=ls.find(x=>x.usuarioId===u.id),i=l?intentos.find(i=>i.licenciaId===l.id):null,ops=l?operaciones.filter(o=>o.licenciaId===l.id):[];
    result.push({id:u.id,rol:u.rol,nombre:u.nombre,dni:u.dni,club:u.club,documentos:A.documentos({...u.toJSON(),rol:'deportista'},require('../services/documentos-vigencia').hoyArgentina()),licencia:l?.toJSON()||null,cotizacion:i?.cotizacion||l?.exencion||null,intentoEstado:i?.estado||null,operaciones:ops.map(o=>({paymentId:o.paymentId,webhook:o.webhook,...o.datos}))});
-  }return result;
+  }const estado=String(req.query.estadoPago||'todos');
+  const filtrados=require('../services/licencias/listado').filtrar(result,estado);return limitar?filtrados.slice(0,200):filtrados;
  }
+ r.get('/resumen',wrap(async(req,res)=>res.json(require('../services/licencias/listado').resumen(await listar(req,false)))));
+ r.get('/movimientos',wrap(async(req,res)=>{const rows=await listar(req,false),page=Math.max(1,Number.parseInt(req.query.page,10)||1);res.json({usuarios:rows.slice((page-1)*50,page*50),total:rows.length,page,resumen:require('../services/licencias/listado').resumen(rows)});}));
  r.get('/tesoreria',wrap(async(req,res)=>res.json(await listar(req))));
  r.put('/fecha-nacional',requireRole('tesoreria'),wrap(async(req,res)=>res.status(410).json({error:'La fecha nacional ya no se utiliza para el cobro provincial.'})));
  r.post('/comprobar/:usuarioId',requireRole('tesoreria'),wrap(async(req,res)=>{const id=Number(req.params.usuarioId);if(!Number.isSafeInteger(id)||id<=0)fail(400,'Deportista inválida.');res.json(await s.comprobar(id,year(req)));}));

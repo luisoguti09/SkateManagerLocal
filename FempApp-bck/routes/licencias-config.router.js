@@ -31,10 +31,13 @@ function cell(value){let text=String(value??'');if(/^[\s]*[=+@-]/.test(text))tex
 function csv(res,nombre,lines){res.set({'Content-Type':'text/csv; charset=utf-8','Content-Disposition':'attachment; filename="'+nombre+'"'});res.send('\uFEFF'+lines.map(row=>row.map(cell).join(';')).join('\r\n'));}
 async function cotejo(req){
  const Usuario=require('../models/usuario.model');
- const todos=await Usuario.findAll({where:{rol:'deportista'},attributes:['id','nombre','dni','club','estado','createdAt'],order:[['id','ASC']]});
+ const todos=await Usuario.findAll({where:{rol:'deportista'},attributes:['id','nombre','apellido','nombres','dni','club','estado','createdAt'],order:[['nombre','ASC']]});
  const buscar=String(req.query.buscar||'').trim().toLocaleLowerCase(),club=String(req.query.club||''),estado=String(req.query.estado||'');
- if(estado&&!['pendiente','aprobado','requiere_correcciones','bloqueado'].includes(estado)){const e=new Error('Estado inválido.');e.status=400;throw e;}
- return {clubes:[...new Set(todos.map(u=>u.club).filter(Boolean))].sort(),registros:todos.filter(u=>(!club||u.club===club)&&(!estado||u.estado===estado)&&(!buscar||[u.nombre,u.dni].join(' ').toLocaleLowerCase().includes(buscar))).map(u=>({id:u.id,nombre:u.nombre,dni:u.dni,club:u.club,estado:u.estado,fechaSolicitudNacional:null,estadoPago:null}))};
+ if(estado&&!['pendiente','en_revision','por_completar','aprobado','requiere_correcciones','bloqueado'].includes(estado)){const e=new Error('Estado inválido.');e.status=400;throw e;}
+ const C=require('../services/cuenta');
+ const etapas=new Map(await Promise.all(todos.filter(u=>u.estado==='pendiente').map(async u=>[u.id,await C.presentada(u)?'en_revision':'por_completar'])));
+ const filtro=estado==='pendiente'?'en_revision':estado;
+ return {clubes:[...new Set(todos.map(u=>u.club).filter(Boolean))].sort(),registros:todos.filter(u=>(!club||u.club===club)&&(!filtro||(u.estado==='pendiente'?etapas.get(u.id):u.estado)===filtro)&&(!buscar||[u.nombre,u.dni].join(' ').toLocaleLowerCase().includes(buscar))).map(u=>({id:u.id,nombre:u.nombre,dni:u.dni,club:u.club,estado:u.estado==='pendiente'?(etapas.get(u.id)==='en_revision'?'En revisión':'Por completar'):u.estado,fechaSolicitudNacional:null,estadoPago:null}))};
 }
 router.get('/cotejo',requireRole('tesoreria'),wrap(async(req,res)=>res.json(await cotejo(req))));
 router.get('/cotejo.csv',requireRole('tesoreria'),wrap(async(req,res)=>{
