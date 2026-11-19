@@ -7,6 +7,7 @@ const Correo=require('../models/cuentacorreo.model');
 const Reset=require('../models/cuentareset.model');
 async function main(){
   await sequelize.authenticate();
+  await require('../services/nombres-esquema').preparar(sequelize);
   const qi=sequelize.getQueryInterface(),table=Usuario.getTableName();
   const columns=await qi.describeTable(table);
   const additions={certificadoAntecedentesFecha:{type:D.DATEONLY,allowNull:true},certificadoWada:{type:D.STRING,allowNull:true},fichaMedicaFecha:{type:D.DATEONLY,allowNull:true},wadaFecha:{type:D.DATEONLY,allowNull:true},certificadoAntecedentes:{type:D.STRING,allowNull:true},sessionVersion:{type:D.INTEGER,allowNull:false,defaultValue:0},revision:{type:D.INTEGER,allowNull:false,defaultValue:0},correcciones:{type:D.TEXT,allowNull:true},camposCorregir:{type:D.JSON,allowNull:true},solicitaLicenciaProvincial:{type:D.BOOLEAN,allowNull:false,defaultValue:false}};
